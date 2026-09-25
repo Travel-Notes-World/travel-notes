@@ -9,7 +9,7 @@ export function ArticleCard({ article, hero = false }: { article: Article; hero?
   return (
     <article className={hero ? "grid gap-6 lg:grid-cols-[3fr_2fr] lg:items-end" : "flex flex-col gap-3"}>
       <Link href={href} aria-hidden="true" tabIndex={-1} className="block">
-        <Placeholder tone={article.heroTone} alt="" className={`aspect-[3/2] w-full ${hero ? "rounded-lg" : "rounded-md"}`} />
+        <Placeholder tone={article.heroTone} alt="" image={article.image} priority={hero} className={`aspect-[3/2] w-full ${hero ? "rounded-lg" : "rounded-md"}`} />
       </Link>
       <div className="flex flex-col gap-3">
         <p className="t-meta text-ink-400 m-0">

@@ -12,6 +12,7 @@ export default function DestinationsPage() {
       <div className="mt-10 grid gap-6 md:gap-8 grid-cols-2 lg:grid-cols-3">
         {destinations.map((d) => <DestinationCard key={d.slug} d={d} />)}
       </div>
+      <p className="t-body-sm text-ink-400 mt-8">Sample photos are by Wikimedia Commons contributors and credited on each destination page. They will be replaced with original photography.</p>
     </div>
   );
 }

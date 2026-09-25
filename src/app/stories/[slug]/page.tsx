@@ -8,7 +8,7 @@ import { DisclosureBanner } from "@/components/DisclosureBanner";
 import { ItineraryDay } from "@/components/ItineraryDay";
 import { AdSlot } from "@/components/AdSlot";
 import { ArticleCard } from "@/components/ArticleCard";
-import { Placeholder } from "@/components/Placeholder";
+import { Placeholder, Credit } from "@/components/Placeholder";
 import { siteUrl } from "@/lib/site";
 
 const slugify = (s: string) => s.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
@@ -87,8 +87,8 @@ export default async function StoryPage({ params }: { params: Promise<{ slug: st
           {a.sponsoredBy && <div className="mt-6"><DisclosureBanner sponsor={a.sponsoredBy} /></div>}
 
           <figure className="mt-8 m-0">
-            <Placeholder tone={a.heroTone} alt={a.heroAlt} className="aspect-[4/5] md:aspect-[3/2] w-full rounded-lg" />
-            <figcaption className="t-body-sm text-ink-600 mt-2">Placeholder until original photography is added. Caption and credit render here.</figcaption>
+            <Placeholder tone={a.heroTone} alt={a.heroAlt} image={a.image} priority className="aspect-[4/5] md:aspect-[3/2] w-full rounded-lg" />
+            <figcaption className="t-body-sm text-ink-600 mt-2"><Credit image={a.image} caption={a.image ? undefined : "Product photography pending. Caption and credit render here."} /></figcaption>
           </figure>
 
           <div className="mt-8"><SummaryBox takeaways={a.takeaways} sections={sections} /></div>
