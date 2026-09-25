@@ -1,0 +1,133 @@
+@import "tailwindcss";
+
+/* Travel Notes design tokens — source of truth:
+   https://claude.ai/artifact/L3JWve3Gp6mdFJP2Ckb6Rr (project/tokens.json) */
+:root {
+  --paper-000: #faf7f2;
+  --paper-100: #f2ede3;
+  --paper-200: #e4dccd;
+  --line-500: #8a8377;
+  --ink-900: #1c1a17;
+  --ink-600: #4a463f;
+  --ink-400: #6f6a61;
+  --marine-600: #1f5f6b;
+  --marine-700: #164653;
+  --marine-100: #dcebed;
+  --on-marine: #faf7f2;
+  --ochre-500: #c2762b;
+  --ochre-700: #8a4f14;
+  --ochre-100: #f6e7d3;
+  --signal-error: #a6261f;
+  --signal-success: #2d6a3a;
+  --scrim: #1c1a17b3;
+  --shadow-header: 0 1px 0 #e4dccd, 0 8px 24px #1c1a1714;
+  color-scheme: light;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --paper-000: #171614;
+    --paper-100: #211f1c;
+    --paper-200: #37332d;
+    --line-500: #7d766a;
+    --ink-900: #f1ece3;
+    --ink-600: #cdc6b9;
+    --ink-400: #a39b8e;
+    --marine-600: #7fc3cc;
+    --marine-700: #a6d8de;
+    --marine-100: #1d3a40;
+    --on-marine: #171614;
+    --ochre-500: #e39a4f;
+    --ochre-700: #f0b978;
+    --ochre-100: #3a2a17;
+    --signal-error: #f08a83;
+    --signal-success: #8ccb9a;
+    --scrim: #000000b3;
+    --shadow-header: 0 1px 0 #37332d, 0 8px 24px #00000066;
+    color-scheme: dark;
+  }
+}
+
+@theme inline {
+  --color-paper-000: var(--paper-000);
+  --color-paper-100: var(--paper-100);
+  --color-paper-200: var(--paper-200);
+  --color-line-500: var(--line-500);
+  --color-ink-900: var(--ink-900);
+  --color-ink-600: var(--ink-600);
+  --color-ink-400: var(--ink-400);
+  --color-marine-600: var(--marine-600);
+  --color-marine-700: var(--marine-700);
+  --color-marine-100: var(--marine-100);
+  --color-on-marine: var(--on-marine);
+  --color-ochre-500: var(--ochre-500);
+  --color-ochre-700: var(--ochre-700);
+  --color-ochre-100: var(--ochre-100);
+  --color-signal-error: var(--signal-error);
+  --color-signal-success: var(--signal-success);
+  --color-scrim: var(--scrim);
+
+  --font-display: var(--font-fraunces), "Iowan Old Style", Georgia, serif;
+  --font-text: var(--font-inter), system-ui, sans-serif;
+
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --radius-lg: 16px;
+  --radius-pill: 999px;
+
+  --spacing-measure: 42rem;   /* measure-prose */
+  --spacing-container: 76rem; /* container-max */
+  --spacing-hero: 88rem;      /* hero-max */
+  --spacing-sidebar: 300px;   /* sidebar-width */
+  --spacing-ad-inline: 280px; /* ad-inline-min-height */
+
+  --shadow-header: var(--shadow-header);
+}
+
+@layer base {
+  html { scroll-padding-top: 80px; }
+  body {
+    background: var(--paper-000);
+    color: var(--ink-900);
+    font-family: var(--font-text);
+    -webkit-font-smoothing: antialiased;
+  }
+  :focus-visible { outline: 2px solid var(--marine-600); outline-offset: 2px; }
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { animation: none !important; transition: none !important; }
+  }
+}
+
+@layer components {
+  .t-display-1 { font-family: var(--font-display); font-weight: 600; font-size: 40px; line-height: 1.05; letter-spacing: -0.5px; }
+  .t-heading-1 { font-family: var(--font-display); font-weight: 600; font-size: 32px; line-height: 1.1; letter-spacing: -0.3px; }
+  .t-heading-2 { font-family: var(--font-display); font-weight: 600; font-size: 28px; line-height: 1.2; }
+  .t-heading-3 { font-family: var(--font-display); font-weight: 600; font-size: 22px; line-height: 1.3; }
+  .t-pull-quote { font-family: var(--font-display); font-weight: 400; font-style: italic; font-size: 24px; line-height: 1.4; }
+  .t-deck { font-size: 20px; line-height: 1.5; color: var(--ink-600); }
+  .t-body { font-size: 18px; line-height: 1.65; }
+  .t-body-sm { font-size: 15px; line-height: 1.5; }
+  .t-ui { font-size: 15px; line-height: 1.25; font-weight: 500; }
+  .t-card-title { font-size: 18px; line-height: 1.3; font-weight: 600; }
+  .t-meta { font-size: 13px; line-height: 1.4; font-weight: 500; letter-spacing: 0.6px; }
+  @media (min-width: 768px) {
+    .t-display-1 { font-size: 52px; }
+    .t-heading-1 { font-size: 40px; }
+  }
+
+  /* Article prose */
+  .prose-tn { max-width: var(--spacing-measure); }
+  .prose-tn > * + * { margin-top: 24px; }
+  .prose-tn h2 { font-family: var(--font-display); font-weight: 600; font-size: 28px; line-height: 1.2; margin-top: 48px; margin-bottom: 16px; }
+  .prose-tn h3 { font-family: var(--font-display); font-weight: 600; font-size: 22px; line-height: 1.3; margin-top: 32px; }
+  .prose-tn p, .prose-tn li { font-size: 18px; line-height: 1.65; }
+  .prose-tn a { color: var(--marine-600); text-decoration: underline; text-underline-offset: 3px; }
+  .prose-tn a:hover { color: var(--marine-700); }
+  .prose-tn ul, .prose-tn ol { padding-left: 24px; }
+  .prose-tn blockquote { font-family: var(--font-display); font-style: italic; font-size: 24px; line-height: 1.4; border-left: 0; padding: 0 0 0 24px; position: relative; }
+  .prose-tn blockquote::before { content: ""; position: absolute; left: 0; top: 4px; bottom: 4px; width: 3px; background: var(--ochre-500); }
+  .prose-tn table { width: 100%; border-collapse: collapse; font-size: 15px; line-height: 1.5; }
+  .prose-tn th, .prose-tn td { text-align: left; padding: 8px 12px; border-bottom: 1px solid var(--paper-200); }
+  .prose-tn th { color: var(--ink-600); font-weight: 600; }
+  .prose-tn figcaption { font-size: 15px; line-height: 1.5; color: var(--ink-600); margin-top: 8px; }
+}
