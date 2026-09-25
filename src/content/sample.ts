@@ -37,6 +37,7 @@ export type Article = {
   firstPublished: string; // ISO
   updated: string; // ISO
   destination: { name: string; path: string[] }; // e.g. ["japan","kyoto"]
+  accent: string; // destination signature colour
   sponsoredBy?: string;
   takeaways: string[];
   heroAlt: string;
@@ -46,15 +47,16 @@ export type Article = {
   days?: Day[];
 };
 
-export type Destination = { name: string; parent: string; slug: string; guides: number; tone: string; alt: string; image?: CommonsImage };
+/** `accent` is the destination's signature colour: solid band under the tile photo and frame around hubs/cards. All accents are dark enough for paper-000 text (>7:1). */
+export type Destination = { name: string; parent: string; slug: string; guides: number; tone: string; accent: string; alt: string; image?: CommonsImage };
 
 export const destinations: Destination[] = [
-  { name: "Kyoto", parent: "Japan", slug: "japan/kyoto", guides: 3, tone: "linear-gradient(135deg,#8fa9a6,#4e6f74 55%,#2e4a50)", alt: "Placeholder for Kyoto photography", image: IMAGES.kyoto },
-  { name: "Marrakech", parent: "Morocco", slug: "morocco/marrakech", guides: 2, tone: "linear-gradient(135deg,#d6a56a,#a25d2a 60%,#5d2e0f)", alt: "Placeholder for Marrakech photography", image: IMAGES.marrakech },
-  { name: "Tasmania", parent: "Australia", slug: "australia/tasmania", guides: 2, tone: "linear-gradient(135deg,#9fc3d6,#4f7f9a 60%,#244a5e)", alt: "Placeholder for Tasmania photography", image: IMAGES.tasmania },
-  { name: "Lisbon", parent: "Portugal", slug: "portugal/lisbon", guides: 1, tone: "linear-gradient(135deg,#e6c9a8,#c27a4b 60%,#7a3f1e)", alt: "Placeholder for Lisbon photography", image: IMAGES.lisbon },
-  { name: "Hoi An", parent: "Vietnam", slug: "vietnam/hoi-an", guides: 1, tone: "linear-gradient(135deg,#e9d38a,#b58a2a 60%,#5e4410)", alt: "Placeholder for Hoi An photography", image: IMAGES.hoian },
-  { name: "Queenstown", parent: "New Zealand", slug: "new-zealand/queenstown", guides: 1, tone: "linear-gradient(135deg,#b8c8d8,#5f7e9c 60%,#2b4560)", alt: "Placeholder for Queenstown photography", image: IMAGES.queenstown },
+  { name: "Kyoto", parent: "Japan", slug: "japan/kyoto", guides: 3, tone: "linear-gradient(135deg,#8fa9a6,#4e6f74 55%,#2e4a50)", accent: "#2e4a50", alt: "Placeholder for Kyoto photography", image: IMAGES.kyoto },
+  { name: "Marrakech", parent: "Morocco", slug: "morocco/marrakech", guides: 2, tone: "linear-gradient(135deg,#d6a56a,#a25d2a 60%,#5d2e0f)", accent: "#5d2e0f", alt: "Placeholder for Marrakech photography", image: IMAGES.marrakech },
+  { name: "Tasmania", parent: "Australia", slug: "australia/tasmania", guides: 2, tone: "linear-gradient(135deg,#9fc3d6,#4f7f9a 60%,#244a5e)", accent: "#244a5e", alt: "Placeholder for Tasmania photography", image: IMAGES.tasmania },
+  { name: "Lisbon", parent: "Portugal", slug: "portugal/lisbon", guides: 1, tone: "linear-gradient(135deg,#e6c9a8,#c27a4b 60%,#7a3f1e)", accent: "#7a3f1e", alt: "Placeholder for Lisbon photography", image: IMAGES.lisbon },
+  { name: "Hoi An", parent: "Vietnam", slug: "vietnam/hoi-an", guides: 1, tone: "linear-gradient(135deg,#e9d38a,#b58a2a 60%,#5e4410)", accent: "#5e4410", alt: "Placeholder for Hoi An photography", image: IMAGES.hoian },
+  { name: "Queenstown", parent: "New Zealand", slug: "new-zealand/queenstown", guides: 1, tone: "linear-gradient(135deg,#b8c8d8,#5f7e9c 60%,#2b4560)", accent: "#2b4560", alt: "Placeholder for Queenstown photography", image: IMAGES.queenstown },
 ];
 
 const kyotoBody = [
@@ -82,6 +84,7 @@ export const articles: Article[] = [
     firstPublished: "2026-08-20",
     updated: "2026-09-12",
     destination: { name: "Kyoto", path: ["japan", "kyoto"] },
+    accent: "#2e4a50",
     takeaways: [
       "Sample takeaway one — editors write three to five of these per article.",
       "Sample takeaway two — short, specific, no marketing language.",
@@ -118,6 +121,7 @@ export const articles: Article[] = [
     firstPublished: "2026-07-02",
     updated: "2026-09-03",
     destination: { name: "Tasmania", path: ["australia", "tasmania"] },
+    accent: "#244a5e",
     takeaways: ["Sample takeaway.", "Sample takeaway.", "Sample takeaway."],
     heroAlt: "Product photography pending — placeholder",
     heroTone: "linear-gradient(135deg,#c9a97a,#8a5a2b 60%,#4d3016)",
@@ -137,6 +141,7 @@ export const articles: Article[] = [
     firstPublished: "2026-09-01",
     updated: "2026-09-01",
     destination: { name: "Tasmania", path: ["australia", "tasmania"] },
+    accent: "#2f4a34",
     sponsoredBy: "Sample Partner",
     takeaways: ["Sample takeaway.", "Sample takeaway."],
     heroAlt: "Placeholder image standing in for a coastal photograph",

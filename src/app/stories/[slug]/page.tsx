@@ -86,7 +86,7 @@ export default async function StoryPage({ params }: { params: Promise<{ slug: st
 
           {a.sponsoredBy && <div className="mt-6"><DisclosureBanner sponsor={a.sponsoredBy} /></div>}
 
-          <figure className="mt-8 m-0">
+          <figure className="mt-8 m-0 rounded-lg" style={{ boxShadow: `0 0 0 3px ${a.accent}` }}>
             <Placeholder tone={a.heroTone} alt={a.heroAlt} image={a.image} priority className="aspect-[4/5] md:aspect-[3/2] w-full rounded-lg" />
             <figcaption className="t-body-sm text-ink-600 mt-2"><Credit image={a.image} caption={a.image ? undefined : "Product photography pending. Caption and credit render here."} /></figcaption>
           </figure>

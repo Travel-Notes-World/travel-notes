@@ -22,10 +22,10 @@ export default async function Page({ params }: { params: Promise<{ path: string[
       <div className="mt-6 grid gap-8 lg:grid-cols-[3fr_2fr] lg:items-end">
         <div>
           <p className="t-meta text-ink-400 m-0">{d.parent}</p>
-          <h1 className="t-display-1 mt-2 m-0">{d.name}</h1>
+          <h1 className="t-display-1 mt-2 m-0 flex items-baseline gap-3"><span aria-hidden="true" className="inline-block w-4 h-4 rounded-sm shrink-0" style={{ background: d.accent }} />{d.name}</h1>
           <p className="t-deck mt-3 max-w-measure">Sample introduction. A real hub is published only when it has an original editor-written introduction, best-time-to-visit guidance and enough supporting guides (plan §4).</p>
         </div>
-        <figure className="m-0"><Placeholder tone={d.tone} alt={d.alt} image={d.image} priority className="aspect-[3/2] w-full rounded-lg" /><figcaption className="t-body-sm text-ink-600 mt-2"><Credit image={d.image} /></figcaption></figure>
+        <figure className="m-0 rounded-lg" style={{ boxShadow: `0 0 0 3px ${d.accent}` }}><Placeholder tone={d.tone} alt={d.alt} image={d.image} priority className="aspect-[3/2] w-full rounded-lg" /><figcaption className="t-body-sm text-ink-600 mt-2"><Credit image={d.image} /></figcaption></figure>
       </div>
       <section className="mt-12" aria-labelledby="guides-heading">
         <h2 id="guides-heading" className="t-heading-2 m-0 mb-6">Guides and itineraries</h2>

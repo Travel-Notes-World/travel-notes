@@ -10,6 +10,7 @@ export function ArticleCard({ article, hero = false }: { article: Article; hero?
     <article className={hero ? "grid gap-6 lg:grid-cols-[3fr_2fr] lg:items-end" : "flex flex-col gap-3"}>
       <Link href={href} aria-hidden="true" tabIndex={-1} className="block">
         <Placeholder tone={article.heroTone} alt="" image={article.image} priority={hero} className={`aspect-[3/2] w-full ${hero ? "rounded-lg" : "rounded-md"}`} />
+        <span aria-hidden="true" className="block h-1 rounded-full mt-2" style={{ background: article.accent, width: hero ? 96 : 56 }} />
       </Link>
       <div className="flex flex-col gap-3">
         <p className="t-meta text-ink-400 m-0">
