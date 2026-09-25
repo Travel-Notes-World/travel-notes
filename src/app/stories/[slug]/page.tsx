@@ -9,6 +9,7 @@ import { ItineraryDay } from "@/components/ItineraryDay";
 import { AdSlot } from "@/components/AdSlot";
 import { ArticleCard } from "@/components/ArticleCard";
 import { Placeholder } from "@/components/Placeholder";
+import { siteUrl } from "@/lib/site";
 
 const slugify = (s: string) => s.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
 const fmt = (iso: string) => new Date(iso).toLocaleDateString("en-AU", { day: "numeric", month: "long", year: "numeric" });
@@ -36,7 +37,6 @@ export default async function StoryPage({ params }: { params: Promise<{ slug: st
 
   const sections = a.body.map((s) => ({ id: slugify(s.heading), title: s.heading }));
   const related = articles.filter((x) => x.slug !== a.slug).slice(0, 3);
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
 
   const jsonLd = {
     "@context": "https://schema.org",

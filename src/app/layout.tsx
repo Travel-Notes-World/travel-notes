@@ -19,8 +19,7 @@ const inter = localFont({
   display: "swap",
 });
 
-// Set NEXT_PUBLIC_SITE_URL to the production origin before launch (plan §6: canonicals never come from the request host).
-const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
+import { siteUrl } from "@/lib/site";
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
