@@ -6,12 +6,25 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "payload": "payload",
+    "migrate": "payload migrate",
+    "migrate:create": "payload migrate:create",
+    "generate:types": "payload generate:types",
+    "generate:importmap": "payload generate:importmap",
+    "test:access": "node --import tsx --test --test-force-exit tests/access.test.ts"
   },
   "dependencies": {
+    "@payloadcms/db-postgres": "3.90.2",
+    "@payloadcms/next": "3.90.2",
+    "@payloadcms/richtext-lexical": "3.90.2",
+    "@payloadcms/ui": "3.90.2",
+    "graphql": "16.14.2",
     "next": "16.3.6",
+    "payload": "3.90.2",
     "react": "19.2.8",
-    "react-dom": "19.2.8"
+    "react-dom": "19.2.8",
+    "sharp": "0.35.5"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
@@ -21,6 +34,12 @@
     "eslint": "^9",
     "eslint-config-next": "16.3.6",
     "tailwindcss": "^4",
+    "tsx": "4.23.15",
     "typescript": "^5"
+  },
+  "type": "module",
+  "overrides": {
+    "undici": "7.30.0",
+    "dompurify": "3.4.16"
   }
 }

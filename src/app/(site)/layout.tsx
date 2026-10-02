@@ -2,19 +2,19 @@ import type { Metadata } from "next";
 import localFont from "next/font/local";
 import { SiteHeader } from "@/components/SiteHeader";
 import { SiteFooter } from "@/components/SiteFooter";
-import "./globals.css";
+import "../globals.css";
 
 // Self-hosted variable fonts (SIL Open Font License) — no request to Google at runtime.
 const fraunces = localFont({
   src: [
-    { path: "../fonts/fraunces-latin-full-normal.woff2", style: "normal", weight: "100 900" },
-    { path: "../fonts/fraunces-latin-full-italic.woff2", style: "italic", weight: "100 900" },
+    { path: "../../fonts/fraunces-latin-full-normal.woff2", style: "normal", weight: "100 900" },
+    { path: "../../fonts/fraunces-latin-full-italic.woff2", style: "italic", weight: "100 900" },
   ],
   variable: "--font-fraunces",
   display: "swap",
 });
 const inter = localFont({
-  src: [{ path: "../fonts/inter-latin-standard-normal.woff2", style: "normal", weight: "100 900" }],
+  src: [{ path: "../../fonts/inter-latin-standard-normal.woff2", style: "normal", weight: "100 900" }],
   variable: "--font-inter",
   display: "swap",
 });
