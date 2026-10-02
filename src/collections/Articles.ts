@@ -3,6 +3,7 @@ import { Forbidden } from 'payload'
 
 import { blockPublishBelowPublisher, draftOnlyBelowPublisher } from '../access/publishGuard'
 import { hasRole, isPublisher, isStaff, nobodyField, staffOnlyField } from '../access/roles'
+import { ARTICLES_TAG, articleTag, expireTags } from '../lib/content/revalidate'
 import { seoFields, slugField } from './fields'
 
 export const ARTICLE_TYPES = [
@@ -79,6 +80,23 @@ export const Articles: CollectionConfig = {
           data.firstPublishedAt = new Date().toISOString()
         }
         return data
+      },
+    ],
+    // Refresh the public pages whenever a change touches what readers can see:
+    // publish, an edit to a published article, a slug change, or a withdrawal.
+    afterChange: [
+      async ({ doc, previousDoc }) => {
+        if (doc._status === 'published' || previousDoc?._status === 'published') {
+          const slugs = [doc.slug, previousDoc?.slug].filter((s): s is string => typeof s === 'string' && s.length > 0)
+          await expireTags([ARTICLES_TAG, ...slugs.map(articleTag)])
+        }
+        return doc
+      },
+    ],
+    afterDelete: [
+      async ({ doc }) => {
+        if (typeof doc?.slug === 'string') await expireTags([ARTICLES_TAG, articleTag(doc.slug)])
+        return doc
       },
     ],
   },

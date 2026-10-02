@@ -1,5 +1,6 @@
 import Link from "next/link";
-import { articles, destinations } from "@/content/sample";
+import { destinations } from "@/content/sample";
+import { getLatestStories } from "@/lib/content/stories";
 import { ArticleCard } from "@/components/ArticleCard";
 import { DestinationCard } from "@/components/DestinationCard";
 import { NewsletterForm } from "@/components/NewsletterForm";
@@ -9,8 +10,11 @@ const topics = [
   ["/topics/budget", "Budget travel"], ["/topics/gear", "Gear"],
 ];
 
-export default function HomePage() {
-  const [lead, ...rest] = articles;
+/** Fallback regeneration (implementation plan §3: homepage 5 minutes). Publishing expires the cache straight away. */
+export const revalidate = 300;
+
+export default async function HomePage() {
+  const [lead, ...rest] = await getLatestStories(7);
   return (
     <div className="mx-auto max-w-container px-4 md:px-6 lg:px-8">
       <section className="pt-8 md:pt-12" aria-label="Lead story">

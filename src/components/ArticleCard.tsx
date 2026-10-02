@@ -1,10 +1,16 @@
 import Link from "next/link";
-import type { Article } from "@/content/sample";
+import type { CommonsImage } from "@/content/sample";
 import { Placeholder } from "./Placeholder";
 
 const fmt = (iso: string) => new Date(iso).toLocaleDateString("en-AU", { day: "numeric", month: "short", year: "numeric" });
 
-export function ArticleCard({ article, hero = false }: { article: Article; hero?: boolean }) {
+/** The fields a card needs. Both sample articles and CMS stories satisfy this shape. */
+export type CardArticle = {
+  slug: string; type: string; title: string; excerpt: string; readMinutes: number; updated: string;
+  author: { name: string }; heroTone: string; accent: string; image?: CommonsImage;
+};
+
+export function ArticleCard({ article, hero = false }: { article: CardArticle; hero?: boolean }) {
   const href = `/stories/${article.slug}`;
   return (
     <article className={hero ? "grid gap-6 lg:grid-cols-[3fr_2fr] lg:items-end" : "flex flex-col gap-3"}>

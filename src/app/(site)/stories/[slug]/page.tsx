@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { articles, getArticle } from "@/content/sample";
 import { Breadcrumbs } from "@/components/Breadcrumbs";
 import { SummaryBox } from "@/components/SummaryBox";
 import { DisclosureBanner } from "@/components/DisclosureBanner";
@@ -9,34 +8,48 @@ import { ItineraryDay } from "@/components/ItineraryDay";
 import { AdSlot } from "@/components/AdSlot";
 import { ArticleCard } from "@/components/ArticleCard";
 import { Placeholder, Credit } from "@/components/Placeholder";
+import { RichBody } from "@/components/RichBody";
+import { getLatestStories, getStory, sampleStorySlugs, slugify } from "@/lib/content/stories";
 import { siteUrl } from "@/lib/site";
 
-const slugify = (s: string) => s.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
-const fmt = (iso: string) => new Date(iso).toLocaleDateString("en-AU", { day: "numeric", month: "long", year: "numeric" });
+const fmt = (iso: string) => new Date(iso).toLocaleDateString("en-AU", { day: "numeric", month: "long", year: "numeric", timeZone: "Australia/Sydney" });
+const sameDay = (a: string, b: string) => a.slice(0, 10) === b.slice(0, 10);
 
+/** Fallback regeneration (implementation plan §3: articles 60 minutes). Publishing expires the cache straight away. */
+export const revalidate = 3600;
+
+/** Sample stories are built ahead of time. CMS stories are generated on first visit, then cached until they change. */
 export function generateStaticParams() {
-  return articles.map((a) => ({ slug: a.slug }));
+  return sampleStorySlugs().map((slug) => ({ slug }));
 }
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
   const { slug } = await params;
-  const a = getArticle(slug);
+  const a = await getStory(slug);
   if (!a) return {};
+  const title = a.seo?.title ?? a.title;
+  const description = a.seo?.description ?? a.deck;
   return {
-    title: a.title,
-    description: a.deck,
+    // `absolute` stops the layout from adding "| Travel Notes" to a search title an editor wrote in full.
+    title: a.seo ? { absolute: title } : title,
+    description,
     alternates: { canonical: `/stories/${a.slug}` },
-    openGraph: { type: "article", title: a.title, description: a.deck, publishedTime: a.firstPublished, modifiedTime: a.updated },
+    // The whole site stays noindex until launch (see layout). This adds a per-article opt-out on top.
+    ...(a.seo?.noindex ? { robots: { index: false, follow: true } } : {}),
+    openGraph: { type: "article", title, description, url: `/stories/${a.slug}`, publishedTime: a.firstPublished, modifiedTime: a.updated },
   };
 }
 
 export default async function StoryPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
-  const a = getArticle(slug);
+  const a = await getStory(slug);
   if (!a) notFound();
 
-  const sections = a.body.map((s) => ({ id: slugify(s.heading), title: s.heading }));
-  const related = articles.filter((x) => x.slug !== a.slug).slice(0, 3);
+  const sections = a.body.kind === "rich"
+    ? a.body.headings
+    : a.body.sections.map((s) => ({ id: slugify(s.heading), title: s.heading }));
+  const related = (await getLatestStories(4)).filter((x) => x.slug !== a.slug).slice(0, 3);
+  const inlineAd = a.showAds ? <AdSlot placement="article-inline-1" /> : null;
 
   const jsonLd = {
     "@context": "https://schema.org",
@@ -49,27 +62,31 @@ export default async function StoryPage({ params }: { params: Promise<{ slug: st
     publisher: { "@type": "Organization", name: "Travel Notes" },
     mainEntityOfPage: `${siteUrl}/stories/${a.slug}`,
   };
+  // Breadcrumbs only include levels that exist: an article without a destination has no destination crumb.
+  const crumbs = [
+    { label: "Destinations", href: "/destinations" },
+    ...(a.destination ? [{ label: a.destination.name, href: `/destinations/${a.destination.path}` }] : []),
+    { label: a.title },
+  ];
   const breadcrumbLd = {
     "@context": "https://schema.org",
     "@type": "BreadcrumbList",
-    itemListElement: [
-      { "@type": "ListItem", position: 1, name: "Destinations", item: `${siteUrl}/destinations` },
-      { "@type": "ListItem", position: 2, name: a.destination.name, item: `${siteUrl}/destinations/${a.destination.path.join("/")}` },
-      { "@type": "ListItem", position: 3, name: a.title },
-    ],
+    itemListElement: crumbs.map((c, i) => ({
+      "@type": "ListItem",
+      position: i + 1,
+      name: c.label,
+      ...("href" in c && c.href ? { item: `${siteUrl}${c.href}` } : {}),
+    })),
   };
 
   return (
     <article className="mx-auto max-w-container px-4 md:px-6 lg:px-8 pt-6 md:pt-10">
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify([jsonLd, breadcrumbLd]) }} />
+      {/* "<" is escaped so text typed by an editor can never close the script tag. */}
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify([jsonLd, breadcrumbLd]).replace(/</g, "\\u003c") }} />
 
       <div className="lg:grid lg:grid-cols-[minmax(0,1fr)_300px] lg:gap-12">
         <div>
-          <Breadcrumbs items={[
-            { label: "Destinations", href: "/destinations" },
-            { label: a.destination.name, href: `/destinations/${a.destination.path.join("/")}` },
-            { label: a.title },
-          ]} />
+          <Breadcrumbs items={crumbs} />
 
           <header className="mt-6 max-w-measure">
             <p className="t-meta text-ink-400 m-0"><span className="text-ochre-700">{a.type}</span><span className="ml-3">{a.readMinutes} min read</span></p>
@@ -79,28 +96,38 @@ export default async function StoryPage({ params }: { params: Promise<{ slug: st
               <div aria-hidden="true" className="w-10 h-10 rounded-full bg-paper-200" />
               <p className="t-body-sm m-0">
                 <Link href={`/authors/${a.author.slug}`} className="text-ink-900 font-medium no-underline hover:underline">{a.author.name}</Link>
-                <span className="block text-ink-400">Published {fmt(a.firstPublished)}{a.updated !== a.firstPublished && `, updated ${fmt(a.updated)}`}</span>
+                <span className="block text-ink-400">Published {fmt(a.firstPublished)}{!sameDay(a.updated, a.firstPublished) && `, updated ${fmt(a.updated)}`}</span>
               </p>
             </div>
           </header>
 
-          {a.sponsoredBy && <div className="mt-6"><DisclosureBanner sponsor={a.sponsoredBy} /></div>}
+          {a.disclosure === "sponsored" && a.sponsoredBy && <div className="mt-6"><DisclosureBanner sponsor={a.sponsoredBy} /></div>}
+          {a.disclosure === "affiliate" && <div className="mt-6"><DisclosureBanner kind="affiliate" /></div>}
 
-          <figure className="mt-8 m-0 rounded-lg" style={{ boxShadow: `0 0 0 3px ${a.accent}` }}>
-            <Placeholder tone={a.heroTone} alt={a.heroAlt} image={a.image} priority className="aspect-[4/5] md:aspect-[3/2] w-full rounded-lg" />
-            <figcaption className="t-body-sm text-ink-600 mt-2"><Credit image={a.image} caption={a.image ? undefined : "Product photography pending. Caption and credit render here."} /></figcaption>
-          </figure>
+          {/* CMS articles have no hero image until media uploads (Cloudflare R2) are set up, so no empty frame is shown. */}
+          {(a.isSample || a.image) && (
+            <figure className="mt-8 m-0 rounded-lg" style={{ boxShadow: `0 0 0 3px ${a.accent}` }}>
+              <Placeholder tone={a.heroTone} alt={a.heroAlt} image={a.image} priority className="aspect-[4/5] md:aspect-[3/2] w-full rounded-lg" />
+              <figcaption className="t-body-sm text-ink-600 mt-2"><Credit image={a.image} caption={a.image ? undefined : "Product photography pending. Caption and credit render here."} /></figcaption>
+            </figure>
+          )}
 
-          <div className="mt-8"><SummaryBox takeaways={a.takeaways} sections={sections} /></div>
+          {(a.takeaways.length > 0 || sections.length > 0) && (
+            <div className="mt-8"><SummaryBox takeaways={a.takeaways} sections={sections} /></div>
+          )}
 
           <div className="prose-tn mt-8">
-            {a.body.map((s, i) => (
-              <section key={i}>
-                <h2 id={slugify(s.heading)}>{s.heading}</h2>
-                {s.paragraphs.map((p, j) => <p key={j}>{p}</p>)}
-                {i === 0 && <AdSlot placement="article-inline-1" />}
-              </section>
-            ))}
+            {a.body.kind === "rich" ? (
+              <RichBody data={a.body.data} afterFirstSection={inlineAd} />
+            ) : (
+              a.body.sections.map((s, i) => (
+                <section key={i}>
+                  <h2 id={slugify(s.heading)}>{s.heading}</h2>
+                  {s.paragraphs.map((p, j) => <p key={j}>{p}</p>)}
+                  {i === 0 && inlineAd}
+                </section>
+              ))
+            )}
           </div>
 
           {a.days && (
@@ -116,17 +143,21 @@ export default async function StoryPage({ params }: { params: Promise<{ slug: st
           </section>
         </div>
 
-        <aside className="hidden lg:block" aria-label="Sidebar">
-          <div className="sticky top-24"><AdSlot placement="sidebar-1" /></div>
-        </aside>
+        {a.showAds && (
+          <aside className="hidden lg:block" aria-label="Sidebar">
+            <div className="sticky top-24"><AdSlot placement="sidebar-1" /></div>
+          </aside>
+        )}
       </div>
 
-      <section className="mt-16" aria-labelledby="related-heading">
-        <h2 id="related-heading" className="t-heading-2 m-0 mb-6">Related stories</h2>
-        <div className="grid gap-6 md:gap-8 md:grid-cols-2 lg:grid-cols-3">
-          {related.map((r) => <ArticleCard key={r.slug} article={r} />)}
-        </div>
-      </section>
+      {related.length > 0 && (
+        <section className="mt-16" aria-labelledby="related-heading">
+          <h2 id="related-heading" className="t-heading-2 m-0 mb-6">Related stories</h2>
+          <div className="grid gap-6 md:gap-8 md:grid-cols-2 lg:grid-cols-3">
+            {related.map((r) => <ArticleCard key={r.slug} article={r} />)}
+          </div>
+        </section>
+      )}
     </article>
   );
 }

@@ -14,6 +14,10 @@ import { Topics } from './collections/Topics'
 const filename = fileURLToPath(import.meta.url)
 const dirname = path.dirname(filename)
 
+// Keep full certificate checking explicit. Neon's connection string says sslmode=require, which the
+// database driver currently treats as verify-full but warns it will weaken in its next major version.
+const connectionString = (process.env.DATABASE_URL || '').replace(/sslmode=(require|prefer|verify-ca)\b/, 'sslmode=verify-full')
+
 export default buildConfig({
   admin: {
     user: Staff.slug,
@@ -27,7 +31,7 @@ export default buildConfig({
   // The site reads content on the server through the Local API, so the public GraphQL endpoint is not needed.
   graphQL: { disable: true },
   db: postgresAdapter({
-    pool: { connectionString: process.env.DATABASE_URL || '' },
+    pool: { connectionString },
     idType: 'uuid',
     // Schema changes go through reviewed migration files in src/migrations, never automatic sync.
     push: false,

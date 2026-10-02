@@ -2,7 +2,7 @@
 
 Editorial travel publication: destination guides, itineraries, practical tips, photography, video and gear reviews.
 
-**Status: CMS foundation.** Payload CMS runs inside this app at `/admin`, on Neon PostgreSQL. The public pages still show clearly labelled sample content (`src/content/sample.ts`); connecting them to the CMS is the next step. Media uploads, ads, newsletter and analytics are not wired yet. This follows the phased roadmap in the Developer Implementation Plan (25 Sep 2026).
+**Status: articles publish end to end.** Payload CMS runs inside this app at `/admin`, on Neon PostgreSQL. An article published in the CMS appears at `/stories/your-slug` and on the homepage. Destination, topic and author pages still show clearly labelled sample content (`src/content/sample.ts`), and sample articles remain until real ones replace them. Media uploads, ads, newsletter and analytics are not wired yet. This follows the phased roadmap in the Developer Implementation Plan (25 Sep 2026).
 
 - Design system (tokens, components, page templates): https://claude.ai/artifact/L3JWve3Gp6mdFJP2Ckb6Rr
 - Tokens are mirrored in `src/app/globals.css` and exposed to Tailwind via `@theme`.
@@ -26,6 +26,12 @@ Next.js 16.3.6 App Router, TypeScript, Tailwind CSS v4, `next/font` (Fraunces + 
 - Roles: contributor (own drafts), editor (edits and approves all content), publisher (publishes, withdraws, deletes), administrator (manages staff). The first account created becomes the administrator.
 - Readers and the public API only ever receive published content. Drafts, version history and staff records are private.
 
+### How published content reaches the site
+
+- `src/lib/content/stories.ts` is the only place public pages read articles from. It queries with a reader's permissions, so drafts and staff fields cannot leak, and caches results by tag.
+- Publishing, editing a published article, renaming its slug, withdrawing or deleting it expires the cached page straight away (`src/lib/content/revalidate.ts`). As a safety net, article pages also refresh every 60 minutes and the homepage every 5 minutes.
+- If the database cannot be reached, sample pages still render and other article addresses return an error instead of a cached "not found".
+
 ### Database changes
 
 The schema is changed only through migration files in `src/migrations/`, never by automatic sync.
@@ -45,7 +51,9 @@ npm run generate:importmap # refresh the admin import map
 
 - No multi-factor authentication on editor logins yet (required by the plan before launch).
 - No media uploads until Cloudflare R2 is set up, so articles have no hero image field yet.
-- No scheduled publishing, cache invalidation, search projection or outbox worker yet.
+- No scheduled publishing, search projection or outbox worker yet. Cache expiry runs directly in the CMS request, without retries or warming.
+- No Redirects collection yet: after a slug change the old address returns "not found" instead of redirecting. Avoid renaming published slugs until it exists.
+- Corrections text on article pages is still a fixed placeholder line.
 - Local development and the live preview currently share one database. Create a separate Neon branch for development before real content is written.
 - `npm audit` reports a moderate, development-only issue in `esbuild` through `drizzle-kit` (used to generate migrations). There is no fixed release from Payload yet.
 
