@@ -64,6 +64,7 @@ export type SupportedTimezones =
 export interface Config {
   auth: {
     staff: StaffAuthOperations;
+    members: MemberAuthOperations;
   };
   blocks: {};
   collections: {
@@ -72,6 +73,24 @@ export interface Config {
     topics: Topic;
     authors: Author;
     staff: Staff;
+    members: Member;
+    contributions: Contribution;
+    replies: Reply;
+    revisions: Revision;
+    media: Media;
+    votes: Vote;
+    bookmarks: Bookmark;
+    follows: Follow;
+    rsvps: Rsvp;
+    plans: Plan;
+    reports: Report;
+    'moderation-actions': ModerationAction;
+    'destination-suggestions': DestinationSuggestion;
+    notifications: Notification;
+    'email-outbox': EmailOutbox;
+    'rate-limits': RateLimit;
+    'metric-counters': MetricCounter;
+    'job-runs': JobRun;
     'payload-kv': PayloadKv;
     'payload-locked-documents': PayloadLockedDocument;
     'payload-preferences': PayloadPreference;
@@ -84,6 +103,24 @@ export interface Config {
     topics: TopicsSelect<false> | TopicsSelect<true>;
     authors: AuthorsSelect<false> | AuthorsSelect<true>;
     staff: StaffSelect<false> | StaffSelect<true>;
+    members: MembersSelect<false> | MembersSelect<true>;
+    contributions: ContributionsSelect<false> | ContributionsSelect<true>;
+    replies: RepliesSelect<false> | RepliesSelect<true>;
+    revisions: RevisionsSelect<false> | RevisionsSelect<true>;
+    media: MediaSelect<false> | MediaSelect<true>;
+    votes: VotesSelect<false> | VotesSelect<true>;
+    bookmarks: BookmarksSelect<false> | BookmarksSelect<true>;
+    follows: FollowsSelect<false> | FollowsSelect<true>;
+    rsvps: RsvpsSelect<false> | RsvpsSelect<true>;
+    plans: PlansSelect<false> | PlansSelect<true>;
+    reports: ReportsSelect<false> | ReportsSelect<true>;
+    'moderation-actions': ModerationActionsSelect<false> | ModerationActionsSelect<true>;
+    'destination-suggestions': DestinationSuggestionsSelect<false> | DestinationSuggestionsSelect<true>;
+    notifications: NotificationsSelect<false> | NotificationsSelect<true>;
+    'email-outbox': EmailOutboxSelect<false> | EmailOutboxSelect<true>;
+    'rate-limits': RateLimitsSelect<false> | RateLimitsSelect<true>;
+    'metric-counters': MetricCountersSelect<false> | MetricCountersSelect<true>;
+    'job-runs': JobRunsSelect<false> | JobRunsSelect<true>;
     'payload-kv': PayloadKvSelect<false> | PayloadKvSelect<true>;
     'payload-locked-documents': PayloadLockedDocumentsSelect<false> | PayloadLockedDocumentsSelect<true>;
     'payload-preferences': PayloadPreferencesSelect<false> | PayloadPreferencesSelect<true>;
@@ -93,19 +130,41 @@ export interface Config {
     defaultIDType: string;
   };
   fallbackLocale: null;
-  globals: {};
-  globalsSelect: {};
+  globals: {
+    'community-settings': CommunitySetting;
+  };
+  globalsSelect: {
+    'community-settings': CommunitySettingsSelect<false> | CommunitySettingsSelect<true>;
+  };
   locale: null;
   widgets: {
     collections: CollectionsWidget;
   };
-  user: Staff;
+  user: Staff | Member;
   jobs: {
     tasks: unknown;
     workflows: unknown;
   };
 }
 export interface StaffAuthOperations {
+  forgotPassword: {
+    email: string;
+    password: string;
+  };
+  login: {
+    email: string;
+    password: string;
+  };
+  registerFirstUser: {
+    email: string;
+    password: string;
+  };
+  unlock: {
+    email: string;
+    password: string;
+  };
+}
+export interface MemberAuthOperations {
   forgotPassword: {
     email: string;
     password: string;
@@ -285,7 +344,7 @@ export interface Destination {
    * One URL segment only, for example "kyoto". The full path is built from the parent.
    */
   slug: string;
-  kind: 'country' | 'region' | 'city';
+  kind: 'country' | 'region' | 'city' | 'area';
   /**
    * Leave empty for a country.
    */
@@ -302,6 +361,33 @@ export interface Destination {
    * Optional. Destination signature colour. It must be dark enough for light text.
    */
   accentColour?: string | null;
+  /**
+   * Other names people search for, for example "Saigon" for Ho Chi Minh City.
+   */
+  aliases?: string[] | null;
+  latitude?: number | null;
+  longitude?: number | null;
+  /**
+   * IANA time zone, for example Asia/Bangkok. Used for event times.
+   */
+  timeZone?: string | null;
+  /**
+   * Only used to order search suggestions.
+   */
+  population?: number | null;
+  /**
+   * Tick only after checking that this destination’s community page has useful content. Until then the page stays out of search engines and the sitemap.
+   */
+  hubIndexable?: boolean | null;
+  /**
+   * Where this record came from. Imported records keep their licence and source id.
+   */
+  source?: {
+    name?: string | null;
+    externalId?: string | null;
+    licence?: string | null;
+    importedAt?: string | null;
+  };
   /**
    * One or two sentences used on cards and at the top of the hub.
    */
@@ -394,6 +480,10 @@ export interface Staff {
    * Untick to suspend this account without deleting it.
    */
   active?: boolean | null;
+  /**
+   * Tick to let this person moderate the community at /moderation. Administrators can always moderate.
+   */
+  communityModerator?: boolean | null;
   updatedAt: string;
   createdAt: string;
   email: string;
@@ -413,6 +503,718 @@ export interface Staff {
     | null;
   password?: string | null;
   collection: 'staff';
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "members".
+ */
+export interface Member {
+  id: string;
+  /**
+   * Public name in addresses: /travellers/handle.
+   */
+  handle: string;
+  displayName: string;
+  bio?: string | null;
+  /**
+   * Self-declared by the member. Not checked by Travel Notes.
+   */
+  experience?: string | null;
+  avatar?: (string | null) | Media;
+  status: 'active' | 'suspended' | 'deleted';
+  /**
+   * Shown to the member when the account is suspended.
+   */
+  statusReason?: string | null;
+  /**
+   * Empty means until a moderator lifts it.
+   */
+  suspendedUntil?: string | null;
+  /**
+   * Set by a moderator, never automatically. Only matters if lighter review is switched on in Community settings.
+   */
+  trusted?: boolean | null;
+  termsAcceptedAt?: string | null;
+  /**
+   * Sign-in and security email is always sent. Everything else is the member’s choice.
+   */
+  emailPrefs?: {
+    replies?: boolean | null;
+    moderation?: boolean | null;
+    events?: boolean | null;
+    digest?: boolean | null;
+  };
+  lastDigestAt?: string | null;
+  /**
+   * Approved contributions.
+   */
+  publishedCount?: number | null;
+  /**
+   * Approved replies.
+   */
+  answerCount?: number | null;
+  deletedAt?: string | null;
+  updatedAt: string;
+  createdAt: string;
+  email: string;
+  resetPasswordToken?: string | null;
+  resetPasswordExpiration?: string | null;
+  salt?: string | null;
+  hash?: string | null;
+  resetPasswordRequestedAt?: string | null;
+  _verified?: boolean | null;
+  _verificationToken?: string | null;
+  sessions?:
+    | {
+        id: string;
+        createdAt?: string | null;
+        expiresAt: string;
+      }[]
+    | null;
+  password?: string | null;
+  collection: 'members';
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "media".
+ */
+export interface Media {
+  id: string;
+  owner: string | Member;
+  /**
+   * Describes the photo for people who cannot see it.
+   */
+  alt?: string | null;
+  state: 'pending' | 'approved' | 'rejected' | 'withheld' | 'removed';
+  /**
+   * When the member confirmed they took the photo or have permission to share it.
+   */
+  rightsConfirmedAt: string;
+  contribution?: (string | null) | Contribution;
+  purpose: 'photo' | 'avatar';
+  updatedAt: string;
+  createdAt: string;
+  url?: string | null;
+  thumbnailURL?: string | null;
+  filename?: string | null;
+  mimeType?: string | null;
+  filesize?: number | null;
+  width?: number | null;
+  height?: number | null;
+  focalX?: number | null;
+  focalY?: number | null;
+  sizes?: {
+    thumb?: {
+      url?: string | null;
+      width?: number | null;
+      height?: number | null;
+      mimeType?: string | null;
+      filesize?: number | null;
+      filename?: string | null;
+    };
+    card?: {
+      url?: string | null;
+      width?: number | null;
+      height?: number | null;
+      mimeType?: string | null;
+      filesize?: number | null;
+      filename?: string | null;
+    };
+  };
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "contributions".
+ */
+export interface Contribution {
+  id: string;
+  /**
+   * Stable public id used in the address. Never changes.
+   */
+  shortId: string;
+  type: 'question' | 'trip' | 'activity';
+  author: string | Member;
+  title: string;
+  /**
+   * Readable part of the address. Old addresses keep working because the id decides which page opens.
+   */
+  slug: string;
+  /**
+   * Plain text. HTML is never stored or rendered.
+   */
+  body?: string | null;
+  language: string;
+  destinations?: (string | Destination)[] | null;
+  /**
+   * The chosen destinations plus their parents, so a country hub also lists its cities. Set automatically.
+   */
+  destinationTree?: (string | Destination)[] | null;
+  topics?: (string | Topic)[] | null;
+  style?:
+    | (
+        | 'budget'
+        | 'mid_range'
+        | 'luxury'
+        | 'backpacking'
+        | 'family'
+        | 'adventure'
+        | 'slow'
+        | 'road_trip'
+        | 'city_break'
+        | 'food'
+        | 'business'
+      )
+    | null;
+  state: 'draft' | 'pending' | 'changes_requested' | 'published' | 'rejected' | 'hidden' | 'removed';
+  submittedAt?: string | null;
+  /**
+   * First approval. Never changed to look fresh.
+   */
+  publishedAt?: string | null;
+  /**
+   * Last approved change to the content.
+   */
+  contentUpdatedAt?: string | null;
+  publishedRevision?: (string | null) | Revision;
+  /**
+   * An edit waiting for review. The public page keeps showing the approved content.
+   */
+  pendingRevision?: (string | null) | Revision;
+  /**
+   * Approval and search-engine indexing are separate decisions.
+   */
+  indexing: 'policy' | 'allow' | 'block';
+  moderation?: {
+    /**
+     * Reason shown to the author.
+     */
+    note?: string | null;
+    /**
+     * Moderators only.
+     */
+    internalNote?: string | null;
+    reviewedBy?: (string | null) | Staff;
+    reviewedAt?: string | null;
+  };
+  /**
+   * Approved replies only.
+   */
+  replyCount?: number | null;
+  helpfulCount?: number | null;
+  photos?: (string | Media)[] | null;
+  /**
+   * Plain text used for search. Set automatically from approved content.
+   */
+  searchText?: string | null;
+  question?: {
+    /**
+     * Year and month, for example 2027-03.
+     */
+    travelMonth?: string | null;
+    durationDays?: number | null;
+    partyType?: ('solo' | 'couple' | 'family' | 'friends' | 'group') | null;
+    /**
+     * Whole number of the smallest unit of the currency (cents, yen).
+     */
+    budgetMinor?: number | null;
+    budgetCurrency?: string | null;
+    resolved?: boolean | null;
+    acceptedAnswer?: (string | null) | Reply;
+    /**
+     * Set by a moderator when an earlier thread already answers this.
+     */
+    duplicateOf?: (string | null) | Contribution;
+  };
+  trip?: {
+    /**
+     * First day of the trip, if the author gave exact dates.
+     */
+    startDate?: string | null;
+    /**
+     * Last day of the trip.
+     */
+    endDate?: string | null;
+    travelMonth?: string | null;
+    durationDays?: number | null;
+    nights?: number | null;
+    partySize?: number | null;
+    partyType?: ('solo' | 'couple' | 'family' | 'friends' | 'group') | null;
+    costScope?: ('per_person' | 'per_party') | null;
+    flightsIncluded?: boolean | null;
+    /**
+     * What the costs include and leave out.
+     */
+    costNotes?: string | null;
+    transport?: string | null;
+    recommendations?: string | null;
+    mistakes?: string | null;
+    /**
+     * When the author confirmed this is their own first-hand account and may be published.
+     */
+    permissionGivenAt?: string | null;
+  };
+  tripCosts?:
+    | {
+        category:
+          | 'flights'
+          | 'accommodation'
+          | 'transport'
+          | 'food'
+          | 'activities'
+          | 'shopping'
+          | 'insurance'
+          | 'visas'
+          | 'other';
+        /**
+         * Exact whole number of the smallest currency unit. Never a floating-point total.
+         */
+        amountMinor: number;
+        currency: string;
+        /**
+         * Whether the amount is the whole cost or a rate.
+         */
+        basis: 'total' | 'per_day' | 'per_night';
+        /**
+         * Number of days or nights when the amount is a rate. 1 for a total.
+         */
+        quantity: number;
+        /**
+         * Optional day the money was spent.
+         */
+        date?: string | null;
+        kind: 'measured' | 'estimate';
+        note?: string | null;
+        id?: string | null;
+      }[]
+    | null;
+  itineraryDays?:
+    | {
+        title?: string | null;
+        /**
+         * Optional calendar day.
+         */
+        date?: string | null;
+        stops?:
+          | {
+              title: string;
+              destination?: (string | null) | Destination;
+              /**
+               * A public place, for example a museum or market.
+               */
+              place?: string | null;
+              timeNote?: string | null;
+              costMinor?: number | null;
+              costCurrency?: string | null;
+              description?: string | null;
+              id?: string | null;
+            }[]
+          | null;
+        id?: string | null;
+      }[]
+    | null;
+  activity?: {
+    category?: ('community_gathering' | 'public_event' | 'commercial_activity') | null;
+    format?: ('in_person' | 'online') | null;
+    venueName?: string | null;
+    venueAddress?: string | null;
+    /**
+     * IANA time zone of the venue, for example Asia/Bangkok.
+     */
+    timeZone?: string | null;
+    allDay?: boolean | null;
+    /**
+     * Start instant in UTC.
+     */
+    startsAt?: string | null;
+    /**
+     * End instant in UTC. For all-day events, the end of the last local day.
+     */
+    endsAt?: string | null;
+    /**
+     * What the organiser entered, in venue time: 2026-11-01T18:30, or 2026-11-01 for all-day.
+     */
+    startLocal?: string | null;
+    endLocal?: string | null;
+    /**
+     * Kept when an event is rescheduled.
+     */
+    originalStartLocal?: string | null;
+    eventStatus?: ('scheduled' | 'postponed' | 'rescheduled' | 'cancelled' | 'ended') | null;
+    statusNote?: string | null;
+    statusChangedAt?: string | null;
+    priceState?: ('free' | 'paid' | 'unknown') | null;
+    priceMinor?: number | null;
+    priceCurrency?: string | null;
+    bookingUrl?: string | null;
+    /**
+     * Where the details can be checked.
+     */
+    sourceUrl?: string | null;
+    organiserName?: string | null;
+    /**
+     * Private contact for verification. Moderators only.
+     */
+    organiserContact?: string | null;
+    /**
+     * A moderator confirmed the organiser. Separate from sponsorship or affiliation.
+     */
+    organiserVerified?: boolean | null;
+    disclosure?: ('none' | 'business' | 'affiliate' | 'sponsored') | null;
+    audience?: string | null;
+    accessibility?: string | null;
+    capacity?: number | null;
+    /**
+     * When a moderator last checked the facts. Different from the date it was posted.
+     */
+    lastCheckedAt?: string | null;
+    interestedCount?: number | null;
+    goingCount?: number | null;
+  };
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "revisions".
+ */
+export interface Revision {
+  id: string;
+  contribution: string | Contribution;
+  number: number;
+  kind: 'submission' | 'edit';
+  editor: string | Member;
+  /**
+   * The content exactly as the member submitted it.
+   */
+  snapshot:
+    | {
+        [k: string]: unknown;
+      }
+    | unknown[]
+    | string
+    | number
+    | boolean
+    | null;
+  reviewState: 'pending' | 'approved' | 'changes_requested' | 'rejected' | 'superseded';
+  reason?: string | null;
+  reviewedBy?: (string | null) | Staff;
+  reviewedAt?: string | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "replies".
+ */
+export interface Reply {
+  id: string;
+  contribution: string | Contribution;
+  parent?: (string | null) | Reply;
+  author: string | Member;
+  body: string;
+  state: 'pending' | 'published' | 'rejected' | 'hidden' | 'removed';
+  publishedAt?: string | null;
+  /**
+   * Reason shown to the author.
+   */
+  moderationNote?: string | null;
+  reviewedBy?: (string | null) | Staff;
+  helpfulCount?: number | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "votes".
+ */
+export interface Vote {
+  id: string;
+  key: string;
+  member: string | Member;
+  targetType: 'contribution' | 'reply';
+  targetId: string;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "bookmarks".
+ */
+export interface Bookmark {
+  id: string;
+  key: string;
+  member: string | Member;
+  targetType: 'contribution' | 'article';
+  targetId: string;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "follows".
+ */
+export interface Follow {
+  id: string;
+  key: string;
+  member: string | Member;
+  destination: string | Destination;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "rsvps".
+ */
+export interface Rsvp {
+  id: string;
+  key: string;
+  member: string | Member;
+  activity: string | Contribution;
+  status: 'interested' | 'going';
+  showPublicly?: boolean | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "plans".
+ */
+export interface Plan {
+  id: string;
+  owner: string | Member;
+  title: string;
+  startDate?: string | null;
+  endDate?: string | null;
+  notes?: string | null;
+  days?:
+    | {
+        title?: string | null;
+        date?: string | null;
+        stops?:
+          | {
+              title: string;
+              place?: string | null;
+              notes?: string | null;
+              savedContribution?: (string | null) | Contribution;
+              id?: string | null;
+            }[]
+          | null;
+        id?: string | null;
+      }[]
+    | null;
+  /**
+   * Set when the plan was copied from a published itinerary.
+   */
+  source?: {
+    contribution?: (string | null) | Contribution;
+    title?: string | null;
+    authorName?: string | null;
+    copiedAt?: string | null;
+  };
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "reports".
+ */
+export interface Report {
+  id: string;
+  /**
+   * One open report per member per item.
+   */
+  key: string;
+  reporter: string | Member;
+  targetType: 'contribution' | 'reply' | 'member' | 'media';
+  targetId: string;
+  /**
+   * The page the report belongs to, for quick review.
+   */
+  contribution?: (string | null) | Contribution;
+  category:
+    'spam' | 'misleading_promotion' | 'harassment' | 'privacy' | 'copyright' | 'incorrect' | 'event_problem' | 'other';
+  details?: string | null;
+  status: 'open' | 'resolved' | 'dismissed';
+  resolution?: string | null;
+  resolvedBy?: (string | null) | Staff;
+  resolvedAt?: string | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "moderation-actions".
+ */
+export interface ModerationAction {
+  id: string;
+  action:
+    | 'submit'
+    | 'withdraw'
+    | 'approve'
+    | 'request_changes'
+    | 'reject'
+    | 'hide'
+    | 'unhide'
+    | 'remove'
+    | 'author_remove'
+    | 'propose_revision'
+    | 'approve_revision'
+    | 'reject_revision'
+    | 'approve_reply'
+    | 'reject_reply'
+    | 'hide_reply'
+    | 'remove_reply'
+    | 'auto_approve_reply'
+    | 'accept_answer'
+    | 'unaccept_answer'
+    | 'override_accepted_answer'
+    | 'mark_duplicate'
+    | 'set_indexing'
+    | 'event_status'
+    | 'verify_organiser'
+    | 'fact_check'
+    | 'approve_media'
+    | 'reject_media'
+    | 'remove_media'
+    | 'resolve_report'
+    | 'dismiss_report'
+    | 'suspend'
+    | 'unsuspend'
+    | 'set_trust'
+    | 'account_deleted'
+    | 'accept_suggestion'
+    | 'reject_suggestion';
+  actorType: 'staff' | 'member' | 'system';
+  staff?: (string | null) | Staff;
+  member?: (string | null) | Member;
+  targetType: 'contribution' | 'reply' | 'revision' | 'member' | 'media' | 'report' | 'suggestion';
+  targetId: string;
+  contribution?: (string | null) | Contribution;
+  reason?: string | null;
+  details?:
+    | {
+        [k: string]: unknown;
+      }
+    | unknown[]
+    | string
+    | number
+    | boolean
+    | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "destination-suggestions".
+ */
+export interface DestinationSuggestion {
+  id: string;
+  member: string | Member;
+  name: string;
+  country: string;
+  details?: string | null;
+  status: 'pending' | 'accepted' | 'rejected';
+  /**
+   * The destination record created or matched by a moderator.
+   */
+  destination?: (string | null) | Destination;
+  resolution?: string | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "notifications".
+ */
+export interface Notification {
+  id: string;
+  dedupeKey: string;
+  recipient: string | Member;
+  type: 'reply_published' | 'answer_accepted' | 'moderation_decision' | 'event_changed' | 'account_notice';
+  message: string;
+  /**
+   * Site address to open. Always a public or own page.
+   */
+  path?: string | null;
+  readAt?: string | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "email-outbox".
+ */
+export interface EmailOutbox {
+  id: string;
+  idempotencyKey: string;
+  template:
+    | 'verify_email'
+    | 'password_reset'
+    | 'reply_published'
+    | 'answer_accepted'
+    | 'moderation_decision'
+    | 'event_changed'
+    | 'destination_digest';
+  /**
+   * The address is read from the member at send time, so a changed or deleted address is respected.
+   */
+  recipient?: (string | null) | Member;
+  data?:
+    | {
+        [k: string]: unknown;
+      }
+    | unknown[]
+    | string
+    | number
+    | boolean
+    | null;
+  status: 'pending' | 'sent' | 'captured' | 'suppressed' | 'failed';
+  attempts: number;
+  nextAttemptAt?: string | null;
+  lastError?: string | null;
+  /**
+   * resend = sent to the provider. capture = stored for testing, not sent to anyone.
+   */
+  transport?: string | null;
+  providerId?: string | null;
+  sentAt?: string | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "rate-limits".
+ */
+export interface RateLimit {
+  id: string;
+  key: string;
+  count: number;
+  expiresAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "metric-counters".
+ */
+export interface MetricCounter {
+  id: string;
+  key: string;
+  event: string;
+  day: string;
+  dimension?: string | null;
+  count: number;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "job-runs".
+ */
+export interface JobRun {
+  id: string;
+  job: string;
+  ok: boolean;
+  summary?: string | null;
+  durationMs?: number | null;
+  updatedAt: string;
+  createdAt: string;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
@@ -457,12 +1259,89 @@ export interface PayloadLockedDocument {
     | ({
         relationTo: 'staff';
         value: string | Staff;
+      } | null)
+    | ({
+        relationTo: 'members';
+        value: string | Member;
+      } | null)
+    | ({
+        relationTo: 'contributions';
+        value: string | Contribution;
+      } | null)
+    | ({
+        relationTo: 'replies';
+        value: string | Reply;
+      } | null)
+    | ({
+        relationTo: 'revisions';
+        value: string | Revision;
+      } | null)
+    | ({
+        relationTo: 'media';
+        value: string | Media;
+      } | null)
+    | ({
+        relationTo: 'votes';
+        value: string | Vote;
+      } | null)
+    | ({
+        relationTo: 'bookmarks';
+        value: string | Bookmark;
+      } | null)
+    | ({
+        relationTo: 'follows';
+        value: string | Follow;
+      } | null)
+    | ({
+        relationTo: 'rsvps';
+        value: string | Rsvp;
+      } | null)
+    | ({
+        relationTo: 'plans';
+        value: string | Plan;
+      } | null)
+    | ({
+        relationTo: 'reports';
+        value: string | Report;
+      } | null)
+    | ({
+        relationTo: 'moderation-actions';
+        value: string | ModerationAction;
+      } | null)
+    | ({
+        relationTo: 'destination-suggestions';
+        value: string | DestinationSuggestion;
+      } | null)
+    | ({
+        relationTo: 'notifications';
+        value: string | Notification;
+      } | null)
+    | ({
+        relationTo: 'email-outbox';
+        value: string | EmailOutbox;
+      } | null)
+    | ({
+        relationTo: 'rate-limits';
+        value: string | RateLimit;
+      } | null)
+    | ({
+        relationTo: 'metric-counters';
+        value: string | MetricCounter;
+      } | null)
+    | ({
+        relationTo: 'job-runs';
+        value: string | JobRun;
       } | null);
   globalSlug?: string | null;
-  user: {
-    relationTo: 'staff';
-    value: string | Staff;
-  };
+  user:
+    | {
+        relationTo: 'staff';
+        value: string | Staff;
+      }
+    | {
+        relationTo: 'members';
+        value: string | Member;
+      };
   updatedAt: string;
   createdAt: string;
 }
@@ -472,10 +1351,15 @@ export interface PayloadLockedDocument {
  */
 export interface PayloadPreference {
   id: string;
-  user: {
-    relationTo: 'staff';
-    value: string | Staff;
-  };
+  user:
+    | {
+        relationTo: 'staff';
+        value: string | Staff;
+      }
+    | {
+        relationTo: 'members';
+        value: string | Member;
+      };
   key?: string | null;
   value?:
     | {
@@ -571,6 +1455,20 @@ export interface DestinationsSelect<T extends boolean = true> {
   path?: T;
   isoCountryCode?: T;
   accentColour?: T;
+  aliases?: T;
+  latitude?: T;
+  longitude?: T;
+  timeZone?: T;
+  population?: T;
+  hubIndexable?: T;
+  source?:
+    | T
+    | {
+        name?: T;
+        externalId?: T;
+        licence?: T;
+        importedAt?: T;
+      };
   summary?: T;
   body?: T;
   seo?:
@@ -631,6 +1529,7 @@ export interface StaffSelect<T extends boolean = true> {
   name?: T;
   role?: T;
   active?: T;
+  communityModerator?: T;
   updatedAt?: T;
   createdAt?: T;
   email?: T;
@@ -648,6 +1547,466 @@ export interface StaffSelect<T extends boolean = true> {
         createdAt?: T;
         expiresAt?: T;
       };
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "members_select".
+ */
+export interface MembersSelect<T extends boolean = true> {
+  handle?: T;
+  displayName?: T;
+  bio?: T;
+  experience?: T;
+  avatar?: T;
+  status?: T;
+  statusReason?: T;
+  suspendedUntil?: T;
+  trusted?: T;
+  termsAcceptedAt?: T;
+  emailPrefs?:
+    | T
+    | {
+        replies?: T;
+        moderation?: T;
+        events?: T;
+        digest?: T;
+      };
+  lastDigestAt?: T;
+  publishedCount?: T;
+  answerCount?: T;
+  deletedAt?: T;
+  updatedAt?: T;
+  createdAt?: T;
+  email?: T;
+  resetPasswordToken?: T;
+  resetPasswordExpiration?: T;
+  salt?: T;
+  hash?: T;
+  resetPasswordRequestedAt?: T;
+  _verified?: T;
+  _verificationToken?: T;
+  sessions?:
+    | T
+    | {
+        id?: T;
+        createdAt?: T;
+        expiresAt?: T;
+      };
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "contributions_select".
+ */
+export interface ContributionsSelect<T extends boolean = true> {
+  shortId?: T;
+  type?: T;
+  author?: T;
+  title?: T;
+  slug?: T;
+  body?: T;
+  language?: T;
+  destinations?: T;
+  destinationTree?: T;
+  topics?: T;
+  style?: T;
+  state?: T;
+  submittedAt?: T;
+  publishedAt?: T;
+  contentUpdatedAt?: T;
+  publishedRevision?: T;
+  pendingRevision?: T;
+  indexing?: T;
+  moderation?:
+    | T
+    | {
+        note?: T;
+        internalNote?: T;
+        reviewedBy?: T;
+        reviewedAt?: T;
+      };
+  replyCount?: T;
+  helpfulCount?: T;
+  photos?: T;
+  searchText?: T;
+  question?:
+    | T
+    | {
+        travelMonth?: T;
+        durationDays?: T;
+        partyType?: T;
+        budgetMinor?: T;
+        budgetCurrency?: T;
+        resolved?: T;
+        acceptedAnswer?: T;
+        duplicateOf?: T;
+      };
+  trip?:
+    | T
+    | {
+        startDate?: T;
+        endDate?: T;
+        travelMonth?: T;
+        durationDays?: T;
+        nights?: T;
+        partySize?: T;
+        partyType?: T;
+        costScope?: T;
+        flightsIncluded?: T;
+        costNotes?: T;
+        transport?: T;
+        recommendations?: T;
+        mistakes?: T;
+        permissionGivenAt?: T;
+      };
+  tripCosts?:
+    | T
+    | {
+        category?: T;
+        amountMinor?: T;
+        currency?: T;
+        basis?: T;
+        quantity?: T;
+        date?: T;
+        kind?: T;
+        note?: T;
+        id?: T;
+      };
+  itineraryDays?:
+    | T
+    | {
+        title?: T;
+        date?: T;
+        stops?:
+          | T
+          | {
+              title?: T;
+              destination?: T;
+              place?: T;
+              timeNote?: T;
+              costMinor?: T;
+              costCurrency?: T;
+              description?: T;
+              id?: T;
+            };
+        id?: T;
+      };
+  activity?:
+    | T
+    | {
+        category?: T;
+        format?: T;
+        venueName?: T;
+        venueAddress?: T;
+        timeZone?: T;
+        allDay?: T;
+        startsAt?: T;
+        endsAt?: T;
+        startLocal?: T;
+        endLocal?: T;
+        originalStartLocal?: T;
+        eventStatus?: T;
+        statusNote?: T;
+        statusChangedAt?: T;
+        priceState?: T;
+        priceMinor?: T;
+        priceCurrency?: T;
+        bookingUrl?: T;
+        sourceUrl?: T;
+        organiserName?: T;
+        organiserContact?: T;
+        organiserVerified?: T;
+        disclosure?: T;
+        audience?: T;
+        accessibility?: T;
+        capacity?: T;
+        lastCheckedAt?: T;
+        interestedCount?: T;
+        goingCount?: T;
+      };
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "replies_select".
+ */
+export interface RepliesSelect<T extends boolean = true> {
+  contribution?: T;
+  parent?: T;
+  author?: T;
+  body?: T;
+  state?: T;
+  publishedAt?: T;
+  moderationNote?: T;
+  reviewedBy?: T;
+  helpfulCount?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "revisions_select".
+ */
+export interface RevisionsSelect<T extends boolean = true> {
+  contribution?: T;
+  number?: T;
+  kind?: T;
+  editor?: T;
+  snapshot?: T;
+  reviewState?: T;
+  reason?: T;
+  reviewedBy?: T;
+  reviewedAt?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "media_select".
+ */
+export interface MediaSelect<T extends boolean = true> {
+  owner?: T;
+  alt?: T;
+  state?: T;
+  rightsConfirmedAt?: T;
+  contribution?: T;
+  purpose?: T;
+  updatedAt?: T;
+  createdAt?: T;
+  url?: T;
+  thumbnailURL?: T;
+  filename?: T;
+  mimeType?: T;
+  filesize?: T;
+  width?: T;
+  height?: T;
+  focalX?: T;
+  focalY?: T;
+  sizes?:
+    | T
+    | {
+        thumb?:
+          | T
+          | {
+              url?: T;
+              width?: T;
+              height?: T;
+              mimeType?: T;
+              filesize?: T;
+              filename?: T;
+            };
+        card?:
+          | T
+          | {
+              url?: T;
+              width?: T;
+              height?: T;
+              mimeType?: T;
+              filesize?: T;
+              filename?: T;
+            };
+      };
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "votes_select".
+ */
+export interface VotesSelect<T extends boolean = true> {
+  key?: T;
+  member?: T;
+  targetType?: T;
+  targetId?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "bookmarks_select".
+ */
+export interface BookmarksSelect<T extends boolean = true> {
+  key?: T;
+  member?: T;
+  targetType?: T;
+  targetId?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "follows_select".
+ */
+export interface FollowsSelect<T extends boolean = true> {
+  key?: T;
+  member?: T;
+  destination?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "rsvps_select".
+ */
+export interface RsvpsSelect<T extends boolean = true> {
+  key?: T;
+  member?: T;
+  activity?: T;
+  status?: T;
+  showPublicly?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "plans_select".
+ */
+export interface PlansSelect<T extends boolean = true> {
+  owner?: T;
+  title?: T;
+  startDate?: T;
+  endDate?: T;
+  notes?: T;
+  days?:
+    | T
+    | {
+        title?: T;
+        date?: T;
+        stops?:
+          | T
+          | {
+              title?: T;
+              place?: T;
+              notes?: T;
+              savedContribution?: T;
+              id?: T;
+            };
+        id?: T;
+      };
+  source?:
+    | T
+    | {
+        contribution?: T;
+        title?: T;
+        authorName?: T;
+        copiedAt?: T;
+      };
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "reports_select".
+ */
+export interface ReportsSelect<T extends boolean = true> {
+  key?: T;
+  reporter?: T;
+  targetType?: T;
+  targetId?: T;
+  contribution?: T;
+  category?: T;
+  details?: T;
+  status?: T;
+  resolution?: T;
+  resolvedBy?: T;
+  resolvedAt?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "moderation-actions_select".
+ */
+export interface ModerationActionsSelect<T extends boolean = true> {
+  action?: T;
+  actorType?: T;
+  staff?: T;
+  member?: T;
+  targetType?: T;
+  targetId?: T;
+  contribution?: T;
+  reason?: T;
+  details?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "destination-suggestions_select".
+ */
+export interface DestinationSuggestionsSelect<T extends boolean = true> {
+  member?: T;
+  name?: T;
+  country?: T;
+  details?: T;
+  status?: T;
+  destination?: T;
+  resolution?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "notifications_select".
+ */
+export interface NotificationsSelect<T extends boolean = true> {
+  dedupeKey?: T;
+  recipient?: T;
+  type?: T;
+  message?: T;
+  path?: T;
+  readAt?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "email-outbox_select".
+ */
+export interface EmailOutboxSelect<T extends boolean = true> {
+  idempotencyKey?: T;
+  template?: T;
+  recipient?: T;
+  data?: T;
+  status?: T;
+  attempts?: T;
+  nextAttemptAt?: T;
+  lastError?: T;
+  transport?: T;
+  providerId?: T;
+  sentAt?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "rate-limits_select".
+ */
+export interface RateLimitsSelect<T extends boolean = true> {
+  key?: T;
+  count?: T;
+  expiresAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "metric-counters_select".
+ */
+export interface MetricCountersSelect<T extends boolean = true> {
+  key?: T;
+  event?: T;
+  day?: T;
+  dimension?: T;
+  count?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "job-runs_select".
+ */
+export interface JobRunsSelect<T extends boolean = true> {
+  job?: T;
+  ok?: T;
+  summary?: T;
+  durationMs?: T;
+  updatedAt?: T;
+  createdAt?: T;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
@@ -688,6 +2047,79 @@ export interface PayloadMigrationsSelect<T extends boolean = true> {
   batch?: T;
   updatedAt?: T;
   createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "community-settings".
+ */
+export interface CommunitySetting {
+  id: string;
+  /**
+   * ON: everyone can read approved community pages. OFF: only signed-in staff can see them.
+   */
+  publicAccess?: boolean | null;
+  /**
+   * ON: new members can sign up. Needs working email, because every new account must confirm its address.
+   */
+  signupsOpen?: boolean | null;
+  /**
+   * OFF: members can read but cannot post, reply or upload. Use it during an incident.
+   */
+  submissionsOpen?: boolean | null;
+  /**
+   * How many contributions one member can have waiting for review at once.
+   */
+  maxPendingPerMember?: number | null;
+  /**
+   * Approval makes a page public. This policy decides separately whether search engines may index it. A moderator can override it per page.
+   */
+  indexing?: {
+    /**
+     * ON: a question becomes indexable once it has enough approved answers. OFF: every question needs a moderator decision.
+     */
+    questionsAuto?: boolean | null;
+    /**
+     * Approved answers needed before a question is indexable.
+     */
+    questionMinAnswers?: number | null;
+    /**
+     * Approved contributions or answers a member needs before their public profile is indexable.
+     */
+    profileMinPublished?: number | null;
+  };
+  review?: {
+    /**
+     * OFF (recommended at launch): every reply is reviewed. ON: replies from members a moderator marked as trusted are published straight away and logged. Members are never marked trusted automatically.
+     */
+    autoApproveTrustedReplies?: boolean | null;
+  };
+  updatedAt?: string | null;
+  createdAt?: string | null;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "community-settings_select".
+ */
+export interface CommunitySettingsSelect<T extends boolean = true> {
+  publicAccess?: T;
+  signupsOpen?: T;
+  submissionsOpen?: T;
+  maxPendingPerMember?: T;
+  indexing?:
+    | T
+    | {
+        questionsAuto?: T;
+        questionMinAnswers?: T;
+        profileMinPublished?: T;
+      };
+  review?:
+    | T
+    | {
+        autoApproveTrustedReplies?: T;
+      };
+  updatedAt?: T;
+  createdAt?: T;
+  globalType?: T;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema

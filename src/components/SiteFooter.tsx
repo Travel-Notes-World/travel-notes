@@ -2,7 +2,7 @@ import Link from "next/link";
 
 const groups: { title: string; links: [string, string][] }[] = [
   { title: "Travel guides", links: [["/destinations", "Destinations"], ["/topics/itineraries", "Itineraries"], ["/topics/tips", "Practical tips"], ["/topics/gear", "Gear reviews"]] },
-  { title: "Community", links: [["/community", "Discussion groups"], ["/community/guidelines", "Community guidelines"], ["/corrections", "Corrections"]] },
+  { title: "Community", links: [["/community/questions", "Traveller questions"], ["/community/trips", "Trip reports"], ["/activities", "Activities"], ["/community/guidelines", "Community guidelines"], ["/corrections", "Corrections"]] },
   { title: "Work with us", links: [["/advertise", "Advertise"], ["/write-for-us", "Write for us"], ["/affiliate-disclosure", "Affiliate disclosure"], ["/editorial-policy", "Editorial policy"]] },
   { title: "About", links: [["/about", "About Travel Notes"], ["/contact", "Contact"], ["/privacy", "Privacy"], ["/terms", "Terms"], ["/cookie-policy", "Cookie policy"]] },
 ];
