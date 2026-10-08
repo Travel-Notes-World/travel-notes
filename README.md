@@ -48,11 +48,26 @@ npm run generate:importmap # refresh the admin import map
 
 `npm run test:access` checks the role boundaries (for example, a contributor cannot publish or read another contributor's draft). It creates and deletes records, so it only runs against a throwaway database set in `TEST_DATABASE_URL`.
 
+## Community
+
+Members' questions, trip reports, activities, replies, saved trips, notifications and the
+moderation console at `/moderation`. It is switched off by default: an administrator opens it in
+`/admin` → Community settings. Everything about it is in `docs/community/`:
+
+- `implementation-plan.md`: decisions and status
+- `data-model.md`: tables, states, permissions, export and deletion
+- `setup-and-deployment.md`: environment variables, migration, preview, release checklist, rollback
+- `moderation-handbook.md` and `owner-launch-guide.md`: running it
+- `test-results.md` and `future-phases.md`
+
+Tests: `TEST_DATABASE_URL=… npm run test:community` (throwaway database only), and the browser
+checks in `tests/e2e/`.
+
 ### Known gaps before launch
 
 - No multi-factor authentication on editor logins yet (required by the plan before launch).
 - No media uploads until Cloudflare R2 is set up, so articles have no hero image field yet.
-- No scheduled publishing, search projection or outbox worker yet. Cache expiry runs directly in the CMS request, without retries or warming.
+- No scheduled publishing for articles yet. Cache expiry runs directly in the CMS request, without retries or warming. (The community has its own email queue and daily job.)
 - No Redirects collection yet: after a slug change the old address returns "not found" instead of redirecting. Avoid renaming published slugs until it exists.
 - Corrections text on article pages is still a fixed placeholder line.
 - Sample content (`src/content/sample.ts`) must be removed before launch: sample article pages, and the destination and topic pages that are built from it.
