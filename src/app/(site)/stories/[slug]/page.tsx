@@ -58,16 +58,20 @@ export default async function StoryPage({ params }: { params: Promise<{ slug: st
     description: a.deck,
     datePublished: a.firstPublished,
     dateModified: a.updated,
-    author: { "@type": "Person", name: a.author.name, url: `${siteUrl}/authors/${a.author.slug}` },
+    // Sample articles have a placeholder author with no profile page, so no author address is claimed for them.
+    author: { "@type": "Person", name: a.author.name, ...(a.isSample ? {} : { url: `${siteUrl}/authors/${a.author.slug}` }) },
     publisher: { "@type": "Organization", name: "Travel Notes" },
     mainEntityOfPage: `${siteUrl}/stories/${a.slug}`,
   };
-  // Breadcrumbs only include levels that exist: an article without a destination has no destination crumb.
-  const crumbs = [
-    { label: "Destinations", href: "/destinations" },
-    ...(a.destination ? [{ label: a.destination.name, href: `/destinations/${a.destination.path}` }] : []),
-    { label: a.title },
-  ];
+  // Breadcrumbs only include levels that exist. An article filed under a destination sits below it;
+  // an article with no destination (practical advice, gear) sits directly below the homepage.
+  const crumbs = a.destination
+    ? [
+        { label: "Destinations", href: "/destinations" },
+        { label: a.destination.name, href: `/destinations/${a.destination.path}` },
+        { label: a.title },
+      ]
+    : [{ label: "Home", href: "/" }, { label: a.title }];
   const breadcrumbLd = {
     "@context": "https://schema.org",
     "@type": "BreadcrumbList",
@@ -95,7 +99,11 @@ export default async function StoryPage({ params }: { params: Promise<{ slug: st
             <div className="mt-5 flex items-center gap-3">
               <div aria-hidden="true" className="w-10 h-10 rounded-full bg-paper-200" />
               <p className="t-body-sm m-0">
-                <Link href={`/authors/${a.author.slug}`} className="text-ink-900 font-medium no-underline hover:underline">{a.author.name}</Link>
+                {a.isSample ? (
+                  <span className="text-ink-900 font-medium">{a.author.name}</span>
+                ) : (
+                  <Link href={`/authors/${a.author.slug}`} className="text-ink-900 font-medium no-underline hover:underline">{a.author.name}</Link>
+                )}
                 <span className="block text-ink-400">Published {fmt(a.firstPublished)}{!sameDay(a.updated, a.firstPublished) && `, updated ${fmt(a.updated)}`}</span>
               </p>
             </div>

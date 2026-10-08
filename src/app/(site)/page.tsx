@@ -17,9 +17,11 @@ export default async function HomePage() {
   const [lead, ...rest] = await getLatestStories(7);
   return (
     <div className="mx-auto max-w-container px-4 md:px-6 lg:px-8">
-      <section className="pt-8 md:pt-12" aria-label="Lead story">
-        <ArticleCard article={lead} hero />
-      </section>
+      {lead && (
+        <section className="pt-8 md:pt-12" aria-label="Lead story">
+          <ArticleCard article={lead} hero />
+        </section>
+      )}
 
       <section className="mt-12 md:mt-16" aria-labelledby="destinations-heading">
         <div className="flex items-baseline justify-between gap-4 mb-6">
@@ -31,12 +33,15 @@ export default async function HomePage() {
         </div>
       </section>
 
-      <section className="mt-12 md:mt-16" aria-labelledby="latest-heading">
-        <h2 id="latest-heading" className="t-heading-2 m-0 mb-6">Latest guides</h2>
-        <div className="grid gap-6 md:gap-8 md:grid-cols-2 lg:grid-cols-3">
-          {rest.map((a) => <ArticleCard key={a.slug} article={a} />)}
-        </div>
-      </section>
+      {/* Hidden while there is only one published article: it is already the lead story above. */}
+      {rest.length > 0 && (
+        <section className="mt-12 md:mt-16" aria-labelledby="latest-heading">
+          <h2 id="latest-heading" className="t-heading-2 m-0 mb-6">Latest guides</h2>
+          <div className="grid gap-6 md:gap-8 md:grid-cols-2 lg:grid-cols-3">
+            {rest.map((a) => <ArticleCard key={a.slug} article={a} />)}
+          </div>
+        </section>
+      )}
 
       <section className="mt-12 md:mt-16" aria-labelledby="topics-heading">
         <h2 id="topics-heading" className="sr-only">Topics</h2>

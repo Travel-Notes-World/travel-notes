@@ -19,3 +19,5 @@ export async function expireTags(tags: string[]): Promise<void> {
 
 export const articleTag = (slug: string) => `article:${slug}`
 export const ARTICLES_TAG = 'articles'
+export const authorTag = (slug: string) => `author:${slug}`
+export const AUTHORS_TAG = 'authors'

@@ -188,6 +188,25 @@ const findLatestPublished = (limit: number) =>
     { tags: [ARTICLES_TAG], revalidate: ARTICLE_REVALIDATE_SECONDS },
   )()
 
+const findPublishedByAuthor = (authorId: string, limit: number) =>
+  unstable_cache(
+    async (): Promise<CmsArticle[]> => {
+      const payload = await getPayload({ config })
+      const result = await payload.find({
+        collection: 'articles',
+        where: { or: [{ primaryAuthor: { equals: authorId } }, { coauthors: { in: [authorId] } }] },
+        sort: '-firstPublishedAt',
+        limit,
+        depth: 1,
+        draft: false,
+        overrideAccess: false,
+      })
+      return result.docs
+    },
+    ['articles-by-author', authorId, String(limit)],
+    { tags: [ARTICLES_TAG], revalidate: ARTICLE_REVALIDATE_SECONDS },
+  )()
+
 const logReadFailure = (label: string, error: unknown) =>
   console.error(`[content] ${label} failed.`, error instanceof Error ? error.message : error)
 
@@ -210,7 +229,11 @@ export async function getStory(slug: string): Promise<Story | null> {
   return sample ? fromSample(sample) : null
 }
 
-/** Newest published CMS articles first, then sample articles until real content replaces them. */
+/**
+ * Real and sample articles are never listed together. As soon as one CMS article is published,
+ * listings show published CMS articles only. Sample articles appear only while the CMS has none,
+ * so the page templates can still be reviewed before the first real article exists.
+ */
 export async function getLatestStories(limit = 12): Promise<Story[]> {
   // Listings stay available during a CMS outage by showing what can still be shown.
   let docs: CmsArticle[] = []
@@ -220,9 +243,14 @@ export async function getLatestStories(limit = 12): Promise<Story[]> {
     logReadFailure('latest articles', error)
   }
   const cms = docs.map(fromCms).filter((s): s is Story => s !== null)
-  const taken = new Set(cms.map((s) => s.slug))
-  const samples = sampleArticles.filter((a) => !taken.has(a.slug)).map(fromSample)
-  return [...cms, ...samples].slice(0, limit)
+  if (cms.length > 0) return cms.slice(0, limit)
+  return sampleArticles.map(fromSample).slice(0, limit)
+}
+
+/** Published articles where this author is the primary author or a coauthor, newest first. */
+export async function getStoriesByAuthor(authorId: string, limit = 24): Promise<Story[]> {
+  const docs = await findPublishedByAuthor(authorId, limit)
+  return docs.map(fromCms).filter((s): s is Story => s !== null)
 }
 
 export const sampleStorySlugs = () => sampleArticles.map((a) => a.slug)
