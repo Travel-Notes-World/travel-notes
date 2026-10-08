@@ -4,18 +4,18 @@ import { SiteHeader } from "@/components/SiteHeader";
 import { SiteFooter } from "@/components/SiteFooter";
 import "../globals.css";
 
-// Self-hosted variable fonts (SIL Open Font License) — no request to Google at runtime.
-const fraunces = localFont({
+// Self-hosted variable fonts (SIL Open Font License, via Fontsource) — no request to Google at runtime.
+const newsreader = localFont({
   src: [
-    { path: "../../fonts/fraunces-latin-full-normal.woff2", style: "normal", weight: "100 900" },
-    { path: "../../fonts/fraunces-latin-full-italic.woff2", style: "italic", weight: "100 900" },
+    { path: "../../fonts/newsreader-latin-standard-normal.woff2", style: "normal", weight: "200 800" },
+    { path: "../../fonts/newsreader-latin-standard-italic.woff2", style: "italic", weight: "200 800" },
   ],
-  variable: "--font-fraunces",
+  variable: "--font-newsreader",
   display: "swap",
 });
-const inter = localFont({
-  src: [{ path: "../../fonts/inter-latin-standard-normal.woff2", style: "normal", weight: "100 900" }],
-  variable: "--font-inter",
+const instrumentSans = localFont({
+  src: [{ path: "../../fonts/instrument-sans-latin-standard-normal.woff2", style: "normal", weight: "400 700" }],
+  variable: "--font-instrument",
   display: "swap",
 });
 
@@ -30,7 +30,7 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" className={`${fraunces.variable} ${inter.variable}`}>
+    <html lang="en" className={`${newsreader.variable} ${instrumentSans.variable}`}>
       <body>
         <a href="#main" className="sr-only focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:z-50 focus:bg-marine-600 focus:text-on-marine focus:px-4 focus:py-2 focus:rounded-md">
           Skip to content

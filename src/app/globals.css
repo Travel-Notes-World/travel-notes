@@ -1,49 +1,58 @@
 @import "tailwindcss";
 
-/* Travel Notes design tokens — source of truth:
-   https://claude.ai/artifact/L3JWve3Gp6mdFJP2Ckb6Rr (project/tokens.json) */
+/* Travel Notes design tokens — "Homepage 1a" design (8 Oct 2026): navy, teal, gold and cream,
+   Newsreader for headings and Instrument Sans for text. Token names are kept from the first design
+   system so every page picks up the new look: "marine" is now teal, "ochre" is now gold. */
 :root {
-  --paper-000: #faf7f2;
-  --paper-100: #f2ede3;
-  --paper-200: #e4dccd;
-  --line-500: #8a8377;
-  --ink-900: #1c1a17;
-  --ink-600: #4a463f;
-  --ink-400: #6f6a61;
-  --marine-600: #1f5f6b;
-  --marine-700: #164653;
-  --marine-100: #dcebed;
-  --on-marine: #faf7f2;
-  --ochre-500: #c2762b;
-  --ochre-700: #8a4f14;
-  --ochre-100: #f6e7d3;
+  --paper-000: #ffffff;   /* page background */
+  --paper-100: #f5f1e8;   /* cream sections */
+  --paper-200: #ece8dc;   /* card borders, dividers */
+  --line-400: #ddd6c4;    /* chip and soft input borders */
+  --line-500: #8a8377;    /* form field borders (3:1 against white) */
+  --ink-900: #1f2937;
+  --ink-600: #4b5563;
+  --ink-400: #5f6672;     /* darker than the mockup's #6B7280 so small text passes on cream */
+  --navy-900: #0b3c5d;    /* headings, dark sections */
+  --marine-600: #0f766e;  /* teal: links, primary actions */
+  --marine-700: #0b3c5d;  /* hover */
+  --marine-100: #e3f1ef;
+  --on-marine: #ffffff;
+  --ochre-500: #d4a017;   /* gold: main call to action (navy text on gold) */
+  --ochre-600: #c2920f;
+  --ochre-700: #8a6d1a;   /* gold as text on light backgrounds */
+  --ochre-100: #f7edd0;
   --signal-error: #a6261f;
   --signal-success: #2d6a3a;
-  --scrim: #1c1a17b3;
-  --shadow-header: 0 1px 0 #e4dccd, 0 8px 24px #1c1a1714;
+  --scrim: #0b3c5db3;
+  --shadow-header: 0 1px 0 #e8e4d8;
+  --shadow-card: 0 10px 30px rgba(11, 60, 93, 0.15);
   color-scheme: light;
 }
 
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
-    --paper-000: #171614;
-    --paper-100: #211f1c;
-    --paper-200: #37332d;
-    --line-500: #7d766a;
-    --ink-900: #f1ece3;
-    --ink-600: #cdc6b9;
-    --ink-400: #a39b8e;
-    --marine-600: #7fc3cc;
-    --marine-700: #a6d8de;
-    --marine-100: #1d3a40;
-    --on-marine: #171614;
-    --ochre-500: #e39a4f;
-    --ochre-700: #f0b978;
-    --ochre-100: #3a2a17;
+    --paper-000: #0d1b26;
+    --paper-100: #13293a;
+    --paper-200: #22394b;
+    --line-400: #2f4a5e;
+    --line-500: #7d8b97;
+    --ink-900: #eef2f5;
+    --ink-600: #c4cdd4;
+    --ink-400: #9eabb6;
+    --navy-900: #e9f0f5;
+    --marine-600: #5fc2b6;
+    --marine-700: #9ad9d0;
+    --marine-100: #143a3a;
+    --on-marine: #0d1b26;
+    --ochre-500: #e2b53a;
+    --ochre-600: #f0c654;
+    --ochre-700: #e8c25c;
+    --ochre-100: #3a2f12;
     --signal-error: #f08a83;
     --signal-success: #8ccb9a;
     --scrim: #000000b3;
-    --shadow-header: 0 1px 0 #37332d, 0 8px 24px #00000066;
+    --shadow-header: 0 1px 0 #22394b;
+    --shadow-card: 0 10px 30px rgba(0, 0, 0, 0.45);
     color-scheme: dark;
   }
 }
@@ -52,7 +61,9 @@
   --color-paper-000: var(--paper-000);
   --color-paper-100: var(--paper-100);
   --color-paper-200: var(--paper-200);
+  --color-line-400: var(--line-400);
   --color-line-500: var(--line-500);
+  --color-navy-900: var(--navy-900);
   --color-ink-900: var(--ink-900);
   --color-ink-600: var(--ink-600);
   --color-ink-400: var(--ink-400);
@@ -61,27 +72,31 @@
   --color-marine-100: var(--marine-100);
   --color-on-marine: var(--on-marine);
   --color-ochre-500: var(--ochre-500);
+  --color-ochre-600: var(--ochre-600);
   --color-ochre-700: var(--ochre-700);
   --color-ochre-100: var(--ochre-100);
   --color-signal-error: var(--signal-error);
   --color-signal-success: var(--signal-success);
   --color-scrim: var(--scrim);
 
-  --font-display: var(--font-fraunces), "Iowan Old Style", Georgia, serif;
-  --font-text: var(--font-inter), system-ui, sans-serif;
+  --font-display: var(--font-newsreader), "Iowan Old Style", Georgia, serif;
+  --font-text: var(--font-instrument), system-ui, sans-serif;
 
   --radius-sm: 4px;
   --radius-md: 8px;
   --radius-lg: 16px;
+  --radius-xl: 14px;
   --radius-pill: 999px;
 
   --spacing-measure: 42rem;   /* measure-prose */
   --spacing-container: 76rem; /* container-max */
+  --spacing-wide: 90rem;      /* 1440px: header, footer and homepage, as in the design canvas */
   --spacing-hero: 88rem;      /* hero-max */
   --spacing-sidebar: 300px;   /* sidebar-width */
   --spacing-ad-inline: 280px; /* ad-inline-min-height */
 
   --shadow-header: var(--shadow-header);
+  --shadow-card: var(--shadow-card);
 }
 
 @layer base {
@@ -99,11 +114,12 @@
 }
 
 @layer components {
-  .t-display-1 { font-family: var(--font-display); font-weight: 600; font-size: 40px; line-height: 1.05; letter-spacing: -0.5px; }
-  .t-heading-1 { font-family: var(--font-display); font-weight: 600; font-size: 32px; line-height: 1.1; letter-spacing: -0.3px; }
-  .t-heading-2 { font-family: var(--font-display); font-weight: 600; font-size: 28px; line-height: 1.2; }
-  .t-heading-3 { font-family: var(--font-display); font-weight: 600; font-size: 22px; line-height: 1.3; }
+  .t-display-1 { font-family: var(--font-display); font-weight: 500; font-size: 40px; line-height: 1.06; letter-spacing: -1px; color: var(--navy-900); text-wrap: balance; }
+  .t-heading-1 { font-family: var(--font-display); font-weight: 500; font-size: 32px; line-height: 1.1; letter-spacing: -0.5px; color: var(--navy-900); text-wrap: balance; }
+  .t-heading-2 { font-family: var(--font-display); font-weight: 500; font-size: 28px; line-height: 1.2; letter-spacing: -0.5px; color: var(--navy-900); }
+  .t-heading-3 { font-family: var(--font-display); font-weight: 500; font-size: 22px; line-height: 1.3; color: var(--navy-900); }
   .t-pull-quote { font-family: var(--font-display); font-weight: 400; font-style: italic; font-size: 24px; line-height: 1.4; }
+  .t-eyebrow { font-size: 12px; line-height: 1.3; font-weight: 600; letter-spacing: 2px; text-transform: uppercase; color: var(--marine-600); }
   .t-deck { font-size: 20px; line-height: 1.5; color: var(--ink-600); }
   .t-body { font-size: 18px; line-height: 1.65; }
   .t-body-sm { font-size: 15px; line-height: 1.5; }
@@ -111,21 +127,21 @@
   .t-card-title { font-size: 18px; line-height: 1.3; font-weight: 600; }
   .t-meta { font-size: 13px; line-height: 1.4; font-weight: 500; letter-spacing: 0.6px; }
   @media (min-width: 768px) {
-    .t-display-1 { font-size: 52px; }
-    .t-heading-1 { font-size: 40px; }
+    .t-display-1 { font-size: 62px; letter-spacing: -1.5px; }
+    .t-heading-1 { font-size: 40px; letter-spacing: -1px; }
   }
 
   /* Article prose */
   .prose-tn { max-width: var(--spacing-measure); }
   .prose-tn > * + * { margin-top: 24px; }
-  .prose-tn h2 { font-family: var(--font-display); font-weight: 600; font-size: 28px; line-height: 1.2; margin-top: 48px; margin-bottom: 16px; }
-  .prose-tn h3 { font-family: var(--font-display); font-weight: 600; font-size: 22px; line-height: 1.3; margin-top: 32px; }
+  .prose-tn h2 { font-family: var(--font-display); font-weight: 500; color: var(--navy-900); font-size: 28px; line-height: 1.2; margin-top: 48px; margin-bottom: 16px; }
+  .prose-tn h3 { font-family: var(--font-display); font-weight: 500; color: var(--navy-900); font-size: 22px; line-height: 1.3; margin-top: 32px; }
   .prose-tn p, .prose-tn li { font-size: 18px; line-height: 1.65; }
   .prose-tn a { color: var(--marine-600); text-decoration: underline; text-underline-offset: 3px; }
   .prose-tn a:hover { color: var(--marine-700); }
   .prose-tn ul, .prose-tn ol { padding-left: 24px; }
   .prose-tn blockquote { font-family: var(--font-display); font-style: italic; font-size: 24px; line-height: 1.4; border-left: 0; padding: 0 0 0 24px; position: relative; }
-  .prose-tn blockquote::before { content: ""; position: absolute; left: 0; top: 4px; bottom: 4px; width: 3px; background: var(--ochre-500); }
+  .prose-tn blockquote::before { content: ""; position: absolute; left: 0; top: 4px; bottom: 4px; width: 2px; background: var(--ochre-500); }
   .prose-tn table { width: 100%; border-collapse: collapse; font-size: 15px; line-height: 1.5; }
   .prose-tn th, .prose-tn td { text-align: left; padding: 8px 12px; border-bottom: 1px solid var(--paper-200); }
   .prose-tn th { color: var(--ink-600); font-weight: 600; }
