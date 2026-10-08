@@ -79,6 +79,13 @@
   --color-signal-success: var(--signal-success);
   --color-scrim: var(--scrim);
 
+  /* Fixed brand colours for sections that stay dark in both themes (footer, video band, AI planner).
+     Unlike navy-900 / marine-600 these do not flip in dark mode, so white text on them always passes. */
+  --color-brand-navy: #0b3c5d;
+  --color-brand-teal: #0f766e;
+  --color-brand-gold: #d4a017;
+  --color-brand-mint: #7fc4bb;
+
   --font-display: var(--font-newsreader), "Iowan Old Style", Georgia, serif;
   --font-text: var(--font-instrument), system-ui, sans-serif;
 

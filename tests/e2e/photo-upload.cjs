@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-require-imports -- plain Node script run outside the app build */
 // Browser check: a member adds a photo to a trip draft; the stored file has no GPS metadata.
 const { chromium } = require(process.env.PLAYWRIGHT_PATH || 'playwright');
 const { execSync } = require('child_process');

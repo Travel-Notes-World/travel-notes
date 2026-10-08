@@ -1,0 +1,67 @@
+{
+  "header": {
+    "homeLabel": "Travel Notes home",
+    "nav": [
+      { "label": "Destinations", "href": "/destinations" },
+      { "label": "Travel Guides", "href": "/guides" },
+      { "label": "Community", "href": "/community" },
+      { "label": "Activities", "href": "/activities" },
+      { "label": "Photography", "href": null },
+      { "label": "Trip Planner", "href": null }
+    ],
+    "businessLink": { "label": "For Businesses", "href": "/advertise" },
+    "subscribe": { "label": "Subscribe", "href": "/#newsletter" },
+    "searchLabel": "Search",
+    "menuLabel": "Menu"
+  },
+  "footer": {
+    "tagline": "The travel knowledge platform. Expert guides, real traveller insight and, soon, AI trip planning.",
+    "groups": [
+      {
+        "title": "Explore",
+        "links": [
+          { "label": "Destinations", "href": "/destinations" },
+          { "label": "Travel Guides", "href": "/guides" },
+          { "label": "Itineraries", "href": "/topics/itineraries" },
+          { "label": "Practical tips", "href": "/topics/tips" },
+          { "label": "Photography", "href": null },
+          { "label": "Videos", "href": null },
+          { "label": "Hidden Gems", "href": null }
+        ]
+      },
+      {
+        "title": "Community",
+        "links": [
+          { "label": "Ask Travellers", "href": "/community/questions" },
+          { "label": "Trip Reports", "href": "/community/trips" },
+          { "label": "Activities", "href": "/activities" },
+          { "label": "Community guidelines", "href": "/community/guidelines" },
+          { "label": "Write for Us", "href": "/write-for-us" }
+        ]
+      },
+      {
+        "title": "Business",
+        "links": [
+          { "label": "Advertise", "href": "/advertise" },
+          { "label": "Business Directory", "href": null }
+        ]
+      },
+      {
+        "title": "Company",
+        "links": [
+          { "label": "About", "href": "/about" },
+          { "label": "Editorial Standards", "href": "/editorial-policy" },
+          { "label": "Corrections", "href": "/corrections" },
+          { "label": "Contact", "href": "/contact" }
+        ]
+      }
+    ],
+    "legal": [
+      { "label": "Privacy", "href": "/privacy" },
+      { "label": "Terms", "href": "/terms" },
+      { "label": "Cookies", "href": "/cookie-policy" },
+      { "label": "Affiliate Disclosure", "href": "/affiliate-disclosure" }
+    ],
+    "copyright": "Travel Notes. All rights reserved."
+  }
+}
