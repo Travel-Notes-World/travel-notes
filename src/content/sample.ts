@@ -5,23 +5,28 @@
  * Replace via the content repository in src/lib/content once the CMS lands.
  */
 
+import media from "./data/sample-media.json";
+
 export type ArticleType = "Destination guide" | "Itinerary" | "Practical advice" | "Gear review" | "Sponsored feature";
 
 /** A Wikimedia Commons photo used as SAMPLE imagery, shown with its author credit. Replace with original photography. */
 export type CommonsImage = { file: string; author: string; license: string; licenseUrl: string; alt: string };
 
-export const CC_BY_SA_4 = { license: "CC BY-SA 4.0", licenseUrl: "https://creativecommons.org/licenses/by-sa/4.0/" };
-export const CC_BY_SA_3 = { license: "CC BY-SA 3.0", licenseUrl: "https://creativecommons.org/licenses/by-sa/3.0/" };
+/** Image and destination data live in data/sample-media.json; images reference a license key there. */
+type ImageKey = keyof typeof media.images;
+type LicenseKey = keyof typeof media.licenses;
 
-export const IMAGES = {
-  kyoto: { file: "Fushimi Inari Taisha Torii 17.jpg", author: "Immanuelle", ...CC_BY_SA_4, alt: "Vermilion torii gates lining a path at Fushimi Inari shrine, Kyoto" },
-  marrakech: { file: "PLACE Jamaa Lafna MARRAKECH 2.JPEG", author: "Viault", ...CC_BY_SA_3, alt: "Jemaa el-Fnaa square in Marrakech, crowded with stalls and people" },
-  tasmania: { file: "Boat shed and Cradle Mountain at Dove Lake, Tas.jpg", author: "Thennicke", ...CC_BY_SA_4, alt: "Boat shed on Dove Lake with Cradle Mountain behind, Tasmania" },
-  lisbon: { file: "Carris tram 28 Lisbon 2.jpg", author: "Steven Lek", ...CC_BY_SA_4, alt: "Yellow tram 28 on a steep street in Lisbon" },
-  hoian: { file: "Hội An, Ancient Town, 2020-01 CN-06.jpg", author: "Steffen Schmitz", ...CC_BY_SA_4, alt: "Lantern-hung shophouses in Hoi An Ancient Town" },
-  queenstown: { file: "Lake Wakatipu & Remarkable Mountains.jpg", author: "Donaldytong", ...CC_BY_SA_3, alt: "Lake Wakatipu with the Remarkables mountain range, Queenstown" },
-  greatOceanRoad: { file: "The Twelve Apostles, Victoria, June 2017.jpg", author: "Ruhseal", ...CC_BY_SA_4, alt: "Limestone stacks of the Twelve Apostles on the Great Ocean Road" },
-} satisfies Record<string, CommonsImage>;
+const toImage = ({ license, ...rest }: (typeof media.images)[ImageKey]): CommonsImage => ({ ...rest, ...media.licenses[license as LicenseKey] });
+
+export const IMAGES = Object.fromEntries(
+  Object.entries(media.images).map(([key, image]) => [key, toImage(image)]),
+) as Record<ImageKey, CommonsImage>;
+
+/** Looks up a sample image by its key in sample-media.json; unknown keys fail at build time, not on the page. */
+export const sampleImage = (key: string): CommonsImage => {
+  if (!(key in IMAGES)) throw new Error(`Unknown sample image "${key}" in src/content/data`);
+  return IMAGES[key as ImageKey];
+};
 
 export type Stop = { time: string; name: string; note: string };
 export type Day = { number: number; title: string; stops: Stop[] };
@@ -50,14 +55,7 @@ export type Article = {
 /** `accent` is the destination's signature colour: solid band under the tile photo and frame around hubs/cards. All accents are dark enough for paper-000 text (>7:1). */
 export type Destination = { name: string; parent: string; slug: string; guides: number; tone: string; accent: string; alt: string; image?: CommonsImage };
 
-export const destinations: Destination[] = [
-  { name: "Kyoto", parent: "Japan", slug: "japan/kyoto", guides: 3, tone: "linear-gradient(135deg,#8fa9a6,#4e6f74 55%,#2e4a50)", accent: "#2e4a50", alt: "Placeholder for Kyoto photography", image: IMAGES.kyoto },
-  { name: "Marrakech", parent: "Morocco", slug: "morocco/marrakech", guides: 2, tone: "linear-gradient(135deg,#d6a56a,#a25d2a 60%,#5d2e0f)", accent: "#5d2e0f", alt: "Placeholder for Marrakech photography", image: IMAGES.marrakech },
-  { name: "Tasmania", parent: "Australia", slug: "australia/tasmania", guides: 2, tone: "linear-gradient(135deg,#9fc3d6,#4f7f9a 60%,#244a5e)", accent: "#244a5e", alt: "Placeholder for Tasmania photography", image: IMAGES.tasmania },
-  { name: "Lisbon", parent: "Portugal", slug: "portugal/lisbon", guides: 1, tone: "linear-gradient(135deg,#e6c9a8,#c27a4b 60%,#7a3f1e)", accent: "#7a3f1e", alt: "Placeholder for Lisbon photography", image: IMAGES.lisbon },
-  { name: "Hoi An", parent: "Vietnam", slug: "vietnam/hoi-an", guides: 1, tone: "linear-gradient(135deg,#e9d38a,#b58a2a 60%,#5e4410)", accent: "#5e4410", alt: "Placeholder for Hoi An photography", image: IMAGES.hoian },
-  { name: "Queenstown", parent: "New Zealand", slug: "new-zealand/queenstown", guides: 1, tone: "linear-gradient(135deg,#b8c8d8,#5f7e9c 60%,#2b4560)", accent: "#2b4560", alt: "Placeholder for Queenstown photography", image: IMAGES.queenstown },
-];
+export const destinations: Destination[] = media.destinations.map(({ image, ...d }) => ({ ...d, image: sampleImage(image) }));
 
 const kyotoBody = [
   { heading: "Getting there and around", paragraphs: [

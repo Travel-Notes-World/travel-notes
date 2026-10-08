@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-require-imports -- plain Node script run outside the app build */
 const { chromium } = require(process.env.PLAYWRIGHT_PATH || 'playwright');
 const BASE = process.env.E2E_BASE_URL || 'http://localhost:3100';
 (async()=>{

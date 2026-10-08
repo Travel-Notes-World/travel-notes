@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-require-imports -- plain Node script run outside the app build */
 // End-to-end browser check of the community release against the local server (port 3100).
 // Uses the local dev database only; emails are captured, never sent.
 const { chromium } = require(process.env.PLAYWRIGHT_PATH || 'playwright');

@@ -1,30 +1,29 @@
 import Link from "next/link";
 
+import navigation from "@/content/data/navigation.json";
+
 import { Logo } from "./SiteHeader";
 
-/** Links without an address are features that are not built yet; they are shown as "Soon", not as links. */
-const groups: { title: string; links: [string | null, string][] }[] = [
-  { title: "Explore", links: [["/destinations", "Destinations"], ["/guides", "Travel Guides"], ["/topics/itineraries", "Itineraries"], ["/topics/tips", "Practical tips"], [null, "Photography"], [null, "Videos"], [null, "Hidden Gems"]] },
-  { title: "Community", links: [["/community/questions", "Ask Travellers"], ["/community/trips", "Trip Reports"], ["/activities", "Activities"], ["/community/guidelines", "Community guidelines"], ["/write-for-us", "Write for Us"]] },
-  { title: "Business", links: [["/advertise", "Advertise"], [null, "Business Directory"]] },
-  { title: "Company", links: [["/about", "About"], ["/editorial-policy", "Editorial Standards"], ["/corrections", "Corrections"], ["/contact", "Contact"]] },
-];
-
-const legal: [string, string][] = [["/privacy", "Privacy"], ["/terms", "Terms"], ["/cookie-policy", "Cookies"], ["/affiliate-disclosure", "Affiliate Disclosure"]];
+/**
+ * Labels and links live in src/content/data/navigation.json. Links with a null href are features
+ * that are not built yet; they are shown as "Soon", not as links. The footer stays brand navy in
+ * both themes, so its white text never depends on the colour scheme.
+ */
+const { footer } = navigation;
 
 export function SiteFooter() {
   return (
-    <footer className="bg-[#0b3c5d] text-white">
+    <footer className="bg-brand-navy text-white">
       <div className="mx-auto max-w-wide px-4 md:px-8 xl:px-14 pt-14 pb-8">
         <div className="grid gap-9 grid-cols-2 md:grid-cols-4 lg:grid-cols-[1.4fr_1fr_1fr_1fr_1fr] mb-10">
           <div className="col-span-2 md:col-span-4 lg:col-span-1">
             <div className="mb-3"><Logo onDark size={24} /></div>
-            <p className="m-0 text-[13.5px] leading-[1.6] text-white/70 max-w-[260px]">The travel knowledge platform. Expert guides, real traveller insight and, soon, AI trip planning.</p>
+            <p className="m-0 text-[13.5px] leading-[1.6] text-white/70 max-w-[260px]">{footer.tagline}</p>
           </div>
-          {groups.map((g) => (
+          {footer.groups.map((g) => (
             <nav key={g.title} aria-label={g.title} className="flex flex-col gap-[9px] text-[13.5px]">
-              <p className="m-0 mb-1 text-[12px] font-semibold tracking-[1.5px] uppercase text-[#d4a017]">{g.title}</p>
-              {g.links.map(([href, label]) =>
+              <p className="m-0 mb-1 text-[12px] font-semibold tracking-[1.5px] uppercase text-brand-gold">{g.title}</p>
+              {g.links.map(({ href, label }) =>
                 href ? (
                   <Link key={label} href={href} className="text-white/80 hover:text-white no-underline">{label}</Link>
                 ) : (
@@ -35,9 +34,9 @@ export function SiteFooter() {
           ))}
         </div>
         <div className="flex flex-wrap gap-4 justify-between items-center pt-[22px] border-t border-white/15 text-[12.5px] text-white/60">
-          <span>© {new Date().getFullYear()} Travel Notes. All rights reserved.</span>
+          <span>© {new Date().getFullYear()} {footer.copyright}</span>
           <nav aria-label="Legal" className="flex flex-wrap gap-5">
-            {legal.map(([href, label]) => <Link key={href} href={href} className="text-white/60 hover:text-white no-underline">{label}</Link>)}
+            {footer.legal.map(({ href, label }) => <Link key={href} href={href} className="text-white/60 hover:text-white no-underline">{label}</Link>)}
           </nav>
         </div>
       </div>
