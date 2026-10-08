@@ -1,0 +1,51 @@
+import config from '@payload-config'
+import { getPayload } from 'payload'
+
+export type EditorialSitemapEntry = { path: string; lastModified?: string }
+
+/**
+ * Canonical, indexable editorial addresses for the sitemap.
+ *
+ * Only published CMS articles are listed (sample placeholder articles never are), and only when an
+ * editor has not ticked "noindex". An author page is listed only when the author has at least one
+ * listed article, matching the author page's own robots rule. Destination and topic pages still use
+ * placeholder sample content, so they are not listed until they come from the CMS.
+ *
+ * `lastModified` is the editor-set update date (or first publication), never "today".
+ */
+export async function editorialSitemap(): Promise<EditorialSitemapEntry[]> {
+  const payload = await getPayload({ config })
+  const found = await payload.find({
+    collection: 'articles',
+    sort: '-firstPublishedAt',
+    limit: 10000,
+    pagination: false,
+    depth: 0,
+    draft: false,
+    overrideAccess: false,
+    select: { slug: true, seo: true, body: true, primaryAuthor: true, coauthors: true, firstPublishedAt: true, editorialUpdatedAt: true, createdAt: true },
+  })
+  const entries: EditorialSitemapEntry[] = []
+  const authorIds = new Set<string>()
+  for (const doc of found.docs) {
+    // The article page renders only articles with a body and a primary author; the rest are not real pages.
+    if (!doc.body || !doc.primaryAuthor || doc.seo?.noindex) continue
+    const modified = doc.editorialUpdatedAt ?? doc.firstPublishedAt ?? doc.createdAt
+    entries.push({ path: `/stories/${doc.slug}`, lastModified: modified ? new Date(modified).toISOString() : undefined })
+    const ids = [doc.primaryAuthor, ...(doc.coauthors ?? [])].map((a) => (a && typeof a === 'object' ? a.id : a))
+    for (const id of ids) if (typeof id === 'string') authorIds.add(id)
+  }
+  if (authorIds.size) {
+    const authors = await payload.find({
+      collection: 'authors',
+      where: { id: { in: [...authorIds] } },
+      limit: authorIds.size,
+      pagination: false,
+      depth: 0,
+      overrideAccess: false,
+      select: { slug: true },
+    })
+    for (const a of authors.docs) entries.push({ path: `/authors/${a.slug}` })
+  }
+  return entries
+}
