@@ -2,7 +2,7 @@ import type { CollectionConfig } from 'payload'
 import { ValidationError } from 'payload'
 
 import { blockPublishBelowPublisher, draftOnlyBelowPublisher } from '../access/publishGuard'
-import { isEditor, isPublisher, publishedOrStaff } from '../access/roles'
+import { administratorOnlyField, isEditor, isPublisher, publishedOrStaff } from '../access/roles'
 import { normaliseSlug, seoFields, validateSlug } from './fields'
 
 const MAX_DEPTH = 4
@@ -71,6 +71,7 @@ export const Destinations: CollectionConfig = {
         { label: 'Country', value: 'country' },
         { label: 'Region', value: 'region' },
         { label: 'City', value: 'city' },
+        { label: 'Travel area (island, coast, national park)', value: 'area' },
       ],
       admin: { position: 'sidebar' },
     },
@@ -102,6 +103,49 @@ export const Destinations: CollectionConfig = {
       validate: (value: string | null | undefined) =>
         !value || /^#[0-9a-fA-F]{6}$/.test(value) ? true : 'Use a six-digit hex colour, for example #2e4a50.',
       admin: { position: 'sidebar', description: 'Optional. Destination signature colour. It must be dark enough for light text.' },
+    },
+    {
+      name: 'aliases',
+      type: 'text',
+      hasMany: true,
+      admin: { description: 'Other names people search for, for example "Saigon" for Ho Chi Minh City.' },
+    },
+    { name: 'latitude', type: 'number', min: -90, max: 90, admin: { position: 'sidebar' } },
+    { name: 'longitude', type: 'number', min: -180, max: 180, admin: { position: 'sidebar' } },
+    {
+      name: 'timeZone',
+      type: 'text',
+      maxLength: 64,
+      validate: (value: string | null | undefined) => {
+        if (!value) return true
+        try {
+          new Intl.DateTimeFormat('en', { timeZone: value })
+          return true
+        } catch {
+          return 'Use an IANA time zone name, for example Asia/Bangkok.'
+        }
+      },
+      admin: { position: 'sidebar', description: 'IANA time zone, for example Asia/Bangkok. Used for event times.' },
+    },
+    { name: 'population', type: 'number', min: 0, admin: { position: 'sidebar', description: 'Only used to order search suggestions.' } },
+    {
+      name: 'hubIndexable',
+      type: 'checkbox',
+      defaultValue: false,
+      // An editorial decision: only an administrator can let search engines index a community hub.
+      access: { create: administratorOnlyField, update: administratorOnlyField },
+      admin: { position: 'sidebar', description: 'Tick only after checking that this destination’s community page has useful content. Until then the page stays out of search engines and the sitemap.' },
+    },
+    {
+      name: 'source',
+      type: 'group',
+      admin: { description: 'Where this record came from. Imported records keep their licence and source id.' },
+      fields: [
+        { name: 'name', type: 'text', admin: { readOnly: true } },
+        { name: 'externalId', type: 'text', index: true, admin: { readOnly: true } },
+        { name: 'licence', type: 'text', admin: { readOnly: true } },
+        { name: 'importedAt', type: 'date', admin: { readOnly: true } },
+      ],
     },
     { name: 'summary', type: 'textarea', required: true, admin: { description: 'One or two sentences used on cards and at the top of the hub.' } },
     { name: 'body', type: 'richText', admin: { description: 'Original introduction, best-time guidance and practical notes.' } },

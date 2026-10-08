@@ -77,5 +77,13 @@ export const Staff: CollectionConfig = {
       access: { create: administratorOnlyField, update: administratorOnlyField },
       admin: { description: 'Untick to suspend this account without deleting it.' },
     },
+    {
+      name: 'communityModerator',
+      type: 'checkbox',
+      defaultValue: false,
+      // Only administrators can grant moderation rights. Moderators cannot grant roles.
+      access: { create: administratorOnlyField, update: administratorOnlyField },
+      admin: { description: 'Tick to let this person moderate the community at /moderation. Administrators can always moderate.' },
+    },
   ],
 }
