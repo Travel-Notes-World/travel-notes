@@ -5,6 +5,7 @@ import { blockPublishBelowPublisher, draftOnlyBelowPublisher } from '../access/p
 import { hasRole, isPublisher, isStaff, nobodyField, staffOnlyField } from '../access/roles'
 import { TRAVEL_STYLES } from '../lib/community/constants'
 import { ARTICLES_TAG, articleTag, expireTags } from '../lib/content/revalidate'
+import { addressGone, published } from '../lib/redirects/automatic'
 import { seoFields, slugField } from './fields'
 
 export const ARTICLE_TYPES = [
@@ -86,17 +87,23 @@ export const Articles: CollectionConfig = {
     // Refresh the public pages whenever a change touches what readers can see:
     // publish, an edit to a published article, a slug change, or a withdrawal.
     afterChange: [
-      async ({ doc, previousDoc }) => {
+      async ({ doc, previousDoc, req }) => {
         if (doc._status === 'published' || previousDoc?._status === 'published') {
           const slugs = [doc.slug, previousDoc?.slug].filter((s): s is string => typeof s === 'string' && s.length > 0)
           await expireTags([ARTICLES_TAG, ...slugs.map(articleTag)])
         }
+        // Keep redirects in step: an address change on a published article redirects the old one.
+        if (doc._status === 'published') await published(req, 'articles', doc, '/stories/')
         return doc
       },
     ],
     afterDelete: [
-      async ({ doc }) => {
-        if (typeof doc?.slug === 'string') await expireTags([ARTICLES_TAG, articleTag(doc.slug)])
+      async ({ doc, req }) => {
+        if (typeof doc?.slug === 'string') {
+          await expireTags([ARTICLES_TAG, articleTag(doc.slug)])
+          // A deleted article that readers could see is gone (410), not just missing.
+          if (doc._status === 'published') await addressGone(req, `/stories/${doc.slug}`)
+        }
         return doc
       },
     ],

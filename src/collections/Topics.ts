@@ -3,6 +3,7 @@ import type { CollectionConfig } from 'payload'
 import { blockPublishBelowPublisher, draftOnlyBelowPublisher } from '../access/publishGuard'
 import { isEditor, isPublisher, publishedOrStaff } from '../access/roles'
 import { TOPICS_TAG, expireTags } from '../lib/content/revalidate'
+import { addressGone, published } from '../lib/redirects/automatic'
 import { seoFields, slugField } from './fields'
 
 /** Curated topic landing pages, for example budget travel or gear. */
@@ -22,14 +23,17 @@ export const Topics: CollectionConfig = {
     beforeChange: [blockPublishBelowPublisher],
     // Refresh topic pages, the footer links and the homepage when a change touches what readers can see.
     afterChange: [
-      async ({ doc, previousDoc }) => {
+      async ({ doc, previousDoc, req }) => {
         if (doc._status === 'published' || previousDoc?._status === 'published') await expireTags([TOPICS_TAG])
+        // Keep redirects in step: an address change on a published topic redirects the old one.
+        if (doc._status === 'published') await published(req, 'topics', doc, '/topics/')
         return doc
       },
     ],
     afterDelete: [
-      async ({ doc }) => {
+      async ({ doc, req }) => {
         await expireTags([TOPICS_TAG])
+        if (doc?._status === 'published' && typeof doc.slug === 'string') await addressGone(req, `/topics/${doc.slug}`)
         return doc
       },
     ],

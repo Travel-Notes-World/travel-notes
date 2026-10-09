@@ -2,6 +2,7 @@ import type { MetadataRoute } from "next";
 
 import { communitySitemap } from "@/lib/community/sitemap";
 import { editorialSitemap } from "@/lib/content/sitemap";
+import { findRedirect } from "@/lib/redirects/loader";
 import { siteUrl } from "@/lib/site";
 
 /**
@@ -11,7 +12,8 @@ import { siteUrl } from "@/lib/site";
  * empty rather than listing pages that tell search engines not to index them.
  *
  * Built on request and cached for an hour, so newly approved posts appear without a redeploy.
- * Dates are the last real content change; entries without a known date carry none.
+ * Dates are the last real content change; entries without a known date carry none. An address that
+ * a redirect rule sends elsewhere or marks as gone is never listed.
  */
 export const revalidate = 3600;
 
@@ -30,7 +32,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const seen = new Set<string>();
   const entries: MetadataRoute.Sitemap = [{ url: siteUrl }];
   for (const e of [...editorial, ...community]) {
-    if (seen.has(e.path)) continue;
+    if (seen.has(e.path) || (await findRedirect(e.path, ""))) continue;
     seen.add(e.path);
     entries.push({ url: `${siteUrl}${e.path}`, ...(e.lastModified ? { lastModified: e.lastModified } : {}) });
   }

@@ -71,6 +71,7 @@ export interface Config {
     articles: Article;
     destinations: Destination;
     topics: Topic;
+    redirects: Redirect;
     authors: Author;
     staff: Staff;
     'contact-messages': ContactMessage;
@@ -103,6 +104,7 @@ export interface Config {
     articles: ArticlesSelect<false> | ArticlesSelect<true>;
     destinations: DestinationsSelect<false> | DestinationsSelect<true>;
     topics: TopicsSelect<false> | TopicsSelect<true>;
+    redirects: RedirectsSelect<false> | RedirectsSelect<true>;
     authors: AuthorsSelect<false> | AuthorsSelect<true>;
     staff: StaffSelect<false> | StaffSelect<true>;
     'contact-messages': ContactMessagesSelect<false> | ContactMessagesSelect<true>;
@@ -507,6 +509,7 @@ export interface Staff {
    */
   communityModerator?: boolean | null;
   totpSecret?: string | null;
+  hasTotp?: boolean | null;
   updatedAt: string;
   createdAt: string;
   email: string;
@@ -526,6 +529,31 @@ export interface Staff {
     | null;
   password?: string | null;
   collection: 'staff';
+}
+/**
+ * Send an old address to a new one, or mark it as gone. Changes are live within about a minute.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "redirects".
+ */
+export interface Redirect {
+  id: string;
+  /**
+   * The old address, for example /stories/old-name. Saved in lower case without a trailing slash.
+   */
+  from: string;
+  type: 'permanent' | 'temporary' | 'gone';
+  /**
+   * The new address: a site address such as /stories/new-name, or a full https:// address.
+   */
+  to?: string | null;
+  source?: ('manual' | 'automatic') | null;
+  /**
+   * Optional. Why this redirect exists.
+   */
+  note?: string | null;
+  updatedAt: string;
+  createdAt: string;
 }
 /**
  * Messages sent through the contact form. Reply from your own email; mark the message handled here.
@@ -1314,6 +1342,10 @@ export interface PayloadLockedDocument {
         value: string | Topic;
       } | null)
     | ({
+        relationTo: 'redirects';
+        value: string | Redirect;
+      } | null)
+    | ({
         relationTo: 'authors';
         value: string | Author;
       } | null)
@@ -1570,6 +1602,19 @@ export interface TopicsSelect<T extends boolean = true> {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "redirects_select".
+ */
+export interface RedirectsSelect<T extends boolean = true> {
+  from?: T;
+  type?: T;
+  to?: T;
+  source?: T;
+  note?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "authors_select".
  */
 export interface AuthorsSelect<T extends boolean = true> {
@@ -1597,6 +1642,7 @@ export interface StaffSelect<T extends boolean = true> {
   active?: T;
   communityModerator?: T;
   totpSecret?: T;
+  hasTotp?: T;
   updatedAt?: T;
   createdAt?: T;
   email?: T;
