@@ -61,12 +61,25 @@ type PlaceDoc = Pick<Destination, 'id' | 'name' | 'path' | 'slug' | 'kind' | 'su
 const relId = (value: unknown): string | null =>
   typeof value === 'string' ? value : value && typeof value === 'object' && 'id' in value ? String((value as { id: unknown }).id) : null
 
+/**
+ * The summary an editor wrote, or '' while it is still the importer's placeholder
+ * ("Traveller questions, trip reports and activities about Kyoto, Japan." from
+ * scripts/import-destinations.ts). That wording describes the community hub, not a destination
+ * page, so it is never shown here; pages fall back to their own wording instead.
+ */
+export function editorSummary(name: string, summary: string | null | undefined): string {
+  const text = (summary ?? '').trim()
+  const imported = `Traveller questions, trip reports and activities about ${name}`
+  if (text === `${imported}.` || (text.startsWith(`${imported}, `) && text.endsWith('.'))) return ''
+  return text
+}
+
 const toPlace = (d: PlaceDoc): Place => ({
   id: d.id,
   name: d.name,
   path: d.path ?? d.slug,
   kind: d.kind,
-  summary: d.summary ?? '',
+  summary: editorSummary(d.name, d.summary),
   accent: d.accentColour || null,
   hubIndexable: Boolean(d.hubIndexable),
 })

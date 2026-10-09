@@ -7,6 +7,7 @@ import { getPayload } from 'payload'
 import type { Destination } from '@/payload-types'
 
 import type { Card } from '../community/queries'
+import { editorSummary } from './destinations'
 import { ARTICLES_TAG, DESTINATIONS_TAG } from './revalidate'
 
 /** Topics have no cache tag of their own yet, so the topic list refreshes on a timer. */
@@ -96,7 +97,7 @@ const findFeaturedDestinations = (limit: number) =>
           name: d.name,
           path: d.path as string,
           parentName: parentOf(d)?.name ?? null,
-          summary: d.summary,
+          summary: editorSummary(d.name, d.summary),
           accent: d.accentColour || null,
           guides: counts.get(d.id) ?? 0,
         }))

@@ -146,7 +146,7 @@ export default async function HomePage() {
                     <span className="flex flex-col flex-1 px-5 pt-4.5 pb-5">
                       {d.parentName && <span className="block text-[11.5px] font-semibold tracking-[1.5px] uppercase text-marine-600 mb-1.5">{d.parentName}</span>}
                       <span className="block font-display text-[23px] font-medium text-navy-900 mb-2">{d.name}</span>
-                      <span className="block text-[14px] leading-normal text-ink-600 mb-3 line-clamp-3">{d.summary}</span>
+                      {d.summary && <span className="block text-[14px] leading-normal text-ink-600 mb-3 line-clamp-3">{d.summary}</span>}
                       <span className="block text-[12.5px] text-ink-400 mb-2.5">{d.guides === 1 ? home.destinations.guideOne : `${d.guides} ${home.destinations.guideMany}`}</span>
                       <span className="mt-auto text-[13.5px] font-semibold text-marine-600 group-hover:text-navy-900">{home.destinations.explorePrefix} {d.name} <span aria-hidden="true">→</span></span>
                     </span>

@@ -130,6 +130,26 @@ describe('destination pages: addresses', () => {
   })
 })
 
+describe('destination pages: imported placeholder summaries', () => {
+  it('never shows the importer\'s default summary, for countries or cities', async () => {
+    const peru = await place({ name: 'Peru', slug: 'peru', kind: 'country', summary: 'Traveller questions, trip reports and activities about Peru.' })
+    const cusco = await place({ name: 'Cusco', slug: 'cusco', parent: peru.id, summary: 'Traveller questions, trip reports and activities about Cusco, Peru.' })
+    await guide('Cusco at altitude', cusco, 'published')
+    const page = await pageFor('peru/cusco')
+    assert.equal(page.place.summary, '', 'not shown on the page or used as the meta description')
+    assert.equal((await pageFor('peru')).places[0].summary, '', 'not shown in "Places in Peru"')
+    const card = (await D.listDestinationsWithContent(payload)).find((p: Any) => p.path === 'peru/cusco')
+    assert.equal(card.summary, '', 'not shown on the /destinations card')
+  })
+
+  it('keeps any summary an editor wrote', () => {
+    assert.equal(D.editorSummary('Kyoto', 'Temples early, tea houses late.'), 'Temples early, tea houses late.')
+    assert.equal(D.editorSummary('Kyoto', 'Traveller questions, trip reports and activities about Kyoto, plus our own guides'), 'Traveller questions, trip reports and activities about Kyoto, plus our own guides', 'edited wording is kept')
+    assert.equal(D.editorSummary('Kyoto', 'Traveller questions, trip reports and activities about Osaka.'), 'Traveller questions, trip reports and activities about Osaka.', 'only the placeholder for this place is hidden')
+    assert.equal(D.editorSummary('Kyoto', null), '')
+  })
+})
+
 describe('destination pages: indexing and sitemap', () => {
   it('is noindex unless hubIndexable is ticked', async () => {
     const kyoto = await pageFor('japan/kyoto')
