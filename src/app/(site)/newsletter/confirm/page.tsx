@@ -8,8 +8,9 @@ export const dynamic = "force-dynamic";
 export const metadata: Metadata = { title: "Confirm your subscription", robots: { index: false, follow: false }, referrer: "no-referrer" };
 
 /**
- * Opening the link only shows a button; pressing it confirms. Email security scanners open links
- * automatically, so the visit alone must never count as consent.
+ * In a real browser the page confirms by itself (a small script presses the button once the page is
+ * shown); the button stays as a fallback. A plain fetch of the link, which is what email security
+ * scanners usually do, runs no script and confirms nothing.
  */
 export default async function ConfirmPage({ searchParams }: { searchParams: Promise<Record<string, string | string[] | undefined>> }) {
   const token = (await searchParams).token;
@@ -19,7 +20,7 @@ export default async function ConfirmPage({ searchParams }: { searchParams: Prom
       <h1 className="t-heading-1 m-0">Confirm your subscription</h1>
       {pending && typeof token === "string" ? (
         <>
-          <p className="t-deck mt-3 max-w-measure">Press the button to start receiving the weekly Travel Notes email at <strong>{pending.email}</strong>.</p>
+          <p className="t-deck mt-3 max-w-measure">Confirming the weekly Travel Notes email for <strong>{pending.email}</strong>… If nothing happens in a few seconds, press the button.</p>
           <div className="mt-6"><NewsletterConfirmForm token={token} /></div>
         </>
       ) : (
