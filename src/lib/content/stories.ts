@@ -1,6 +1,6 @@
 import config from '@payload-config'
 import { unstable_cache } from 'next/cache'
-import { getPayload } from 'payload'
+import { getPayload, type Payload } from 'payload'
 
 import { articles as sampleArticles, type CommonsImage, type Day } from '@/content/sample'
 import type { Article as CmsArticle, Author, Destination } from '@/payload-types'
@@ -251,6 +251,24 @@ export async function getLatestStories(limit = 12): Promise<Story[]> {
 export async function getStoriesByAuthor(authorId: string, limit = 24): Promise<Story[]> {
   const docs = await findPublishedByAuthor(authorId, limit)
   return docs.map(fromCms).filter((s): s is Story => s !== null)
+}
+
+/**
+ * Published guides about any of these destinations (as the main or an additional destination),
+ * newest first. Read with a visitor's permissions, so drafts never appear.
+ */
+export async function findStoriesForDestinations(payload: Payload, destinationIds: string[], limit: number): Promise<Story[]> {
+  if (!destinationIds.length) return []
+  const result = await payload.find({
+    collection: 'articles',
+    where: { or: [{ primaryDestination: { in: destinationIds } }, { additionalDestinations: { in: destinationIds } }] },
+    sort: '-firstPublishedAt',
+    limit,
+    depth: 1,
+    draft: false,
+    overrideAccess: false,
+  })
+  return result.docs.map(fromCms).filter((s): s is Story => s !== null)
 }
 
 export const sampleStorySlugs = () => sampleArticles.map((a) => a.slug)

@@ -133,8 +133,7 @@ export default async function HomePage() {
         </ul>
       </section>
 
-      {/* POPULAR DESTINATIONS: published destinations with published guides. Links go to a guide
-          search for the destination until destination pages are served from the CMS. */}
+      {/* POPULAR DESTINATIONS: published destinations with published guides, linking to their pages. */}
       {destinations.length > 0 && (
         <section className="bg-paper-000 py-14 lg:pt-18 lg:pb-16">
           <div className={wrap}>
@@ -142,12 +141,12 @@ export default async function HomePage() {
             <ul className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 list-none m-0 p-0">
               {destinations.map((d) => (
                 <li key={d.path}>
-                  <Link href={`/search?type=guide&destination=${d.id}`} className="group flex flex-col h-full rounded-xl overflow-hidden border border-paper-200 no-underline text-inherit hover:shadow-[0_10px_30px_rgba(11,60,93,.10)]">
+                  <Link href={`/destinations/${d.path}`} className="group flex flex-col h-full rounded-xl overflow-hidden border border-paper-200 no-underline text-inherit hover:shadow-[0_10px_30px_rgba(11,60,93,.10)]">
                     <span aria-hidden="true" className="block h-1.5 bg-marine-600" style={d.accent ? { background: d.accent } : undefined} />
                     <span className="flex flex-col flex-1 px-5 pt-4.5 pb-5">
                       {d.parentName && <span className="block text-[11.5px] font-semibold tracking-[1.5px] uppercase text-marine-600 mb-1.5">{d.parentName}</span>}
                       <span className="block font-display text-[23px] font-medium text-navy-900 mb-2">{d.name}</span>
-                      <span className="block text-[14px] leading-normal text-ink-600 mb-3 line-clamp-3">{d.summary}</span>
+                      {d.summary && <span className="block text-[14px] leading-normal text-ink-600 mb-3 line-clamp-3">{d.summary}</span>}
                       <span className="block text-[12.5px] text-ink-400 mb-2.5">{d.guides === 1 ? home.destinations.guideOne : `${d.guides} ${home.destinations.guideMany}`}</span>
                       <span className="mt-auto text-[13.5px] font-semibold text-marine-600 group-hover:text-navy-900">{home.destinations.explorePrefix} {d.name} <span aria-hidden="true">→</span></span>
                     </span>

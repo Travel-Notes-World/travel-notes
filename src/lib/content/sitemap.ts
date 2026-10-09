@@ -1,6 +1,8 @@
 import config from '@payload-config'
 import { getPayload } from 'payload'
 
+import { indexableDestinationPaths } from './destinations'
+
 export type EditorialSitemapEntry = { path: string; lastModified?: string }
 
 /**
@@ -8,8 +10,9 @@ export type EditorialSitemapEntry = { path: string; lastModified?: string }
  *
  * Only published CMS articles are listed (sample placeholder articles never are), and only when an
  * editor has not ticked "noindex". An author page is listed only when the author has at least one
- * listed article, matching the author page's own robots rule. Destination and topic pages still use
- * placeholder sample content, so they are not listed until they come from the CMS.
+ * listed article, matching the author page's own robots rule. A destination page is listed only
+ * when an administrator has ticked "hubIndexable", matching the page's own robots rule. Topic pages
+ * still use placeholder sample content, so they are not listed until they come from the CMS.
  *
  * `lastModified` is the editor-set update date (or first publication), never "today".
  */
@@ -47,5 +50,6 @@ export async function editorialSitemap(): Promise<EditorialSitemapEntry[]> {
     })
     for (const a of authors.docs) entries.push({ path: `/authors/${a.slug}` })
   }
+  entries.push(...(await indexableDestinationPaths(payload)))
   return entries
 }
