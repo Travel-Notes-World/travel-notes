@@ -16,6 +16,7 @@ import { Destinations } from './collections/Destinations'
 import { Staff } from './collections/Staff'
 import { staffTwoFactorDisabled } from './access/twoFactor'
 import { Topics } from './collections/Topics'
+import { Redirects } from './collections/Redirects'
 import { CommunitySettings } from './globals/CommunitySettings'
 import { LIMITS } from './lib/community/constants'
 import { s3Config } from './lib/community/storage'
@@ -37,7 +38,7 @@ export default buildConfig({
     importMap: { baseDir: path.resolve(dirname) },
     components: { beforeDashboard: ['/components/admin/CommunityModerationLink'] },
   },
-  collections: [Articles, Destinations, Topics, Authors, Staff, ContactMessages, NewsletterSubscribers, ...communityCollections],
+  collections: [Articles, Destinations, Topics, Redirects, Authors, Staff, ContactMessages, NewsletterSubscribers, ...communityCollections],
   globals: [CommunitySettings],
   // Uploads over the limit are refused, not silently cut short.
   upload: { limits: { fileSize: LIMITS.uploadMaxBytes }, abortOnLimit: true },
