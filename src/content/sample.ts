@@ -52,11 +52,6 @@ export type Article = {
   days?: Day[];
 };
 
-/** `accent` is the destination's signature colour: solid band under the tile photo and frame around hubs/cards. All accents are dark enough for paper-000 text (>7:1). */
-export type Destination = { name: string; parent: string; slug: string; guides: number; tone: string; accent: string; alt: string; image?: CommonsImage };
-
-export const destinations: Destination[] = media.destinations.map(({ image, ...d }) => ({ ...d, image: sampleImage(image) }));
-
 const kyotoBody = [
   { heading: "Getting there and around", paragraphs: [
     "Sample paragraph. This text stands in for an editor-written section so the article template can be reviewed at a realistic length. It is not travel advice.",
