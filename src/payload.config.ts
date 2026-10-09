@@ -8,6 +8,7 @@ import { fileURLToPath } from 'url'
 
 import { Articles } from './collections/Articles'
 import { Authors } from './collections/Authors'
+import { ContactMessages } from './collections/ContactMessages'
 import { communityCollections } from './collections/community'
 import { Destinations } from './collections/Destinations'
 import { Staff } from './collections/Staff'
@@ -33,7 +34,7 @@ export default buildConfig({
     importMap: { baseDir: path.resolve(dirname) },
     components: { beforeDashboard: ['/components/admin/CommunityModerationLink'] },
   },
-  collections: [Articles, Destinations, Topics, Authors, Staff, ...communityCollections],
+  collections: [Articles, Destinations, Topics, Authors, Staff, ContactMessages, ...communityCollections],
   globals: [CommunitySettings],
   // Uploads over the limit are refused, not silently cut short.
   upload: { limits: { fileSize: LIMITS.uploadMaxBytes }, abortOnLimit: true },
