@@ -38,7 +38,7 @@ export function emailProblem(): string {
   return `EMAIL_TRANSPORT has an unknown value: "${chosen}".`
 }
 
-export type OutgoingEmail = { to: string; subject: string; text: string; html: string; idempotencyKey: string; unsubscribeUrl?: string }
+export type OutgoingEmail = { to: string; subject: string; text: string; html: string; idempotencyKey: string; unsubscribeUrl?: string; replyTo?: string }
 export type SendResult = { ok: true; transport: 'resend' | 'capture'; providerId?: string } | { ok: false; error: string; retry: boolean }
 
 /** Send one email with the configured transport. Never throws. */
@@ -61,7 +61,7 @@ export async function sendEmail(message: OutgoingEmail): Promise<SendResult> {
         subject: message.subject,
         text: message.text,
         html: message.html,
-        ...(env.EMAIL_REPLY_TO ? { reply_to: env.EMAIL_REPLY_TO } : {}),
+        ...(message.replyTo || env.EMAIL_REPLY_TO ? { reply_to: message.replyTo || env.EMAIL_REPLY_TO } : {}),
         ...(message.unsubscribeUrl ? { headers: { 'List-Unsubscribe': `<${message.unsubscribeUrl}>` } } : {}),
       }),
       signal: AbortSignal.timeout(10_000),

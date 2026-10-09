@@ -73,6 +73,7 @@ export interface Config {
     topics: Topic;
     authors: Author;
     staff: Staff;
+    'contact-messages': ContactMessage;
     members: Member;
     contributions: Contribution;
     replies: Reply;
@@ -103,6 +104,7 @@ export interface Config {
     topics: TopicsSelect<false> | TopicsSelect<true>;
     authors: AuthorsSelect<false> | AuthorsSelect<true>;
     staff: StaffSelect<false> | StaffSelect<true>;
+    'contact-messages': ContactMessagesSelect<false> | ContactMessagesSelect<true>;
     members: MembersSelect<false> | MembersSelect<true>;
     contributions: ContributionsSelect<false> | ContributionsSelect<true>;
     replies: RepliesSelect<false> | RepliesSelect<true>;
@@ -503,6 +505,34 @@ export interface Staff {
     | null;
   password?: string | null;
   collection: 'staff';
+}
+/**
+ * Messages sent through the contact form. Reply from your own email; mark the message handled here.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "contact-messages".
+ */
+export interface ContactMessage {
+  id: string;
+  subject: string;
+  name: string;
+  email: string;
+  topic: 'general' | 'correction' | 'advertising' | 'pitch' | 'privacy' | 'other';
+  /**
+   * The article or page the message is about, if the visitor gave one.
+   */
+  pageUrl?: string | null;
+  message: string;
+  status: 'new' | 'handled' | 'spam';
+  /**
+   * Private note for staff, for example what was done.
+   */
+  note?: string | null;
+  emailStatus: 'pending' | 'sent' | 'captured' | 'failed';
+  emailAttempts: number;
+  emailError?: string | null;
+  updatedAt: string;
+  createdAt: string;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
@@ -1262,6 +1292,10 @@ export interface PayloadLockedDocument {
         value: string | Staff;
       } | null)
     | ({
+        relationTo: 'contact-messages';
+        value: string | ContactMessage;
+      } | null)
+    | ({
         relationTo: 'members';
         value: string | Member;
       } | null)
@@ -1548,6 +1582,25 @@ export interface StaffSelect<T extends boolean = true> {
         createdAt?: T;
         expiresAt?: T;
       };
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "contact-messages_select".
+ */
+export interface ContactMessagesSelect<T extends boolean = true> {
+  subject?: T;
+  name?: T;
+  email?: T;
+  topic?: T;
+  pageUrl?: T;
+  message?: T;
+  status?: T;
+  note?: T;
+  emailStatus?: T;
+  emailAttempts?: T;
+  emailError?: T;
+  updatedAt?: T;
+  createdAt?: T;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
