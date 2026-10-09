@@ -3,6 +3,7 @@ import { s3Storage } from '@payloadcms/storage-s3'
 import { lexicalEditor } from '@payloadcms/richtext-lexical'
 import path from 'path'
 import { buildConfig } from 'payload'
+import { payloadTotp } from 'payload-totp'
 import sharp from 'sharp'
 import { fileURLToPath } from 'url'
 
@@ -12,6 +13,7 @@ import { ContactMessages } from './collections/ContactMessages'
 import { communityCollections } from './collections/community'
 import { Destinations } from './collections/Destinations'
 import { Staff } from './collections/Staff'
+import { staffTwoFactorDisabled } from './access/twoFactor'
 import { Topics } from './collections/Topics'
 import { CommunitySettings } from './globals/CommunitySettings'
 import { LIMITS } from './lib/community/constants'
@@ -46,6 +48,16 @@ export default buildConfig({
       collections: { media: true },
       bucket: s3?.bucket ?? 'not-configured',
       config: s3 ? { endpoint: s3.endpoint, region: s3.region, credentials: s3.credentials, forcePathStyle: true } : {},
+    }),
+    // Staff two-step login with an authenticator app. Must stay the LAST plugin. Every staff account
+    // has to set it up at its next sign-in (forceSetup). The plugin's own access wrapper is off; the
+    // rule is enforced in src/access/twoFactor.ts instead, so visitors keep reading published content.
+    payloadTotp({
+      collection: 'staff',
+      forceSetup: true,
+      disableAccessWrapper: true,
+      disabled: staffTwoFactorDisabled(),
+      totp: { issuer: 'Travel Notes CMS' },
     }),
   ],
   editor: lexicalEditor(),

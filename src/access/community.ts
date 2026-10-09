@@ -1,6 +1,7 @@
 import type { Access, FieldAccess, PayloadRequest } from 'payload'
 
 import { hasRole } from './roles'
+import { staffSecondStepDone } from './twoFactor'
 
 /**
  * Community permissions.
@@ -17,7 +18,7 @@ type StaffLike = { collection?: string; role?: string | null; active?: boolean |
 /** Staff who may moderate the community: administrators, and staff with the moderator tick. */
 export const userCanModerate = (user: unknown): boolean => {
   const u = user as StaffLike | null | undefined
-  if (!u || u.collection !== 'staff' || u.active === false) return false
+  if (!u || u.collection !== 'staff' || u.active === false || !staffSecondStepDone(u)) return false
   return u.role === 'administrator' || u.communityModerator === true
 }
 

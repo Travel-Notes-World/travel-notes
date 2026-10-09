@@ -130,3 +130,21 @@ Using a personal Neon branch instead of local Postgres also works (`.env` or `.e
 
 Tests: `TEST_DATABASE_URL=postgresql://…/tn_test npm run test:community` (82 tests) and
 `npm run test:access` (21 tests).
+
+## 8. Staff two-step login (2FA)
+
+Every staff account must use an authenticator app (Google Authenticator, Microsoft Authenticator,
+1Password, Bitwarden and similar) in addition to its password.
+
+- **First sign-in after this was switched on:** after the password, the CMS shows a QR code. Scan it
+  with the app (or use "Add code manually"), then type the 6-digit code. Done once per account.
+- **Every later sign-in:** password, then the current 6-digit code from the app.
+- **Until the code is entered** the account has no staff rights anywhere (CMS, API, moderation
+  console). The rule is in `src/access/twoFactor.ts`; it is enforced in `hasRole`,
+  `userCanModerate` and the site session, so visitors and community members are not affected.
+- **Wrong codes** count towards the same lockout as wrong passwords (5 tries, 15 minutes).
+- **Lost phone:** after confirming by phone that the request is genuine, an administrator runs
+  `DATABASE_URL=… PAYLOAD_SECRET=… npm run staff:reset-2fa -- person@example.com`. The person sets
+  up the app again at their next sign-in.
+- **Tests** switch it off with `STAFF_2FA=off`, which a production build ignores.
+  `tests/community/two-factor.test.ts` runs with it on.

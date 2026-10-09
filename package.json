@@ -16,6 +16,7 @@
     "test:access": "node --import tsx --test --test-force-exit tests/access.test.ts",
     "test:community": "node --import tsx --test --test-force-exit --test-concurrency=1 tests/community/*.test.ts",
     "destinations:import": "node --import tsx scripts/import-destinations.ts",
+    "staff:reset-2fa": "node --import tsx scripts/reset-staff-2fa.ts",
     "community:demo-seed": "node --import tsx scripts/community-demo-seed.ts"
   },
   "dependencies": {
@@ -27,6 +28,7 @@
     "graphql": "16.14.2",
     "next": "16.3.8",
     "payload": "3.90.2",
+    "payload-totp": "3.0.6",
     "react": "19.2.8",
     "react-dom": "19.2.8",
     "sharp": "0.35.5"
