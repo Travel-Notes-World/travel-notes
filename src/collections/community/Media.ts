@@ -63,5 +63,9 @@ export const Media: CollectionConfig = {
     { name: 'rightsConfirmedAt', type: 'date', required: true, admin: { description: 'When the member confirmed they took the photo or have permission to share it.' } },
     { name: 'contribution', type: 'relationship', relationTo: 'contributions', index: true },
     { name: 'purpose', type: 'select', required: true, defaultValue: 'photo', options: ['photo', 'avatar'] },
+    // The cloud-storage plugin stores each file's object key here. It adds the same field itself when a
+    // bucket is configured; declaring it here keeps the database columns identical with or without one,
+    // so a migration made on a laptop without a bucket never drops it.
+    { name: '_objectKey', type: 'text', admin: { hidden: true, readOnly: true } },
   ],
 }
