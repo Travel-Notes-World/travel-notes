@@ -213,7 +213,11 @@ export async function resetPassword(input: { token: unknown; password: unknown }
   return { ok: true }
 }
 
-export async function changePassword(actor: MemberActor, input: { current: unknown; next: unknown }): Promise<{ ok: true }> {
+/**
+ * Change the password after checking the current one. Every other session of the account ends;
+ * the session making the change (`sessionId`) stays signed in.
+ */
+export async function changePassword(actor: MemberActor, input: { current: unknown; next: unknown }, sessionId?: string | null): Promise<{ ok: true }> {
   const member = await requireActive(actor)
   const errors: FieldErrors = {}
   const next = validatePassword(input.next, errors, [member.email, member.handle])
@@ -225,7 +229,11 @@ export async function changePassword(actor: MemberActor, input: { current: unkno
   } catch {
     invalid({ current: 'Your current password is not correct.' })
   }
-  await payload.update({ collection: 'members', id: member.id, data: { password: next } })
+  // The CMS keeps only the session of the user making a password change and ends the rest. Without
+  // a user it ends every session, which would sign the member out in the browser they are using.
+  const doc = await payload.findByID({ collection: 'members', id: member.id, depth: 0 })
+  const user = sessionId ? { ...doc, collection: 'members' as const, _sid: sessionId } : undefined
+  await payload.update({ collection: 'members', id: member.id, data: { password: next }, user })
   return { ok: true }
 }
 

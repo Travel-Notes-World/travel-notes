@@ -1082,6 +1082,9 @@ export interface ModerationAction {
     | 'unsuspend'
     | 'set_trust'
     | 'account_deleted'
+    | 'send_password_reset'
+    | 'resend_verification'
+    | 'confirm_email'
     | 'accept_suggestion'
     | 'reject_suggestion';
   actorType: 'staff' | 'member' | 'system';
