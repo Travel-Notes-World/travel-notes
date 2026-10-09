@@ -5,6 +5,7 @@ import { blockPublishBelowPublisher, draftOnlyBelowPublisher } from '../access/p
 import { hasRole, isPublisher, isStaff, nobodyField, staffOnlyField } from '../access/roles'
 import { TRAVEL_STYLES } from '../lib/community/constants'
 import { ARTICLES_TAG, articleTag, expireTags } from '../lib/content/revalidate'
+import { lexicalPlainText } from '../lib/content/plainText'
 import { addressGone, published } from '../lib/redirects/automatic'
 import { seoFields, slugField } from './fields'
 
@@ -76,6 +77,9 @@ export const Articles: CollectionConfig = {
         ) {
           throw new Forbidden(req.t)
         }
+
+        // The body's readable text, for guide search (title > summary > body). Never shown or returned.
+        data.searchText = lexicalPlainText(data.body ?? originalDoc?.body)
 
         // Stamp the first publication time once and keep it.
         if (data._status === 'published' && !data.firstPublishedAt && !originalDoc?.firstPublishedAt) {
@@ -261,6 +265,14 @@ export const Articles: CollectionConfig = {
       // Staff ids are never shown to readers and cannot be changed through any interface.
       access: { read: staffOnlyField, create: nobodyField, update: nobodyField },
       admin: { position: 'sidebar', readOnly: true },
+    },
+    {
+      // Plain text of the body, set by the hook above. The database builds the weighted search index
+      // ("search_vector", see migration 20261009_160847_article_search) from title, deck, excerpt and this.
+      name: 'searchText',
+      type: 'textarea',
+      access: { read: nobodyField, create: nobodyField, update: nobodyField },
+      admin: { hidden: true },
     },
   ],
 }

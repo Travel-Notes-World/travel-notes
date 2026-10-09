@@ -624,7 +624,7 @@ describe('12b. editorial guides found by destination', () => {
   })
 
   const guidePaths = async (destinationId: string | null) =>
-    (await S.search({ type: 'guide', destinationId })).guides.map((g: Any) => g.path.replace(/^\/stories\//, '').replace(/-[a-z0-9]+$/, ''))
+    (await S.search({ type: 'guide', destinationId })).guides.items.map((g: Any) => g.path.replace(/^\/stories\//, '').replace(/-[a-z0-9]+$/, ''))
 
   it('lists published guides for a destination without any words typed, never drafts', async () => {
     assert.deepEqual(await guidePaths(places.kyoto.id), ['kyoto-guide'])

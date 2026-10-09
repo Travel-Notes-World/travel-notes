@@ -8,7 +8,7 @@ import { CONTRIBUTION_TYPES, TRAVEL_STYLES, type ContributionType } from "@/lib/
 import { destinationsByIds, isUuid } from "@/lib/community/destinations";
 import { clientIp, getViewer } from "@/lib/community/next/session";
 import { hashSubject, hit } from "@/lib/community/ratelimit";
-import { search, type SearchInput } from "@/lib/community/search";
+import { SEARCH_QUERY_MAX, search, type SearchInput } from "@/lib/community/search";
 import { canViewCommunity } from "@/lib/community/settings";
 import { cleanLine } from "@/lib/community/text";
 
@@ -30,6 +30,7 @@ const RECENT = [
   { value: "365", label: "Last 12 months" },
 ] as const;
 
+const dateFmt = new Intl.DateTimeFormat("en-AU", { day: "numeric", month: "short", year: "numeric", timeZone: "UTC" });
 const one = (v: string | string[] | undefined) => (Array.isArray(v) ? v[0] : v) ?? "";
 const DATE = /^\d{4}-\d{2}-\d{2}$/;
 const utcDay = (value: string, endOfDay = false): Date | null => {
@@ -41,7 +42,7 @@ const utcDay = (value: string, endOfDay = false): Date | null => {
 
 /** Read and validate the filters. Anything unknown is ignored, so a hand-edited address cannot cause an error. */
 function readFilters(params: Params) {
-  const q = cleanLine(one(params.q), 120);
+  const q = cleanLine(one(params.q), SEARCH_QUERY_MAX);
   const typeRaw = one(params.type);
   const type = TYPES.some((t) => t.value === typeRaw && t.value) ? (typeRaw as ContributionType | "guide") : null;
   const destination = isUuid(one(params.destination)) ? one(params.destination) : "";
@@ -84,7 +85,8 @@ export default async function SearchPage({ searchParams }: Props) {
   const ip = await clientIp();
   const allowed = !hasInput || !ip || (await hit("search_ip", hashSubject(ip))).allowed;
   const result = hasInput && allowed ? await search(input) : null;
-  const nothing = result && result.items.length === 0 && result.guides.length === 0;
+  const nothing = result && result.items.length === 0 && result.guides.items.length === 0 && !result.guideError;
+  const guidesOnly = input.type === "guide";
 
   return (
     <PageShell>
@@ -93,7 +95,7 @@ export default async function SearchPage({ searchParams }: Props) {
       {!allowed && <p role="alert" className="t-body-sm max-w-measure">Too many searches from your connection in the last minute. Please wait a moment and try again.</p>}
       <form method="get" action="/search" role="search" className="max-w-[760px] border border-paper-200 rounded-md p-4 md:p-6 bg-paper-000">
         <Field id="q" label="Search words" hint="For example: Kyoto in autumn, ferry to Koh Tao, budget for Peru.">
-          <input {...describedBy("q", true)} name="q" type="search" defaultValue={f.q} maxLength={120} className={inputClass} />
+          <input {...describedBy("q", true)} name="q" type="search" defaultValue={f.q} maxLength={SEARCH_QUERY_MAX} className={inputClass} />
         </Field>
         {communityOpen && (
           <>
@@ -139,18 +141,34 @@ export default async function SearchPage({ searchParams }: Props) {
       <div className="mt-10" aria-live="polite">
         {!result && <p className="t-body-sm text-ink-600 m-0 max-w-measure">Type at least two letters, or choose a filter, to see results.</p>}
 
-        {result && result.guides.length > 0 && (
+        {result?.guideError && <p role="status" className="t-body-sm text-ink-600 mb-8 max-w-measure">Guide search is not available right now. Please try again in a moment.</p>}
+
+        {result && result.guides.items.length > 0 && (
           <section aria-labelledby="guides-heading" className="mb-10">
             <h2 id="guides-heading" className="t-heading-2 m-0 mb-1">Editorial guides</h2>
-            <p className="t-body-sm text-ink-600 mt-0 mb-4">Written by the Travel Notes team.</p>
+            <p className="t-body-sm text-ink-600 mt-0 mb-4">
+              {result.guides.total === 1 ? "1 guide" : `${result.guides.total} guides`}, written by the Travel Notes team.
+              {guidesOnly && result.guides.totalPages > 1 ? ` Page ${result.guides.page} of ${result.guides.totalPages}.` : ""}
+            </p>
             <ul className="list-none m-0 p-0 grid gap-5 max-w-measure">
-              {result.guides.map((g) => (
+              {result.guides.items.map((g) => (
                 <li key={g.path} className="border-t border-paper-200 pt-4">
                   <Link href={g.path} className="t-card-title text-ink-900 no-underline hover:underline decoration-ochre-500 underline-offset-4">{g.title}</Link>
                   {g.excerpt && <p className="t-body-sm text-ink-600 mt-1 mb-0">{g.excerpt}</p>}
+                  <p className="t-meta text-ink-400 mt-2 mb-0">
+                    {g.destination && <><Link href={`/destinations/${g.destination.path}`} className="text-ink-600 underline">{g.destination.name}</Link><span aria-hidden="true"> · </span></>}
+                    {g.updated ? "Updated" : "Published"} <time dateTime={g.date}>{dateFmt.format(new Date(g.date))}</time>
+                  </p>
                 </li>
               ))}
             </ul>
+            {guidesOnly ? (
+              <Pagination page={result.guides.page} totalPages={result.guides.totalPages} href={(p) => hrefFor(f, p)} />
+            ) : (
+              result.guides.total > result.guides.items.length && (
+                <p className="t-body-sm mt-5 mb-0"><Link href={hrefFor({ ...f, type: "guide" }, 1)} className="text-marine-600 underline">All {result.guides.total} guides</Link></p>
+              )
+            )}
           </section>
         )}
 
