@@ -133,8 +133,8 @@ export default async function HomePage() {
         </ul>
       </section>
 
-      {/* POPULAR DESTINATIONS: published destinations with published guides. Links go to the
-          destination's community hub until destination pages are served from the CMS. */}
+      {/* POPULAR DESTINATIONS: published destinations with published guides. Links go to a guide
+          search for the destination until destination pages are served from the CMS. */}
       {destinations.length > 0 && (
         <section className="bg-paper-000 py-14 lg:pt-18 lg:pb-16">
           <div className={wrap}>
@@ -142,7 +142,7 @@ export default async function HomePage() {
             <ul className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 list-none m-0 p-0">
               {destinations.map((d) => (
                 <li key={d.path}>
-                  <Link href={`/community/${d.path}`} className="group flex flex-col h-full rounded-xl overflow-hidden border border-paper-200 no-underline text-inherit hover:shadow-[0_10px_30px_rgba(11,60,93,.10)]">
+                  <Link href={`/search?type=guide&destination=${d.id}`} className="group flex flex-col h-full rounded-xl overflow-hidden border border-paper-200 no-underline text-inherit hover:shadow-[0_10px_30px_rgba(11,60,93,.10)]">
                     <span aria-hidden="true" className="block h-1.5 bg-marine-600" style={d.accent ? { background: d.accent } : undefined} />
                     <span className="flex flex-col flex-1 px-5 pt-4.5 pb-5">
                       {d.parentName && <span className="block text-[11.5px] font-semibold tracking-[1.5px] uppercase text-marine-600 mb-1.5">{d.parentName}</span>}

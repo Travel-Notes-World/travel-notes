@@ -42,6 +42,7 @@ export async function getCommunityHighlights(): Promise<CommunityHighlights> {
 }
 
 export type FeaturedDestination = {
+  id: string
   name: string
   path: string
   parentName: string | null
@@ -91,6 +92,7 @@ const findFeaturedDestinations = (limit: number) =>
       return found.docs
         .filter((d) => d.path)
         .map((d) => ({
+          id: d.id,
           name: d.name,
           path: d.path as string,
           parentName: parentOf(d)?.name ?? null,
