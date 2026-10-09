@@ -107,7 +107,7 @@ export default async function HomePage() {
           </div>
           <div className="relative mx-4 md:mx-8 mb-10 lg:mt-10 lg:ml-12 xl:mr-14">
             <figure className="m-0">
-              <Placeholder image={hero} tone={heroText.imageTone} alt={hero.alt} priority className="block w-full h-sidebar md:h-105 lg:h-130 rounded-2xl" />
+              <Placeholder image={hero} tone={heroText.imageTone} alt={hero.alt} priority className="block w-full h-[300px] md:h-105 lg:h-130 rounded-2xl" />
               <figcaption className="mt-2 text-[11.5px] text-ink-400 text-right">
                 {heroText.imageCaption}. Photo: {hero.author}, via Wikimedia Commons, <a href={hero.licenseUrl} rel="license" className="text-marine-600">{hero.license}</a>
               </figcaption>
