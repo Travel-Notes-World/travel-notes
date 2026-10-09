@@ -7,9 +7,9 @@ import { getPayload } from 'payload'
 import type { Destination } from '@/payload-types'
 
 import type { Card } from '../community/queries'
-import { ARTICLES_TAG } from './revalidate'
+import { ARTICLES_TAG, DESTINATIONS_TAG } from './revalidate'
 
-/** Destinations and topics have no cache tags of their own yet, so these lists refresh on a timer. */
+/** Topics have no cache tag of their own yet, so the topic list refreshes on a timer. */
 const HOME_REVALIDATE_SECONDS = 5 * 60
 /** How many recent articles are counted when choosing the destinations to feature. */
 const ARTICLES_SCANNED = 200
@@ -104,7 +104,7 @@ const findFeaturedDestinations = (limit: number) =>
         .slice(0, limit)
     },
     ['home-destinations', String(limit)],
-    { tags: [ARTICLES_TAG], revalidate: HOME_REVALIDATE_SECONDS },
+    { tags: [ARTICLES_TAG, DESTINATIONS_TAG], revalidate: HOME_REVALIDATE_SECONDS },
   )()
 
 const findTopics = (limit: number) =>
