@@ -1,6 +1,8 @@
+import type { Where } from 'payload'
+
 import { LIMITS, type ContributionType } from './constants'
 import { cms, run, sql } from './db'
-import { isUuid } from './destinations'
+import { isUuid, withDescendants } from './destinations'
 import { track } from './metrics'
 import { listPublished, type Card, type GuideLink } from './queries'
 import { cleanLine } from './text'
@@ -39,12 +41,21 @@ export async function search(input: SearchInput): Promise<SearchResult> {
   const type = input.type && input.type !== 'guide' ? input.type : undefined
   const empty: SearchResult = { items: [], page, totalPages: 0, total: 0, query, guides: [] }
 
+  const destinationId = input.destinationId && isUuid(input.destinationId) ? input.destinationId : null
+
+  // Guides match the words typed, the chosen destination (including places inside it), or both.
+  // A destination alone lists that destination's guides, so "guides for Kyoto" works without words.
   let guides: GuideLink[] = []
-  if (query.length >= 2 && (!input.type || input.type === 'guide') && page === 1) {
+  const wordsForGuides = query.length >= 2
+  const destinationGuides = Boolean(destinationId) && input.type === 'guide'
+  if ((wordsForGuides || destinationGuides) && (!input.type || input.type === 'guide') && page === 1) {
+    const where: Where[] = []
+    if (wordsForGuides) where.push({ or: [{ title: { like: query } }, { excerpt: { like: query } }] })
+    if (destinationId) where.push({ primaryDestination: { in: await withDescendants(destinationId, payload) } })
     const found = await payload.find({
       collection: 'articles',
-      where: { or: [{ title: { like: query } }, { excerpt: { like: query } }] },
-      sort: '-firstPublishedAt', limit: 5, depth: 0, draft: false, overrideAccess: false, select: { title: true, slug: true, excerpt: true },
+      where: { and: where },
+      sort: '-firstPublishedAt', limit: wordsForGuides ? 5 : LIMITS.pageSize, depth: 0, draft: false, overrideAccess: false, select: { title: true, slug: true, excerpt: true },
     })
     guides = found.docs.map((a) => ({ title: a.title, path: `/stories/${a.slug}`, excerpt: a.excerpt }))
   }
@@ -52,7 +63,7 @@ export async function search(input: SearchInput): Promise<SearchResult> {
 
   const filters = {
     type,
-    destinationId: input.destinationId && isUuid(input.destinationId) ? input.destinationId : null,
+    destinationId,
     style: input.style || null,
     from: type === 'activity' ? input.from ?? null : null,
     to: type === 'activity' ? input.to ?? null : null,

@@ -10,7 +10,7 @@ import sharp from 'sharp'
 
 import {
   activityInput, administrator, approvedReply, asUser, captured, moderator, newMember, openCommunity, payload, places, published, questionInput, rejects, setup,
-  tripInput, visibleRows, type Any,
+  tripInput, unique, visibleRows, type Any,
 } from './helpers'
 
 let author: Any, reader: Any, third: Any
@@ -604,6 +604,38 @@ describe('12. search, filters and pagination with a realistic volume', () => {
     const rows = await payload.find({ collection: 'metric-counters', where: { event: { equals: 'community_search' } }, limit: 50, depth: 0 })
     assert.ok(rows.docs.length > 0)
     assert.ok(!JSON.stringify(rows.docs).toLowerCase().includes('quokkaterm'))
+  })
+})
+
+describe('12b. editorial guides found by destination', () => {
+  const paragraph = (text: string) => ({ root: { type: 'root', format: '', indent: 0, version: 1, direction: 'ltr', children: [{ type: 'paragraph', format: '', indent: 0, version: 1, direction: 'ltr', textFormat: 0, textStyle: '', children: [{ type: 'text', text, format: 0, style: '', mode: 'normal', detail: 0, version: 1 }] }] } })
+  const guide = async (slug: string, destination: Any, status: 'published' | 'draft', authorId: string) =>
+    payload.create({
+      collection: 'articles',
+      data: { slug, title: slug, deck: 'Deck', excerpt: 'Excerpt', type: 'destination-guide', body: paragraph(slug), primaryAuthor: authorId, primaryDestination: destination.id, seo: { title: slug, description: 'Description' }, _status: status } as Any,
+      draft: status === 'draft',
+    })
+
+  before(async () => {
+    const writer = await payload.create({ collection: 'authors', data: { name: 'Guide writer', slug: unique('guide-writer-'), biography: 'Bio' } as Any })
+    await guide(unique('kyoto-guide-'), places.kyoto, 'published', writer.id)
+    await guide(unique('kyoto-draft-'), places.kyoto, 'draft', writer.id)
+    await guide(unique('bangkok-guide-'), places.bangkok, 'published', writer.id)
+  })
+
+  const guidePaths = async (destinationId: string | null) =>
+    (await S.search({ type: 'guide', destinationId })).guides.map((g: Any) => g.path.replace(/^\/stories\//, '').replace(/-[a-z0-9]+$/, ''))
+
+  it('lists published guides for a destination without any words typed, never drafts', async () => {
+    assert.deepEqual(await guidePaths(places.kyoto.id), ['kyoto-guide'])
+    assert.deepEqual(await guidePaths(places.bangkok.id), ['bangkok-guide'])
+  })
+  it('includes guides about places inside the chosen destination', async () => {
+    assert.deepEqual(await guidePaths(places.japan.id), ['kyoto-guide'])
+    assert.deepEqual(await guidePaths(places.thailand.id), ['bangkok-guide'])
+  })
+  it('needs words or a destination: an empty guide search returns nothing', async () => {
+    assert.deepEqual(await guidePaths(null), [])
   })
 })
 
