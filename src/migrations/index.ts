@@ -6,6 +6,7 @@ import * as migration_20261009_133919_staff_two_factor from './20261009_133919_s
 import * as migration_20261009_144120_article_travel_styles from './20261009_144120_article_travel_styles';
 import * as migration_20261009_150327_newsletter_subscribers from './20261009_150327_newsletter_subscribers';
 import * as migration_20261009_152739_redirects from './20261009_152739_redirects';
+import * as migration_20261009_160847_article_search from './20261009_160847_article_search';
 
 export const migrations = [
   {
@@ -46,6 +47,11 @@ export const migrations = [
   {
     up: migration_20261009_152739_redirects.up,
     down: migration_20261009_152739_redirects.down,
-    name: '20261009_152739_redirects'
+    name: '20261009_152739_redirects',
+  },
+  {
+    up: migration_20261009_160847_article_search.up,
+    down: migration_20261009_160847_article_search.down,
+    name: '20261009_160847_article_search'
   },
 ];

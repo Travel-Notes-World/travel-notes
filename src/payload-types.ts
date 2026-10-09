@@ -323,6 +323,7 @@ export interface Article {
    */
   reviewedAt?: string | null;
   createdBy?: (string | null) | Staff;
+  searchText?: string | null;
   updatedAt: string;
   createdAt: string;
   _status?: ('draft' | 'published') | null;
@@ -1570,6 +1571,7 @@ export interface ArticlesSelect<T extends boolean = true> {
   editorialUpdatedAt?: T;
   reviewedAt?: T;
   createdBy?: T;
+  searchText?: T;
   updatedAt?: T;
   createdAt?: T;
   _status?: T;

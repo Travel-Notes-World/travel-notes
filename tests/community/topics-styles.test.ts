@@ -105,7 +105,7 @@ describe('topic pages: indexing and sitemap', () => {
 })
 
 describe('travel styles in search', () => {
-  const guideTitles = async (input: Any) => (await S.search(input)).guides.map((g: Any) => g.path.replace(/^\/stories\//, '').replace(/-[a-z0-9]+$/, '')).sort()
+  const guideTitles = async (input: Any) => (await S.search(input)).guides.items.map((g: Any) => g.path.replace(/^\/stories\//, '').replace(/-[a-z0-9]+$/, '')).sort()
 
   it('a style alone lists published guides with that style, never drafts', async () => {
     assert.deepEqual(await guideTitles({ style: 'budget' }), ['cheap-eats', 'free-museums'])
