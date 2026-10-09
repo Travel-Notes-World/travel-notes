@@ -147,7 +147,7 @@ export default async function StoryPage({ params }: { params: Promise<{ slug: st
 
           <section className="mt-12 max-w-measure border-t border-paper-200 pt-6" aria-labelledby="corrections-heading">
             <h2 id="corrections-heading" className="t-meta text-ink-400 m-0">Corrections and references</h2>
-            <p className="t-body-sm text-ink-600 mt-2 m-0">No corrections have been made to this article. <Link href="/corrections" className="text-marine-600">How we handle corrections</Link></p>
+            <p className="t-body-sm text-ink-600 mt-2 m-0">No corrections have been made to this article. <Link href="/corrections" className="text-marine-600 underline">How we handle corrections</Link></p>
           </section>
         </div>
 

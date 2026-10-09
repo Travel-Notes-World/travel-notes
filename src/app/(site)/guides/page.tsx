@@ -20,7 +20,7 @@ export default async function GuidesPage() {
       <h1 className="t-heading-1 mt-2 m-0">Travel guides</h1>
       <p className="t-deck mt-3 max-w-measure">Destination guides, itineraries and practical advice. Every guide shows when it was published and last updated.</p>
       {stories.length ? (
-        <div className="mt-10 grid gap-6 md:gap-8 md:grid-cols-2 lg:grid-cols-3">{stories.map((s) => <ArticleCard key={s.slug} article={s} />)}</div>
+        <div className="mt-10 grid gap-6 md:gap-8 md:grid-cols-2 lg:grid-cols-3">{stories.map((s) => <ArticleCard key={s.slug} article={s} heading="h2" />)}</div>
       ) : (
         <p className="t-body-sm text-ink-600 mt-8">No guides are published yet.</p>
       )}

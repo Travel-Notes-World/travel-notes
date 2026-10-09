@@ -14,7 +14,7 @@ const { header } = navigation;
 export function Logo({ onDark = false, size = 26 }: { onDark?: boolean; size?: number }) {
   return (
     <span className="inline-flex items-baseline gap-[2px] leading-none" style={{ fontSize: size }}>
-      <span className={`font-display font-semibold tracking-[-0.5px] ${onDark ? "text-white" : "text-navy-900"}`}>Travel</span>
+      <span className={`font-display font-semibold tracking-[-0.5px] ${onDark ? "text-white" : "text-navy-900"}`}>Travel</span>{" "}
       <span className={`font-display italic font-normal ${onDark ? "text-brand-mint" : "text-marine-600"}`}>Notes</span>
     </span>
   );

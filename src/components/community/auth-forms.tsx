@@ -74,7 +74,7 @@ export function SignUpForm() {
       <div className="mt-6">
         <div className="flex items-start gap-3">
           <input id="acceptTerms" name="acceptTerms" type="checkbox" required aria-invalid={f.acceptTerms ? true : undefined} aria-describedby={f.acceptTerms ? "acceptTerms-error" : undefined} className="mt-1 w-5 h-5" />
-          <label htmlFor="acceptTerms" className="t-body-sm">I accept the <Link href="/community/guidelines" className="text-marine-600" target="_blank">community rules</Link> and the <Link href="/terms" className="text-marine-600" target="_blank">terms</Link>, and I have read the <Link href="/privacy" className="text-marine-600" target="_blank">privacy notice</Link>.</label>
+          <label htmlFor="acceptTerms" className="t-body-sm">I accept the <Link href="/community/guidelines" className="text-marine-600 underline" target="_blank">community rules</Link> and the <Link href="/terms" className="text-marine-600 underline" target="_blank">terms</Link>, and I have read the <Link href="/privacy" className="text-marine-600 underline" target="_blank">privacy notice</Link>.</label>
         </div>
         {f.acceptTerms && <p id="acceptTerms-error" className="t-body-sm text-signal-error mt-1 font-medium">⚠ {f.acceptTerms}</p>}
       </div>

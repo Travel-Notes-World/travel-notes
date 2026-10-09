@@ -9,7 +9,7 @@ export function SummaryBox({ takeaways, sections }: { takeaways: string[]; secti
         <summary className="t-ui text-marine-700 cursor-pointer">Jump to a section</summary>
         <ol className="mt-2 mb-0 pl-6 t-body-sm">
           {sections.map((s) => (
-            <li key={s.id}><a href={`#${s.id}`} className="text-marine-700">{s.title}</a></li>
+            <li key={s.id}><a href={`#${s.id}`} className="inline-block py-1 text-marine-700">{s.title}</a></li>
           ))}
         </ol>
       </details>

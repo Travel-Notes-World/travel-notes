@@ -45,7 +45,7 @@ export default function GuidelinesPage() {
       <PageHeader eyebrow="Community" title="Community guidelines" intro={<p className="m-0">Simple rules so that the community stays useful, honest and kind.</p>} />
 
       <Notice tone="warning" title="Draft – awaiting owner and legal review">
-        <p>This text is a working draft. It has not yet been approved by the owner of Travel Notes or checked by a lawyer, and it may change. It does not replace the <Link href="/terms" className="text-marine-600">terms of use</Link> or the <Link href="/privacy" className="text-marine-600">privacy policy</Link>.</p>
+        <p>This text is a working draft. It has not yet been approved by the owner of Travel Notes or checked by a lawyer, and it may change. It does not replace the <Link href="/terms" className="text-marine-600 underline">terms of use</Link> or the <Link href="/privacy" className="text-marine-600 underline">privacy policy</Link>.</p>
       </Notice>
 
       <nav aria-labelledby="contents-heading" className="mt-8">
@@ -128,7 +128,7 @@ export default function GuidelinesPage() {
       </Section>
 
       <Section id="decisions">
-        <p>When a moderator declines, changes or removes your post, you are told the reason in your account notifications. If you think the decision was wrong, contact us through the <Link href="/contact" className="text-marine-600">contact page</Link> with a link to the post and a short explanation. Where we can, someone other than the original moderator will look at it again.</p>
+        <p>When a moderator declines, changes or removes your post, you are told the reason in your account notifications. If you think the decision was wrong, contact us through the <Link href="/contact" className="text-marine-600 underline">contact page</Link> with a link to the post and a short explanation. Where we can, someone other than the original moderator will look at it again.</p>
       </Section>
 
       <Section id="search">
@@ -149,7 +149,7 @@ export default function GuidelinesPage() {
       </Section>
 
       <p className="t-body-sm text-ink-600 mt-12 mb-0">
-        Questions about these guidelines? Use the <Link href="/contact" className="text-marine-600">contact page</Link>. <Link href="/community" className="text-marine-600">Back to the community</Link>
+        Questions about these guidelines? Use the <Link href="/contact" className="text-marine-600 underline">contact page</Link>. <Link href="/community" className="text-marine-600 underline">Back to the community</Link>
       </p>
     </PageShell>
   );

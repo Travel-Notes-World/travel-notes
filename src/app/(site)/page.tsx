@@ -105,9 +105,9 @@ export default async function HomePage() {
           </div>
           <div className="relative mx-4 md:mx-8 mb-10 lg:mt-10 lg:ml-12 xl:mr-14">
             <figure className="m-0">
-              <Placeholder image={hero} tone={heroText.imageTone} alt={hero.alt} priority className="block w-full h-[300px] md:h-105 lg:h-130 rounded-2xl" />
+              <Placeholder image={hero} tone={heroText.imageTone} alt={hero.alt} priority sizes="(min-width: 1024px) 50vw, 100vw" className="block w-full h-[300px] md:h-105 lg:h-130 rounded-2xl" />
               <figcaption className="mt-2 text-[11.5px] text-ink-400 text-right">
-                {heroText.imageCaption}. Photo: {hero.author}, via Wikimedia Commons, <a href={hero.licenseUrl} rel="license" className="text-marine-600">{hero.license}</a>
+                {heroText.imageCaption}. Photo: {hero.author}, via Wikimedia Commons, <a href={hero.licenseUrl} rel="license" className="text-marine-600 underline">{hero.license}</a>
               </figcaption>
             </figure>
             {latest && (
@@ -193,7 +193,7 @@ export default async function HomePage() {
                   {more.map((s) => (
                     <li key={s.slug}>
                       <Link href={`/stories/${s.slug}`} className="flex gap-4 border border-paper-200 rounded-xl p-3.5 no-underline text-inherit hover:border-marine-600">
-                        <Placeholder image={s.image} tone={s.heroTone} alt={s.heroAlt} className="w-27.5 sm:w-32.5 h-27.5 shrink-0 rounded-[10px]" />
+                        <Placeholder image={s.image} tone={s.heroTone} alt={s.heroAlt} sizes="130px" className="w-27.5 sm:w-32.5 h-27.5 shrink-0 rounded-[10px]" />
                         <span className="flex flex-col gap-1.5 justify-center">
                           <span className="font-display text-[19px] font-medium text-navy-900 leading-tight">{s.title}</span>
                           <GuideMeta story={s} />

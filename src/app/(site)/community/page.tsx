@@ -162,7 +162,7 @@ export default async function CommunityPage({ searchParams }: Props) {
           Every member post follows the <Link href="/community/guidelines" className="text-marine-600">community guidelines</Link> and can be reported to the moderators.
         </p>
         <p className="t-body-sm text-ink-600 m-0">
-          Place data from <a href="https://www.geonames.org/" className="text-marine-600">GeoNames</a>, licensed <a href="https://creativecommons.org/licenses/by/4.0/" rel="license" className="text-marine-600">CC BY 4.0</a>.
+          Place data from <a href="https://www.geonames.org/" className="text-marine-600 underline">GeoNames</a>, licensed <a href="https://creativecommons.org/licenses/by/4.0/" rel="license" className="text-marine-600 underline">CC BY 4.0</a>.
         </p>
       </footer>
     </PageShell>

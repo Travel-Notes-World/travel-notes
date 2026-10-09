@@ -25,7 +25,7 @@ export default async function Page({ params }: { params: Promise<{ slug: string 
       <h1 className="t-heading-1 mt-2 m-0">{t.name}</h1>
       <p className="t-deck mt-3 max-w-measure">{t.intro}</p>
       {list.length ? (
-        <div className="mt-10 grid gap-6 md:gap-8 md:grid-cols-2 lg:grid-cols-3">{list.map((a) => <ArticleCard key={a.slug} article={a} />)}</div>
+        <div className="mt-10 grid gap-6 md:gap-8 md:grid-cols-2 lg:grid-cols-3">{list.map((a) => <ArticleCard key={a.slug} article={a} heading="h2" />)}</div>
       ) : (
         <p className="t-body-sm text-ink-600 mt-8">No guides in this topic yet. Sample content only until the CMS is connected.</p>
       )}
