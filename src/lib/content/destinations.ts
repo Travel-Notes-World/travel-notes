@@ -4,8 +4,9 @@ import { getPayload, type Payload } from 'payload'
 
 import type { Destination } from '@/payload-types'
 
-import { ARTICLES_TAG, DESTINATIONS_TAG } from './revalidate'
+import { ARTICLES_TAG, DESTINATIONS_TAG, UPDATES_TAG } from './revalidate'
 import { findStoriesForDestinations, type Story } from './stories'
+import { activeUpdatesFor, type UpdateView } from './updates'
 
 /**
  * Destination pages (/destinations/<path>) and the destinations index, read from the CMS.
@@ -17,7 +18,7 @@ import { findStoriesForDestinations, type Story } from './stories'
 
 /** Fallback refresh. Publishing a destination or a guide expires these straight away (tags below). */
 const REVALIDATE_SECONDS = 60 * 60
-const TAGS = [DESTINATIONS_TAG, ARTICLES_TAG]
+const TAGS = [DESTINATIONS_TAG, ARTICLES_TAG, UPDATES_TAG]
 /** "Places in X" shows this many on the destination page, with a link to the full list. */
 export const PLACES_SHOWN = 24
 export const GUIDES_SHOWN = 24
@@ -54,6 +55,8 @@ export type DestinationPage = {
   places: PlaceWithGuides[]
   /** How many such places there are in total, before `places` is cut to the display limit. */
   placeTotal: number
+  /** "What's changed": the newest travel updates that still apply here, in a place inside it, or in the country or region it is in. */
+  updates: UpdateView[]
 }
 
 type PlaceDoc = Pick<Destination, 'id' | 'name' | 'path' | 'slug' | 'kind' | 'summary' | 'accentColour' | 'hubIndexable' | 'parent'>
@@ -208,10 +211,11 @@ async function withBody(payload: Payload, ids?: string[]): Promise<PlaceDoc[]> {
 export async function loadDestinationPage(payload: Payload, doc: Destination, placesLimit: number | null = PLACES_SHOWN): Promise<DestinationPage> {
   const [ancestors, inside] = await Promise.all([ancestorsOf(payload, doc), placesInside(payload, doc.id)])
   const scope = [doc.id, ...inside.branchOf.keys()]
-  const [guides, counts, childrenWithBody] = await Promise.all([
+  const [guides, counts, childrenWithBody, updates] = await Promise.all([
     findStoriesForDestinations(payload, scope, GUIDES_SHOWN),
     guideCounts(payload, scope),
     inside.children.length ? withBody(payload, inside.children.map((c) => c.id)) : Promise.resolve([]),
+    activeUpdatesFor(payload, [...ancestors.map((a) => a.id), ...scope]),
   ])
 
   // A guide counts once for the whole page, and once for each child place whose area it covers.
@@ -235,6 +239,7 @@ export async function loadDestinationPage(payload: Payload, doc: Destination, pl
     guideTotal,
     places: placesLimit === null ? places : places.slice(0, placesLimit),
     placeTotal: places.length,
+    updates,
   }
 }
 

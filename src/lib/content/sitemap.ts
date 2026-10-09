@@ -3,6 +3,7 @@ import { getPayload } from 'payload'
 
 import { indexableDestinationPaths } from './destinations'
 import { indexableTopicPaths } from './topics'
+import { updateSitemapEntries } from './updates'
 
 export type EditorialSitemapEntry = { path: string; lastModified?: string }
 
@@ -13,7 +14,8 @@ export type EditorialSitemapEntry = { path: string; lastModified?: string }
  * editor has not ticked "noindex". An author page is listed only when the author has at least one
  * listed article, matching the author page's own robots rule. A destination page is listed only
  * when an administrator has ticked "hubIndexable", and a topic page only when it passes the
- * automatic rule in topics.ts; both match the page's own robots rule.
+ * automatic rule in topics.ts; both match the page's own robots rule. Travel updates are listed
+ * unless an editor ticked "noindex", with /updates itself once there is at least one.
  *
  * `lastModified` is the editor-set update date (or first publication), never "today".
  */
@@ -51,6 +53,6 @@ export async function editorialSitemap(): Promise<EditorialSitemapEntry[]> {
     })
     for (const a of authors.docs) entries.push({ path: `/authors/${a.slug}` })
   }
-  entries.push(...(await indexableDestinationPaths(payload)), ...(await indexableTopicPaths(payload)))
+  entries.push(...(await indexableDestinationPaths(payload)), ...(await indexableTopicPaths(payload)), ...(await updateSitemapEntries(payload)))
   return entries
 }

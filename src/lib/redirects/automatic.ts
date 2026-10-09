@@ -53,7 +53,7 @@ export const addressChanged = (req: PayloadRequest, oldPath: string, newPath: st
  * The previous public slug comes from version history, not `previousDoc`: when a draft is
  * published, `previousDoc` is that draft, which may already carry the new slug.
  */
-export async function published(req: PayloadRequest, collection: 'articles' | 'topics', doc: { id: string; slug: string }, prefix: string) {
+export async function published(req: PayloadRequest, collection: 'articles' | 'topics' | 'travel-updates', doc: { id: string; slug: string }, prefix: string) {
   let previousSlug: string | undefined
   try {
     const versions = await req.payload.findVersions({

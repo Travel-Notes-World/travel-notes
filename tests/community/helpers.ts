@@ -50,7 +50,7 @@ export async function setup(): Promise<void> {
   await run(payload, sql`UPDATE "contributions" SET "published_revision_id" = NULL, "pending_revision_id" = NULL, "question_accepted_answer_id" = NULL, "question_duplicate_of_id" = NULL`)
   await run(payload, sql`UPDATE "members" SET "avatar_id" = NULL`)
   for (const collection of COMMUNITY_TABLES) await payload.delete({ collection, where: { id: { exists: true } } })
-  for (const collection of ['articles', 'topics', 'destinations', 'authors', 'staff'] as const) await payload.delete({ collection, where: { id: { exists: true } } })
+  for (const collection of ['travel-updates', 'articles', 'topics', 'destinations', 'authors', 'staff'] as const) await payload.delete({ collection, where: { id: { exists: true } } })
 
   staff.admin = await payload.create({ collection: 'staff', data: { name: 'Admin', email: `admin-${stamp}@example.test`, password: 'x'.repeat(16), role: 'contributor' } as Any })
   staff.moderator = await payload.create({ collection: 'staff', data: { name: 'Moderator', email: `mod-${stamp}@example.test`, password: 'x'.repeat(16), role: 'contributor', communityModerator: true } as Any })

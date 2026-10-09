@@ -6,6 +6,7 @@ import { ArticleCard } from "@/components/ArticleCard";
 import { Breadcrumbs } from "@/components/Breadcrumbs";
 import { JsonLd } from "@/components/community/ui";
 import { RichBody } from "@/components/RichBody";
+import { UpdateItem } from "@/components/UpdateItem";
 import { breadcrumbJsonLd } from "@/lib/community/seo";
 import { canViewCommunity } from "@/lib/community/settings";
 import { type DestinationPage, destinationRobots, getDestinationPage, getDestinationResolution } from "@/lib/content/destinations";
@@ -62,7 +63,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 export default async function DestinationRoute({ params }: Props) {
   const page = await load((await params).path);
   if (!page) notFound();
-  const { place, ancestors, guides, guideTotal, places, placeTotal } = page;
+  const { place, ancestors, guides, guideTotal, places, placeTotal, updates } = page;
   const crumbs = crumbsFor(page);
   const communityOpen = await canViewCommunity(null).catch(() => false);
   const parent = ancestors.at(-1);
@@ -91,6 +92,16 @@ export default async function DestinationRoute({ params }: Props) {
         <div className="mt-10 max-w-measure">
           <RichBody data={page.body as Parameters<typeof RichBody>[0]["data"]} />
         </div>
+      )}
+
+      {/* Only shown when something has changed recently; no empty box. */}
+      {updates.length > 0 && (
+        <section className="mt-12 max-w-measure" aria-labelledby="updates-heading">
+          <h2 id="updates-heading" className="t-heading-2 m-0">What&apos;s changed for {place.name}</h2>
+          <p className="t-body-sm text-ink-600 mt-2 mb-0">Recent changes that affect a trip here, each with its official source.</p>
+          <div className="mt-4 grid gap-5">{updates.map((u) => <UpdateItem key={u.id} update={u} headingLevel="h3" />)}</div>
+          <p className="t-body-sm mt-5 mb-0"><Link href="/updates" className="text-marine-600 underline">All travel updates</Link></p>
+        </section>
       )}
 
       <section className="mt-12" aria-labelledby="guides-heading">
