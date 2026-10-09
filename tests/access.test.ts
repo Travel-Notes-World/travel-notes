@@ -18,6 +18,8 @@ if (!testUrl) {
 }
 process.env.DATABASE_URL = testUrl
 process.env.PAYLOAD_SECRET = process.env.PAYLOAD_SECRET || 'test-only-secret'
+// These tests are about roles, not the two-step login, which has its own tests (two-factor.test.ts). Ignored in production builds.
+process.env.STAFF_2FA = process.env.STAFF_2FA ?? 'off'
 
 const lexical = (text: string) => ({
   root: {

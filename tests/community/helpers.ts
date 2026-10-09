@@ -16,6 +16,8 @@ if (!testUrl) {
 }
 process.env.DATABASE_URL = testUrl
 process.env.PAYLOAD_SECRET = process.env.PAYLOAD_SECRET || 'test-only-secret'
+// These tests are about roles, not the two-step login, which has its own tests (two-factor.test.ts). Ignored in production builds.
+process.env.STAFF_2FA = process.env.STAFF_2FA ?? 'off'
 process.env.EMAIL_TRANSPORT = 'capture'
 // The tests post far more than a person would; the limiter itself is tested separately with its own small limit.
 process.env.COMMUNITY_RATE_LIMIT_MULTIPLIER = '1000'

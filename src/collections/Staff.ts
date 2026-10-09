@@ -1,6 +1,6 @@
 import type { CollectionConfig } from 'payload'
 
-import { administratorOnlyField, hasRole, isAdministrator, ROLES } from '../access/roles'
+import { administratorOnlyField, hasRole, isAdministrator, isSignedInStaff, ROLES } from '../access/roles'
 import { siteUrl } from '../lib/site'
 
 /**
@@ -40,15 +40,18 @@ export const Staff: CollectionConfig = {
     },
   },
   access: {
-    // Suspended accounts cannot use the admin panel.
-    admin: ({ req }) => hasRole(req, 'contributor'),
+    // Suspended accounts cannot use the admin panel. A staff member who has not entered their
+    // two-step code yet may open it, but only reaches the set-up or code page: every other
+    // permission below goes through hasRole, which requires the code.
+    admin: ({ req }) => isSignedInStaff(req),
     // The very first account is created through Payload's own first-user screen, which bypasses this rule.
     create: isAdministrator,
     delete: isAdministrator,
     // No enumeration: staff can read and edit their own record only; administrators manage everyone.
     read: ({ req }) => {
       if (hasRole(req, 'administrator')) return true
-      if (hasRole(req, 'contributor') && req.user) return { id: { equals: req.user.id } }
+      // Their own record, also before the two-step code: the CMS needs it to show the set-up page.
+      if (isSignedInStaff(req) && req.user) return { id: { equals: req.user.id } }
       return false
     },
     update: ({ req }) => {
