@@ -19,6 +19,8 @@ code or documents.
 | `EMAIL_FROM` | Required for real email | production | For example `Travel Notes <community@your-domain>`; the domain must be verified in Resend. |
 | `EMAIL_REPLY_TO` | Optional | production | Where replies to community email go. |
 | `CONTACT_INBOX` | Required to receive contact-form email | production | The address that receives messages from `/contact` (for example `hello@your-domain`). It must be able to *receive* email: Resend only sends. Without it, messages are still saved in the CMS (Inbox → Contact messages) and the daily job emails them once it is set. |
+| `RESEND_CONTACTS_API_KEY` | Required for the newsletter | production | A Resend API key with **Full access** (contacts need it; the normal `RESEND_API_KEY` can only send). Used only to add confirmed newsletter subscribers. |
+| `RESEND_NEWSLETTER_SEGMENT_ID` | Required for the newsletter | production | The Resend segment the weekly newsletter is sent to. Without these two, confirmed sign-ups are kept in the CMS (Inbox → Newsletter subscribers) and copied by the daily job once they are set. |
 | `S3_BUCKET`, `S3_ENDPOINT`, `S3_ACCESS_KEY_ID`, `S3_SECRET_ACCESS_KEY` | Required for photos on Vercel | all that allow uploads | Cloudflare R2 (or other S3-compatible) bucket. Without them photo upload says it is unavailable; everything else works. |
 | `S3_REGION` | Optional | | Defaults to `auto` (correct for R2). |
 | `PREVIEW_DATABASE_IS_SEPARATE` | Preview only | preview | `yes` lets preview builds run database migrations. Set it only when Preview's `DATABASE_URL` is its own Neon branch (`preview`), never production. Without it, preview builds skip migrations. |

@@ -10,7 +10,7 @@
       { "label": "Trip Planner", "href": null }
     ],
     "businessLink": { "label": "For Businesses", "href": "/advertise" },
-    "subscribe": { "label": "Subscribe", "href": "/#newsletter" },
+    "subscribe": { "label": "Subscribe", "href": "/newsletter" },
     "searchLabel": "Search",
     "menuLabel": "Menu"
   },
