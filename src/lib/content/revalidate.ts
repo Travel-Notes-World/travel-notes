@@ -22,3 +22,4 @@ export const ARTICLES_TAG = 'articles'
 export const authorTag = (slug: string) => `author:${slug}`
 export const AUTHORS_TAG = 'authors'
 export const DESTINATIONS_TAG = 'destinations'
+export const TOPICS_TAG = 'topics'

@@ -1,4 +1,4 @@
-import type { Day } from "@/content/sample";
+import type { Day } from "@/lib/content/stories";
 
 export function ItineraryDay({ day }: { day: Day }) {
   return (

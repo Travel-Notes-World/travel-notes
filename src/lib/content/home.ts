@@ -8,9 +8,8 @@ import type { Destination } from '@/payload-types'
 
 import type { Card } from '../community/queries'
 import { editorSummary } from './destinations'
-import { ARTICLES_TAG, DESTINATIONS_TAG } from './revalidate'
+import { ARTICLES_TAG, DESTINATIONS_TAG, TOPICS_TAG } from './revalidate'
 
-/** Topics have no cache tag of their own yet, so the topic list refreshes on a timer. */
 const HOME_REVALIDATE_SECONDS = 5 * 60
 /** How many recent articles are counted when choosing the destinations to feature. */
 const ARTICLES_SCANNED = 200
@@ -124,7 +123,7 @@ const findTopics = (limit: number) =>
       return result.docs.map((t) => ({ name: t.name, slug: t.slug }))
     },
     ['home-topics', String(limit)],
-    { revalidate: HOME_REVALIDATE_SECONDS },
+    { tags: [TOPICS_TAG], revalidate: HOME_REVALIDATE_SECONDS },
   )()
 
 /** The homepage must still render if the CMS is briefly unavailable: the section is then hidden. */
