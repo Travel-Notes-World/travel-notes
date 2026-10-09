@@ -4095,6 +4095,196 @@
       "checkConstraints": {},
       "isRLSEnabled": false
     },
+    "public.newsletter_subscribers": {
+      "name": "newsletter_subscribers",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "email": {
+          "name": "email",
+          "type": "varchar",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "status": {
+          "name": "status",
+          "type": "enum_newsletter_subscribers_status",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'pending'"
+        },
+        "requested_at": {
+          "name": "requested_at",
+          "type": "timestamp(3) with time zone",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "confirmed_at": {
+          "name": "confirmed_at",
+          "type": "timestamp(3) with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "source": {
+          "name": "source",
+          "type": "varchar",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "token_hash": {
+          "name": "token_hash",
+          "type": "varchar",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "token_expires_at": {
+          "name": "token_expires_at",
+          "type": "timestamp(3) with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "sync_status": {
+          "name": "sync_status",
+          "type": "enum_newsletter_subscribers_sync_status",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'not-needed'"
+        },
+        "sync_attempts": {
+          "name": "sync_attempts",
+          "type": "numeric",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 0
+        },
+        "sync_error": {
+          "name": "sync_error",
+          "type": "varchar",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp(3) with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp(3) with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "newsletter_subscribers_email_idx": {
+          "name": "newsletter_subscribers_email_idx",
+          "columns": [
+            {
+              "expression": "email",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "newsletter_subscribers_status_idx": {
+          "name": "newsletter_subscribers_status_idx",
+          "columns": [
+            {
+              "expression": "status",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "newsletter_subscribers_token_hash_idx": {
+          "name": "newsletter_subscribers_token_hash_idx",
+          "columns": [
+            {
+              "expression": "token_hash",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "newsletter_subscribers_sync_status_idx": {
+          "name": "newsletter_subscribers_sync_status_idx",
+          "columns": [
+            {
+              "expression": "sync_status",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "newsletter_subscribers_updated_at_idx": {
+          "name": "newsletter_subscribers_updated_at_idx",
+          "columns": [
+            {
+              "expression": "updated_at",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "newsletter_subscribers_created_at_idx": {
+          "name": "newsletter_subscribers_created_at_idx",
+          "columns": [
+            {
+              "expression": "created_at",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
     "public.members_sessions": {
       "name": "members_sessions",
       "schema": "",
@@ -9486,6 +9676,12 @@
           "primaryKey": false,
           "notNull": false
         },
+        "newsletter_subscribers_id": {
+          "name": "newsletter_subscribers_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
         "members_id": {
           "name": "members_id",
           "type": "uuid",
@@ -9736,6 +9932,21 @@
           "columns": [
             {
               "expression": "contact_messages_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "payload_locked_documents_rels_newsletter_subscribers_id_idx": {
+          "name": "payload_locked_documents_rels_newsletter_subscribers_id_idx",
+          "columns": [
+            {
+              "expression": "newsletter_subscribers_id",
               "isExpression": false,
               "asc": true,
               "nulls": "last"
@@ -10115,6 +10326,19 @@
           "tableTo": "contact_messages",
           "columnsFrom": [
             "contact_messages_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "payload_locked_documents_rels_newsletter_subscribers_fk": {
+          "name": "payload_locked_documents_rels_newsletter_subscribers_fk",
+          "tableFrom": "payload_locked_documents_rels",
+          "tableTo": "newsletter_subscribers",
+          "columnsFrom": [
+            "newsletter_subscribers_id"
           ],
           "columnsTo": [
             "id"
@@ -11160,6 +11384,24 @@
         "failed"
       ]
     },
+    "public.enum_newsletter_subscribers_status": {
+      "name": "enum_newsletter_subscribers_status",
+      "schema": "public",
+      "values": [
+        "pending",
+        "confirmed"
+      ]
+    },
+    "public.enum_newsletter_subscribers_sync_status": {
+      "name": "enum_newsletter_subscribers_sync_status",
+      "schema": "public",
+      "values": [
+        "not-needed",
+        "pending",
+        "synced",
+        "failed"
+      ]
+    },
     "public.enum_members_status": {
       "name": "enum_members_status",
       "schema": "public",
@@ -11551,6 +11793,6 @@
     "tables": {},
     "columns": {}
   },
-  "id": "7c8a23a0-a390-410e-ab7e-0929babf6289",
+  "id": "6b2694ed-a586-41f3-87ad-e59ae8c8f6af",
   "prevId": "00000000-0000-0000-0000-000000000000"
 }

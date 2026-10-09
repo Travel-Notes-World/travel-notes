@@ -75,6 +75,7 @@ export interface Config {
     authors: Author;
     staff: Staff;
     'contact-messages': ContactMessage;
+    'newsletter-subscribers': NewsletterSubscriber;
     members: Member;
     contributions: Contribution;
     replies: Reply;
@@ -108,6 +109,7 @@ export interface Config {
     authors: AuthorsSelect<false> | AuthorsSelect<true>;
     staff: StaffSelect<false> | StaffSelect<true>;
     'contact-messages': ContactMessagesSelect<false> | ContactMessagesSelect<true>;
+    'newsletter-subscribers': NewsletterSubscribersSelect<false> | NewsletterSubscribersSelect<true>;
     members: MembersSelect<false> | MembersSelect<true>;
     contributions: ContributionsSelect<false> | ContributionsSelect<true>;
     replies: RepliesSelect<false> | RepliesSelect<true>;
@@ -580,6 +582,33 @@ export interface ContactMessage {
   emailStatus: 'pending' | 'sent' | 'captured' | 'failed';
   emailAttempts: number;
   emailError?: string | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * Weekly email sign-ups. Write and send newsletters in Resend (Broadcasts); unsubscribes are handled there.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "newsletter-subscribers".
+ */
+export interface NewsletterSubscriber {
+  id: string;
+  email: string;
+  status: 'pending' | 'confirmed';
+  requestedAt: string;
+  /**
+   * When they pressed "Confirm" in the email: the consent record.
+   */
+  confirmedAt?: string | null;
+  /**
+   * The page they signed up on.
+   */
+  source?: string | null;
+  tokenHash?: string | null;
+  tokenExpiresAt?: string | null;
+  syncStatus: 'not-needed' | 'pending' | 'synced' | 'failed';
+  syncAttempts: number;
+  syncError?: string | null;
   updatedAt: string;
   createdAt: string;
 }
@@ -1358,6 +1387,10 @@ export interface PayloadLockedDocument {
         value: string | ContactMessage;
       } | null)
     | ({
+        relationTo: 'newsletter-subscribers';
+        value: string | NewsletterSubscriber;
+      } | null)
+    | ({
         relationTo: 'members';
         value: string | Member;
       } | null)
@@ -1677,6 +1710,24 @@ export interface ContactMessagesSelect<T extends boolean = true> {
   emailStatus?: T;
   emailAttempts?: T;
   emailError?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "newsletter-subscribers_select".
+ */
+export interface NewsletterSubscribersSelect<T extends boolean = true> {
+  email?: T;
+  status?: T;
+  requestedAt?: T;
+  confirmedAt?: T;
+  source?: T;
+  tokenHash?: T;
+  tokenExpiresAt?: T;
+  syncStatus?: T;
+  syncAttempts?: T;
+  syncError?: T;
   updatedAt?: T;
   createdAt?: T;
 }

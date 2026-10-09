@@ -5,6 +5,7 @@ import { cleanupPhotos } from './media'
 import { purgeExpiredRateLimits } from './ratelimit'
 import { sendDigests } from './digest'
 import { deliverPendingContactMessages } from '../contact'
+import { syncPendingSubscribers } from '../newsletter'
 
 /**
  * Scheduled jobs. Every job can be run at any time, any number of times: each one only acts on
@@ -19,6 +20,7 @@ export const JOBS = {
   photos: async () => `deleted ${await cleanupPhotos()} unused photos`,
   'rate-limits': async () => `removed ${await purgeExpiredRateLimits()} finished rate-limit windows`,
   digest: async () => { const r = await sendDigests(); return `queued ${r.queued} digests for ${r.considered} subscribers` },
+  newsletter: async () => { const r = await syncPendingSubscribers(); return `newsletter: attempted ${r.attempted}, copied ${r.synced}, still waiting ${r.waiting}` },
   contact: async () => { const r = await deliverPendingContactMessages(); return `contact messages: attempted ${r.attempted}, emailed ${r.sent}, still waiting ${r.waiting}` },
 } as const
 export type JobName = keyof typeof JOBS
@@ -49,7 +51,7 @@ export async function runJob(job: JobName): Promise<JobResult> {
 /** Everything that should happen once a day. One failing job does not stop the others. */
 export async function runDaily(): Promise<JobResult[]> {
   const results: JobResult[] = []
-  for (const job of ['outbox', 'events', 'photos', 'rate-limits', 'digest', 'contact'] as JobName[]) results.push(await runJob(job))
+  for (const job of ['outbox', 'events', 'photos', 'rate-limits', 'digest', 'contact', 'newsletter'] as JobName[]) results.push(await runJob(job))
   // Keep three months of run history.
   const payload = await cms()
   await run(payload, sql`DELETE FROM "job_runs" WHERE "created_at" < now() - interval '90 days'`).catch(() => undefined)
