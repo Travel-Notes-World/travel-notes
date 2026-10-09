@@ -22,6 +22,7 @@
         "links": [
           { "label": "Destinations", "href": "/destinations" },
           { "label": "Travel Guides", "href": "/guides" },
+          { "label": "Travel Updates", "href": "/updates" },
           { "label": "Itineraries", "href": "/topics/itineraries" },
           { "label": "Practical tips", "href": "/topics/tips" },
           { "label": "Photography", "href": null },

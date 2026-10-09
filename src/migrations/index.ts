@@ -7,6 +7,7 @@ import * as migration_20261009_144120_article_travel_styles from './20261009_144
 import * as migration_20261009_150327_newsletter_subscribers from './20261009_150327_newsletter_subscribers';
 import * as migration_20261009_152739_redirects from './20261009_152739_redirects';
 import * as migration_20261009_160847_article_search from './20261009_160847_article_search';
+import * as migration_20261009_163759_travel_updates from './20261009_163759_travel_updates';
 
 export const migrations = [
   {
@@ -52,6 +53,11 @@ export const migrations = [
   {
     up: migration_20261009_160847_article_search.up,
     down: migration_20261009_160847_article_search.down,
-    name: '20261009_160847_article_search'
+    name: '20261009_160847_article_search',
+  },
+  {
+    up: migration_20261009_163759_travel_updates.up,
+    down: migration_20261009_163759_travel_updates.down,
+    name: '20261009_163759_travel_updates'
   },
 ];

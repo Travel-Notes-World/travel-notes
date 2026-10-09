@@ -69,6 +69,7 @@ export interface Config {
   blocks: {};
   collections: {
     articles: Article;
+    'travel-updates': TravelUpdate;
     destinations: Destination;
     topics: Topic;
     redirects: Redirect;
@@ -103,6 +104,7 @@ export interface Config {
   collectionsJoins: {};
   collectionsSelect: {
     articles: ArticlesSelect<false> | ArticlesSelect<true>;
+    'travel-updates': TravelUpdatesSelect<false> | TravelUpdatesSelect<true>;
     destinations: DestinationsSelect<false> | DestinationsSelect<true>;
     topics: TopicsSelect<false> | TopicsSelect<true>;
     redirects: RedirectsSelect<false> | RedirectsSelect<true>;
@@ -512,7 +514,6 @@ export interface Staff {
    */
   communityModerator?: boolean | null;
   totpSecret?: string | null;
-  hasTotp?: boolean | null;
   updatedAt: string;
   createdAt: string;
   email: string;
@@ -532,6 +533,100 @@ export interface Staff {
     | null;
   password?: string | null;
   collection: 'staff';
+}
+/**
+ * Short, dated reports of changes that matter to travellers. Each one needs an official source.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "travel-updates".
+ */
+export interface TravelUpdate {
+  id: string;
+  /**
+   * Say what changed, plainly. For example: "Japan starts charging a departure tax of ¥3,000 from 1 July".
+   */
+  title: string;
+  /**
+   * One or two sentences: what changed, for whom, and from when. Shown in lists, the newsletter and search results.
+   */
+  summary: string;
+  /**
+   * Optional. What it means for travellers and what to do now.
+   */
+  body?: {
+    root: {
+      type: string;
+      children: {
+        type: any;
+        version: number;
+        [k: string]: unknown;
+      }[];
+      direction: ('ltr' | 'rtl') | null;
+      format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | '';
+      indent: number;
+      version: number;
+    };
+    [k: string]: unknown;
+  } | null;
+  /**
+   * The official source first (government, airline, park authority). At least one is required.
+   */
+  sources: {
+    /**
+     * For example: Smartraveller, Japan Ministry of Foreign Affairs.
+     */
+    name: string;
+    url: string;
+    id?: string | null;
+  }[];
+  /**
+   * Only after a real change or correction: what changed since first publication. Set "Updated on" too.
+   */
+  updateNote?: string | null;
+  /**
+   * Used in the address: /updates/your-slug
+   */
+  slug: string;
+  category: 'entry-rules' | 'flights-routes' | 'closures' | 'safety' | 'fees' | 'events' | 'other';
+  /**
+   * Tick when Australian passport holders or flights from Australia are directly affected.
+   */
+  affectsAustralians?: boolean | null;
+  /**
+   * Where it applies. Shown on these destination pages and the places inside them. Leave empty for worldwide.
+   */
+  destinations?: (string | Destination)[] | null;
+  author: string | Author;
+  /**
+   * Optional. When the change starts.
+   */
+  effectiveDate?: string | null;
+  /**
+   * Optional. When it ends (for a closure or a temporary rule). After this date it leaves destination pages.
+   */
+  endDate?: string | null;
+  /**
+   * Set automatically on first publication.
+   */
+  firstPublishedAt?: string | null;
+  /**
+   * Set only for a real change or correction, with a note above.
+   */
+  editorialUpdatedAt?: string | null;
+  /**
+   * Leave empty to use the title and summary.
+   */
+  seo?: {
+    title?: string | null;
+    description?: string | null;
+    /**
+     * Tick to ask search engines not to index this update.
+     */
+    noindex?: boolean | null;
+  };
+  updatedAt: string;
+  createdAt: string;
+  _status?: ('draft' | 'published') | null;
 }
 /**
  * Send an old address to a new one, or mark it as gone. Changes are live within about a minute.
@@ -1364,6 +1459,10 @@ export interface PayloadLockedDocument {
         value: string | Article;
       } | null)
     | ({
+        relationTo: 'travel-updates';
+        value: string | TravelUpdate;
+      } | null)
+    | ({
         relationTo: 'destinations';
         value: string | Destination;
       } | null)
@@ -1578,6 +1677,42 @@ export interface ArticlesSelect<T extends boolean = true> {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "travel-updates_select".
+ */
+export interface TravelUpdatesSelect<T extends boolean = true> {
+  title?: T;
+  summary?: T;
+  body?: T;
+  sources?:
+    | T
+    | {
+        name?: T;
+        url?: T;
+        id?: T;
+      };
+  updateNote?: T;
+  slug?: T;
+  category?: T;
+  affectsAustralians?: T;
+  destinations?: T;
+  author?: T;
+  effectiveDate?: T;
+  endDate?: T;
+  firstPublishedAt?: T;
+  editorialUpdatedAt?: T;
+  seo?:
+    | T
+    | {
+        title?: T;
+        description?: T;
+        noindex?: T;
+      };
+  updatedAt?: T;
+  createdAt?: T;
+  _status?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "destinations_select".
  */
 export interface DestinationsSelect<T extends boolean = true> {
@@ -1677,7 +1812,6 @@ export interface StaffSelect<T extends boolean = true> {
   active?: T;
   communityModerator?: T;
   totpSecret?: T;
-  hasTotp?: T;
   updatedAt?: T;
   createdAt?: T;
   email?: T;
