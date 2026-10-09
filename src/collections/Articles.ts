@@ -3,6 +3,7 @@ import { Forbidden } from 'payload'
 
 import { blockPublishBelowPublisher, draftOnlyBelowPublisher } from '../access/publishGuard'
 import { hasRole, isPublisher, isStaff, nobodyField, staffOnlyField } from '../access/roles'
+import { TRAVEL_STYLES } from '../lib/community/constants'
 import { ARTICLES_TAG, articleTag, expireTags } from '../lib/content/revalidate'
 import { seoFields, slugField } from './fields'
 
@@ -221,6 +222,14 @@ export const Articles: CollectionConfig = {
     },
     { name: 'additionalDestinations', type: 'relationship', relationTo: 'destinations', hasMany: true, admin: { position: 'sidebar' } },
     { name: 'topics', type: 'relationship', relationTo: 'topics', hasMany: true, admin: { position: 'sidebar' } },
+    {
+      name: 'travelStyles',
+      type: 'select',
+      hasMany: true,
+      // The same styles members choose for community posts, so /search?style=… finds both.
+      options: TRAVEL_STYLES.map((s) => ({ label: s.label, value: s.value })),
+      admin: { position: 'sidebar', description: 'Optional. The kinds of trip this guide suits, for example Budget or Family.' },
+    },
     {
       name: 'firstPublishedAt',
       type: 'date',

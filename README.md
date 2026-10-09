@@ -2,7 +2,7 @@
 
 Editorial travel publication: destination guides, itineraries, practical tips, photography, video and gear reviews.
 
-**Status: articles and author profiles publish end to end.** Payload CMS runs inside this app at `/admin`, on Neon PostgreSQL. An article published in the CMS appears at `/stories/your-slug` and on the homepage, and each author in the CMS has a public profile at `/authors/your-slug`. Destination and topic pages still show clearly labelled sample content (`src/content/sample.ts`). Sample articles are listed only while the CMS has no published article: real and sample articles are never listed together. Media uploads, ads, newsletter and analytics are not wired yet. This follows the phased roadmap in the Developer Implementation Plan (25 Sep 2026).
+**Status: articles and author profiles publish end to end.** Payload CMS runs inside this app at `/admin`, on Neon PostgreSQL. An article published in the CMS appears at `/stories/your-slug` and on the homepage, and each author in the CMS has a public profile at `/authors/your-slug`. Destination pages (`/destinations/…`) and topic pages (`/topics/…`) are built from the CMS too; there is no sample content left. Media uploads, ads, newsletter and analytics are not wired yet. This follows the phased roadmap in the Developer Implementation Plan (25 Sep 2026).
 
 - Design system (tokens, components, page templates): https://claude.ai/artifact/L3JWve3Gp6mdFJP2Ckb6Rr
 - Tokens are mirrored in `src/app/globals.css` and exposed to Tailwind via `@theme`.
@@ -31,7 +31,7 @@ Next.js 16.3.6 App Router, TypeScript, Tailwind CSS v4, `next/font` (Fraunces + 
 - `src/lib/content/stories.ts` is the only place public pages read articles from, and `src/lib/content/authors.ts` the only place they read author profiles from. Both query with a reader's permissions, so drafts and staff fields cannot leak, and cache results by tag.
 - Publishing, editing a published article, renaming its slug, withdrawing or deleting it expires the cached page straight away (`src/lib/content/revalidate.ts`). Saving or deleting an author does the same for the author page and for article pages, which show the author's name. As a safety net, article pages also refresh every 60 minutes, author pages every 15 minutes and the homepage every 5 minutes.
 - An author page with no published articles asks search engines not to index it. An unknown author address returns "not found".
-- If the database cannot be reached, sample pages still render and other article addresses return an error instead of a cached "not found".
+- If the database cannot be reached, article addresses return an error instead of a cached "not found".
 
 ### Database changes
 
@@ -70,8 +70,7 @@ checks in `tests/e2e/`.
 - No scheduled publishing for articles yet. Cache expiry runs directly in the CMS request, without retries or warming. (The community has its own email queue and daily job.)
 - No Redirects collection yet: after a slug change the old address returns "not found" instead of redirecting. Avoid renaming published slugs until it exists.
 - Corrections text on article pages is still a fixed placeholder line.
-- Sample content (`src/content/sample.ts`) must be removed before launch: sample article pages, and the destination and topic pages that are built from it.
-- Author profiles have no photo (needs media uploads) and no disclosures field yet. Topic and destination pages do not list CMS articles yet.
+- Author profiles have no photo (needs media uploads) and no disclosures field yet.
 - Local development and the live preview currently share one database. Create a separate Neon branch for development before real content is written.
 - `npm audit` reports a moderate, development-only issue in `esbuild` through `drizzle-kit` (used to generate migrations). There is no fixed release from Payload yet.
 

@@ -9,7 +9,7 @@ import { AdSlot } from "@/components/AdSlot";
 import { ArticleCard } from "@/components/ArticleCard";
 import { Placeholder, Credit } from "@/components/Placeholder";
 import { RichBody } from "@/components/RichBody";
-import { getLatestStories, getStory, sampleStorySlugs, slugify } from "@/lib/content/stories";
+import { getLatestStories, getStory } from "@/lib/content/stories";
 import { siteUrl } from "@/lib/site";
 
 const fmt = (iso: string) => new Date(iso).toLocaleDateString("en-AU", { day: "numeric", month: "long", year: "numeric", timeZone: "Australia/Sydney" });
@@ -18,9 +18,9 @@ const sameDay = (a: string, b: string) => a.slice(0, 10) === b.slice(0, 10);
 /** Fallback regeneration (implementation plan §3: articles 60 minutes). Publishing expires the cache straight away. */
 export const revalidate = 3600;
 
-/** Sample stories are built ahead of time. CMS stories are generated on first visit, then cached until they change. */
+/** Stories are generated on first visit, then cached until they change. */
 export function generateStaticParams() {
-  return sampleStorySlugs().map((slug) => ({ slug }));
+  return [];
 }
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
@@ -45,9 +45,7 @@ export default async function StoryPage({ params }: { params: Promise<{ slug: st
   const a = await getStory(slug);
   if (!a) notFound();
 
-  const sections = a.body.kind === "rich"
-    ? a.body.headings
-    : a.body.sections.map((s) => ({ id: slugify(s.heading), title: s.heading }));
+  const sections = a.body.headings;
   const related = (await getLatestStories(4)).filter((x) => x.slug !== a.slug).slice(0, 3);
   const inlineAd = a.showAds ? <AdSlot placement="article-inline-1" /> : null;
 
@@ -58,8 +56,7 @@ export default async function StoryPage({ params }: { params: Promise<{ slug: st
     description: a.deck,
     datePublished: a.firstPublished,
     dateModified: a.updated,
-    // Sample articles have a placeholder author with no profile page, so no author address is claimed for them.
-    author: { "@type": "Person", name: a.author.name, ...(a.isSample ? {} : { url: `${siteUrl}/authors/${a.author.slug}` }) },
+    author: { "@type": "Person", name: a.author.name, url: `${siteUrl}/authors/${a.author.slug}` },
     publisher: { "@type": "Organization", name: "Travel Notes" },
     mainEntityOfPage: `${siteUrl}/stories/${a.slug}`,
   };
@@ -99,11 +96,7 @@ export default async function StoryPage({ params }: { params: Promise<{ slug: st
             <div className="mt-5 flex items-center gap-3">
               <div aria-hidden="true" className="w-10 h-10 rounded-full bg-paper-200" />
               <p className="t-body-sm m-0">
-                {a.isSample ? (
-                  <span className="text-ink-900 font-medium">{a.author.name}</span>
-                ) : (
-                  <Link href={`/authors/${a.author.slug}`} className="text-ink-900 font-medium no-underline hover:underline">{a.author.name}</Link>
-                )}
+                <Link href={`/authors/${a.author.slug}`} className="text-ink-900 font-medium no-underline hover:underline">{a.author.name}</Link>
                 <span className="block text-ink-400">Published {fmt(a.firstPublished)}{!sameDay(a.updated, a.firstPublished) && `, updated ${fmt(a.updated)}`}</span>
               </p>
             </div>
@@ -113,10 +106,10 @@ export default async function StoryPage({ params }: { params: Promise<{ slug: st
           {a.disclosure === "affiliate" && <div className="mt-6"><DisclosureBanner kind="affiliate" /></div>}
 
           {/* CMS articles have no hero image until media uploads (Cloudflare R2) are set up, so no empty frame is shown. */}
-          {(a.isSample || a.image) && (
+          {a.image && (
             <figure className="mt-8 m-0 rounded-lg" style={{ boxShadow: `0 0 0 3px ${a.accent}` }}>
               <Placeholder tone={a.heroTone} alt={a.heroAlt} image={a.image} priority className="aspect-[4/5] md:aspect-[3/2] w-full rounded-lg" />
-              <figcaption className="t-body-sm text-ink-600 mt-2"><Credit image={a.image} caption={a.image ? undefined : "Product photography pending. Caption and credit render here."} /></figcaption>
+              <figcaption className="t-body-sm text-ink-600 mt-2"><Credit image={a.image} /></figcaption>
             </figure>
           )}
 
@@ -125,17 +118,7 @@ export default async function StoryPage({ params }: { params: Promise<{ slug: st
           )}
 
           <div className="prose-tn mt-8">
-            {a.body.kind === "rich" ? (
-              <RichBody data={a.body.data} afterFirstSection={inlineAd} />
-            ) : (
-              a.body.sections.map((s, i) => (
-                <section key={i}>
-                  <h2 id={slugify(s.heading)}>{s.heading}</h2>
-                  {s.paragraphs.map((p, j) => <p key={j}>{p}</p>)}
-                  {i === 0 && inlineAd}
-                </section>
-              ))
-            )}
+            <RichBody data={a.body.data} afterFirstSection={inlineAd} />
           </div>
 
           {a.days && (

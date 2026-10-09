@@ -289,6 +289,24 @@ export interface Article {
   additionalDestinations?: (string | Destination)[] | null;
   topics?: (string | Topic)[] | null;
   /**
+   * Optional. The kinds of trip this guide suits, for example Budget or Family.
+   */
+  travelStyles?:
+    | (
+        | 'budget'
+        | 'mid_range'
+        | 'luxury'
+        | 'backpacking'
+        | 'family'
+        | 'adventure'
+        | 'slow'
+        | 'road_trip'
+        | 'city_break'
+        | 'food'
+        | 'business'
+      )[]
+    | null;
+  /**
    * Set automatically on first publication.
    */
   firstPublishedAt?: string | null;
@@ -489,7 +507,6 @@ export interface Staff {
    */
   communityModerator?: boolean | null;
   totpSecret?: string | null;
-  hasTotp?: boolean | null;
   updatedAt: string;
   createdAt: string;
   email: string;
@@ -1483,6 +1500,7 @@ export interface ArticlesSelect<T extends boolean = true> {
   primaryDestination?: T;
   additionalDestinations?: T;
   topics?: T;
+  travelStyles?: T;
   firstPublishedAt?: T;
   editorialUpdatedAt?: T;
   reviewedAt?: T;
@@ -1579,7 +1597,6 @@ export interface StaffSelect<T extends boolean = true> {
   active?: T;
   communityModerator?: T;
   totpSecret?: T;
-  hasTotp?: T;
   updatedAt?: T;
   createdAt?: T;
   email?: T;
