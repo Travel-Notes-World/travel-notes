@@ -260,6 +260,90 @@
       "checkConstraints": {},
       "isRLSEnabled": false
     },
+    "public.articles_travel_styles": {
+      "name": "articles_travel_styles",
+      "schema": "",
+      "columns": {
+        "order": {
+          "name": "order",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "parent_id": {
+          "name": "parent_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "value": {
+          "name": "value",
+          "type": "enum_articles_travel_styles",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        }
+      },
+      "indexes": {
+        "articles_travel_styles_order_idx": {
+          "name": "articles_travel_styles_order_idx",
+          "columns": [
+            {
+              "expression": "order",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "articles_travel_styles_parent_idx": {
+          "name": "articles_travel_styles_parent_idx",
+          "columns": [
+            {
+              "expression": "parent_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "articles_travel_styles_parent_fk": {
+          "name": "articles_travel_styles_parent_fk",
+          "tableFrom": "articles_travel_styles",
+          "tableTo": "articles",
+          "columnsFrom": [
+            "parent_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
     "public.articles": {
       "name": "articles",
       "schema": "",
@@ -1070,6 +1154,90 @@
           "tableTo": "_articles_v",
           "columnsFrom": [
             "_parent_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public._articles_v_version_travel_styles": {
+      "name": "_articles_v_version_travel_styles",
+      "schema": "",
+      "columns": {
+        "order": {
+          "name": "order",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "parent_id": {
+          "name": "parent_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "value": {
+          "name": "value",
+          "type": "enum__articles_v_version_travel_styles",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        }
+      },
+      "indexes": {
+        "_articles_v_version_travel_styles_order_idx": {
+          "name": "_articles_v_version_travel_styles_order_idx",
+          "columns": [
+            {
+              "expression": "order",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "_articles_v_version_travel_styles_parent_idx": {
+          "name": "_articles_v_version_travel_styles_parent_idx",
+          "columns": [
+            {
+              "expression": "parent_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "_articles_v_version_travel_styles_parent_fk": {
+          "name": "_articles_v_version_travel_styles_parent_fk",
+          "tableFrom": "_articles_v_version_travel_styles",
+          "tableTo": "_articles_v",
+          "columnsFrom": [
+            "parent_id"
           ],
           "columnsTo": [
             "id"
@@ -10828,6 +10996,23 @@
     }
   },
   "enums": {
+    "public.enum_articles_travel_styles": {
+      "name": "enum_articles_travel_styles",
+      "schema": "public",
+      "values": [
+        "budget",
+        "mid_range",
+        "luxury",
+        "backpacking",
+        "family",
+        "adventure",
+        "slow",
+        "road_trip",
+        "city_break",
+        "food",
+        "business"
+      ]
+    },
     "public.enum_articles_disclosure_kind": {
       "name": "enum_articles_disclosure_kind",
       "schema": "public",
@@ -10874,6 +11059,23 @@
       "values": [
         "draft",
         "published"
+      ]
+    },
+    "public.enum__articles_v_version_travel_styles": {
+      "name": "enum__articles_v_version_travel_styles",
+      "schema": "public",
+      "values": [
+        "budget",
+        "mid_range",
+        "luxury",
+        "backpacking",
+        "family",
+        "adventure",
+        "slow",
+        "road_trip",
+        "city_break",
+        "food",
+        "business"
       ]
     },
     "public.enum__articles_v_version_disclosure_kind": {
@@ -11426,6 +11628,6 @@
     "tables": {},
     "columns": {}
   },
-  "id": "9790c15d-5d35-4efd-9b8c-9be6b99e13b3",
+  "id": "3db2b03b-8f0c-490d-9fd9-28f369686344",
   "prevId": "00000000-0000-0000-0000-000000000000"
 }

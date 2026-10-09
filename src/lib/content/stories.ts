@@ -1,11 +1,11 @@
 import config from '@payload-config'
 import { unstable_cache } from 'next/cache'
-import { getPayload, type Payload } from 'payload'
+import { getPayload, type Payload, type Where } from 'payload'
 
-import { articles as sampleArticles, type CommonsImage, type Day } from '@/content/sample'
 import type { Article as CmsArticle, Author, Destination } from '@/payload-types'
 
 import { ARTICLE_TYPES } from '@/collections/Articles'
+import type { CommonsImage } from './images'
 import { ARTICLES_TAG, articleTag } from './revalidate'
 
 /** Fallback regeneration for article data (implementation plan §3: articles 60 minutes). */
@@ -15,12 +15,13 @@ const DEFAULT_TONE = 'linear-gradient(135deg,#8fa9a6,#4e6f74 55%,#2e4a50)'
 const WORDS_PER_MINUTE = 220
 
 export type StoryHeading = { id: string; title: string }
-export type StoryBody =
-  | { kind: 'sections'; sections: { heading: string; paragraphs: string[] }[] }
-  | { kind: 'rich'; data: NonNullable<CmsArticle['body']>; headings: StoryHeading[] }
+export type StoryBody = { kind: 'rich'; data: NonNullable<CmsArticle['body']>; headings: StoryHeading[] }
+export type Stop = { time: string; name: string; note: string }
+export type Day = { number: number; title: string; stops: Stop[] }
 
-/** One shape for the article template, whether the content comes from the CMS or from the sample file. */
+/** One shape for the article template and the article cards. */
 export type Story = {
+  id: string
   slug: string
   type: string
   title: string
@@ -38,12 +39,11 @@ export type Story = {
   takeaways: string[]
   heroAlt: string
   heroTone: string
+  /** No article image yet: media uploads (Cloudflare R2) are not set up. */
   image?: CommonsImage
   body: StoryBody
   days?: Day[]
   seo?: { title: string; description: string; noindex: boolean }
-  /** True for placeholder content from src/content/sample.ts. */
-  isSample: boolean
 }
 
 export const slugify = (s: string) => s.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '')
@@ -91,6 +91,7 @@ function fromCms(doc: CmsArticle): Story | null {
   const firstPublished = doc.firstPublishedAt ?? doc.createdAt
   const kind = doc.disclosure?.kind ?? 'none'
   return {
+    id: doc.id,
     slug: doc.slug,
     type: typeLabel(doc.type),
     title: doc.title,
@@ -118,33 +119,6 @@ function fromCms(doc: CmsArticle): Story | null {
         }))
       : undefined,
     seo: { title: doc.seo.title, description: doc.seo.description, noindex: Boolean(doc.seo.noindex) },
-    isSample: false,
-  }
-}
-
-function fromSample(a: (typeof sampleArticles)[number]): Story {
-  return {
-    slug: a.slug,
-    type: a.type,
-    title: a.title,
-    deck: a.deck,
-    excerpt: a.excerpt,
-    author: a.author,
-    readMinutes: a.readMinutes,
-    firstPublished: a.firstPublished,
-    updated: a.updated,
-    destination: { name: a.destination.name, path: a.destination.path.join('/') },
-    accent: a.accent,
-    disclosure: a.sponsoredBy ? 'sponsored' : 'none',
-    sponsoredBy: a.sponsoredBy,
-    showAds: true,
-    takeaways: a.takeaways,
-    heroAlt: a.heroAlt,
-    heroTone: a.heroTone,
-    image: a.image,
-    body: { kind: 'sections', sections: a.body },
-    days: a.days,
-    isSample: true,
   }
 }
 
@@ -211,40 +185,29 @@ const logReadFailure = (label: string, error: unknown) =>
   console.error(`[content] ${label} failed.`, error instanceof Error ? error.message : error)
 
 /**
- * A published CMS article wins. Sample content only fills slugs the CMS does not have.
- * If the CMS cannot be reached, a sample slug still renders, but any other slug raises an error
- * instead of a "not found": an outage must never be cached as a missing page.
+ * A published article by its address. If the CMS cannot be reached the error is raised instead of
+ * returning "not found": an outage must never be cached as a missing page.
  */
 export async function getStory(slug: string): Promise<Story | null> {
-  const sample = sampleArticles.find((a) => a.slug === slug)
-  let doc: CmsArticle | null = null
+  let doc: CmsArticle | null
   try {
     doc = await findPublishedBySlug(slug)
   } catch (error) {
     logReadFailure(`article "${slug}"`, error)
-    if (!sample) throw error
+    throw error
   }
-  const story = doc ? fromCms(doc) : null
-  if (story) return story
-  return sample ? fromSample(sample) : null
+  return doc ? fromCms(doc) : null
 }
 
-/**
- * Real and sample articles are never listed together. As soon as one CMS article is published,
- * listings show published CMS articles only. Sample articles appear only while the CMS has none,
- * so the page templates can still be reviewed before the first real article exists.
- */
+/** The newest published articles. Listings stay up during a CMS outage, showing nothing rather than failing. */
 export async function getLatestStories(limit = 12): Promise<Story[]> {
-  // Listings stay available during a CMS outage by showing what can still be shown.
   let docs: CmsArticle[] = []
   try {
     docs = await findLatestPublished(limit)
   } catch (error) {
     logReadFailure('latest articles', error)
   }
-  const cms = docs.map(fromCms).filter((s): s is Story => s !== null)
-  if (cms.length > 0) return cms.slice(0, limit)
-  return sampleArticles.map(fromSample).slice(0, limit)
+  return docs.map(fromCms).filter((s): s is Story => s !== null)
 }
 
 /** Published articles where this author is the primary author or a coauthor, newest first. */
@@ -253,22 +216,14 @@ export async function getStoriesByAuthor(authorId: string, limit = 24): Promise<
   return docs.map(fromCms).filter((s): s is Story => s !== null)
 }
 
-/**
- * Published guides about any of these destinations (as the main or an additional destination),
- * newest first. Read with a visitor's permissions, so drafts never appear.
- */
-export async function findStoriesForDestinations(payload: Payload, destinationIds: string[], limit: number): Promise<Story[]> {
-  if (!destinationIds.length) return []
-  const result = await payload.find({
-    collection: 'articles',
-    where: { or: [{ primaryDestination: { in: destinationIds } }, { additionalDestinations: { in: destinationIds } }] },
-    sort: '-firstPublishedAt',
-    limit,
-    depth: 1,
-    draft: false,
-    overrideAccess: false,
-  })
+/** Published articles matching `where`, newest first, read with a visitor's permissions so drafts never appear. */
+export async function findStories(payload: Payload, where: Where, limit: number): Promise<Story[]> {
+  const result = await payload.find({ collection: 'articles', where, sort: '-firstPublishedAt', limit, depth: 1, draft: false, overrideAccess: false })
   return result.docs.map(fromCms).filter((s): s is Story => s !== null)
 }
 
-export const sampleStorySlugs = () => sampleArticles.map((a) => a.slug)
+/** Published guides about any of these destinations (as the main or an additional destination). */
+export async function findStoriesForDestinations(payload: Payload, destinationIds: string[], limit: number): Promise<Story[]> {
+  if (!destinationIds.length) return []
+  return findStories(payload, { or: [{ primaryDestination: { in: destinationIds } }, { additionalDestinations: { in: destinationIds } }] }, limit)
+}

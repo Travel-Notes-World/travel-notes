@@ -1,0 +1,9 @@
+{
+  "_note": "Licensed photos used on the site, with their credits. Each one must be used somewhere and credited where it appears. Add original photography here or, once media uploads exist, in the CMS.",
+  "licenses": {
+    "cc-by-sa-4": { "license": "CC BY-SA 4.0", "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0/" }
+  },
+  "images": {
+    "tasmania": { "file": "Boat shed and Cradle Mountain at Dove Lake, Tas.jpg", "author": "Thennicke", "license": "cc-by-sa-4", "alt": "Boat shed on Dove Lake with Cradle Mountain behind, Tasmania" }
+  }
+}

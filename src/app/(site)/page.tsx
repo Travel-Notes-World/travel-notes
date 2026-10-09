@@ -3,9 +3,9 @@ import type { ReactNode } from "react";
 
 import { Placeholder } from "@/components/Placeholder";
 import home from "@/content/data/home.json";
-import { sampleImage } from "@/content/sample";
 import { TRAVEL_STYLES } from "@/lib/community/constants";
 import { getCommunityHighlights, getFeaturedDestinations, getHomeTopics } from "@/lib/content/home";
+import { licensedImage } from "@/lib/content/images";
 import { getLatestStories, type Story } from "@/lib/content/stories";
 
 /**
@@ -50,9 +50,6 @@ function SectionHead({ eyebrow, title, link }: { eyebrow?: string; title: string
 
 const travelStyles = TRAVEL_STYLES.filter((s) => !home.ways.excludedTravelStyles.includes(s.value)).map((s) => ({ href: `/search?style=${s.value}`, label: s.label }));
 
-/** Topic pages are not on the CMS yet, so a topic links to a guide search for its name. */
-const topicHref = (name: string) => `/search?${new URLSearchParams({ q: name, type: "guide" })}`;
-
 function GuideMeta({ story, light = false }: { story: Story; light?: boolean }) {
   return (
     <span className={`text-[12.5px] ${light ? "text-white/85" : "text-ink-400"}`}>
@@ -68,13 +65,11 @@ export default async function HomePage() {
     getHomeTopics(),
     getCommunityHighlights(),
   ]);
-  // Sample articles fill listings only while the CMS has none; the homepage never shows them.
-  const realStories = stories.filter((s) => !s.isSample);
-  const latest = realStories[0];
-  const [flagship, ...more] = realStories;
-  const ways = [...topics.map((t) => ({ href: topicHref(t.name), label: t.name })), ...travelStyles];
+  const latest = stories[0];
+  const [flagship, ...more] = stories;
+  const ways = [...topics.map((t) => ({ href: `/topics/${t.slug}`, label: t.name })), ...travelStyles];
   const { hero: heroText } = home;
-  const hero = sampleImage(heroText.image);
+  const hero = licensedImage(heroText.image);
 
   return (
     <>
@@ -126,7 +121,7 @@ export default async function HomePage() {
       {/* TRUST STRIP: statements that are true today, no invented totals */}
       <section aria-label={home.trust.label} className="bg-paper-000 border-b border-paper-200">
         <ul className={`${wrap} list-none m-0 py-5.5 flex flex-wrap justify-center gap-x-14 gap-y-3 text-[13.5px] text-ink-600`}>
-          {realStories.length >= home.trust.guideCount.minimum && <li className="flex items-center gap-2.25"><Dot /><span><strong className="text-ink-900">{realStories.length}+</strong> {home.trust.guideCount.text}</span></li>}
+          {stories.length >= home.trust.guideCount.minimum && <li className="flex items-center gap-2.25"><Dot /><span><strong className="text-ink-900">{stories.length}+</strong> {home.trust.guideCount.text}</span></li>}
           {home.trust.items.map((t) => (
             <li key={t.strong} className="flex items-center gap-2.25"><Dot /><span>{t.before}<strong className="text-ink-900">{t.strong}</strong>{t.after}</span></li>
           ))}

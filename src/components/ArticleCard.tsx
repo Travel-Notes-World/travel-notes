@@ -1,10 +1,10 @@
 import Link from "next/link";
-import type { CommonsImage } from "@/content/sample";
+import type { CommonsImage } from "@/lib/content/images";
 import { Placeholder } from "./Placeholder";
 
 const fmt = (iso: string) => new Date(iso).toLocaleDateString("en-AU", { day: "numeric", month: "short", year: "numeric" });
 
-/** The fields a card needs. Both sample articles and CMS stories satisfy this shape. */
+/** The fields a card needs; a CMS story (src/lib/content/stories.ts) satisfies this shape. */
 export type CardArticle = {
   slug: string; type: string; title: string; excerpt: string; readMinutes: number; updated: string;
   author: { name: string }; heroTone: string; accent: string; image?: CommonsImage;

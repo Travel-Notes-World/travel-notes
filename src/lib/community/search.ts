@@ -1,6 +1,6 @@
 import type { Where } from 'payload'
 
-import { LIMITS, type ContributionType } from './constants'
+import { LIMITS, TRAVEL_STYLES, type ContributionType } from './constants'
 import { cms, run, sql } from './db'
 import { isUuid, withDescendants } from './destinations'
 import { track } from './metrics'
@@ -43,15 +43,19 @@ export async function search(input: SearchInput): Promise<SearchResult> {
 
   const destinationId = input.destinationId && isUuid(input.destinationId) ? input.destinationId : null
 
-  // Guides match the words typed, the chosen destination (including places inside it), or both.
-  // A destination alone lists that destination's guides, so "guides for Kyoto" works without words.
+  const style = TRAVEL_STYLES.some((s) => s.value === input.style) ? (input.style as string) : null
+
+  // Guides match the words typed, the chosen destination (including places inside it), the chosen
+  // travel style, or any combination. A destination or a style alone lists matching guides, so
+  // "guides for Kyoto" and the homepage style buttons work without words.
   let guides: GuideLink[] = []
   const wordsForGuides = query.length >= 2
   const destinationGuides = Boolean(destinationId) && input.type === 'guide'
-  if ((wordsForGuides || destinationGuides) && (!input.type || input.type === 'guide') && page === 1) {
+  if ((wordsForGuides || destinationGuides || style) && (!input.type || input.type === 'guide') && page === 1) {
     const where: Where[] = []
     if (wordsForGuides) where.push({ or: [{ title: { like: query } }, { excerpt: { like: query } }] })
     if (destinationId) where.push({ primaryDestination: { in: await withDescendants(destinationId, payload) } })
+    if (style) where.push({ travelStyles: { in: [style] } })
     const found = await payload.find({
       collection: 'articles',
       where: { and: where },

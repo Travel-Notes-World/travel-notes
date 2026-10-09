@@ -291,6 +291,24 @@ export interface Article {
   additionalDestinations?: (string | Destination)[] | null;
   topics?: (string | Topic)[] | null;
   /**
+   * Optional. The kinds of trip this guide suits, for example Budget or Family.
+   */
+  travelStyles?:
+    | (
+        | 'budget'
+        | 'mid_range'
+        | 'luxury'
+        | 'backpacking'
+        | 'family'
+        | 'adventure'
+        | 'slow'
+        | 'road_trip'
+        | 'city_break'
+        | 'food'
+        | 'business'
+      )[]
+    | null;
+  /**
    * Set automatically on first publication.
    */
   firstPublishedAt?: string | null;
@@ -1516,6 +1534,7 @@ export interface ArticlesSelect<T extends boolean = true> {
   primaryDestination?: T;
   additionalDestinations?: T;
   topics?: T;
+  travelStyles?: T;
   firstPublishedAt?: T;
   editorialUpdatedAt?: T;
   reviewedAt?: T;
