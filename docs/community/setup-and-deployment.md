@@ -20,6 +20,7 @@ code or documents.
 | `EMAIL_REPLY_TO` | Optional | production | Where replies to community email go. |
 | `S3_BUCKET`, `S3_ENDPOINT`, `S3_ACCESS_KEY_ID`, `S3_SECRET_ACCESS_KEY` | Required for photos on Vercel | all that allow uploads | Cloudflare R2 (or other S3-compatible) bucket. Without them photo upload says it is unavailable; everything else works. |
 | `S3_REGION` | Optional | | Defaults to `auto` (correct for R2). |
+| `PREVIEW_DATABASE_IS_SEPARATE` | Preview only | preview | `yes` lets preview builds run database migrations. Set it only when Preview's `DATABASE_URL` is its own Neon branch (`preview`), never production. Without it, preview builds skip migrations. |
 | `CRON_SECRET` | Required | production | At least 16 random characters. Vercel sends it to `/cron/daily` automatically. Without it the daily job refuses to run and the dashboard says so. |
 | `ALLOW_EMAIL_CAPTURE` | Never on the live site | test servers only | Lets a production build on a test machine use `capture`. |
 | `COMMUNITY_RATE_LIMIT_MULTIPLIER` | Never in production | tests/local | Raises rate limits for automated tests; ignored in production. |
@@ -47,13 +48,16 @@ disposable database.
 
 ## 3. Preview deployment (for review)
 
-1. In Neon create a branch `preview-community` from production.
+1. In Neon the branch `preview` (a copy of production, created 9 Oct 2026) is Preview's database.
+   Its `neondb_owner` password differs from production's. To refresh it with current production data,
+   use *Reset from parent* in Neon.
 2. In Vercel, set **Preview**-scoped variables:
-   - `DATABASE_URL` = the preview branch;
+   - `DATABASE_URL` = the `preview` branch (pooled connection string);
+   - `PREVIEW_DATABASE_IS_SEPARATE=yes`, so preview builds apply migrations to that branch;
    - `EMAIL_TRANSPORT=capture`;
    - optionally the `S3_*` variables for a test bucket.
    - Leave `NEXT_PUBLIC_INDEXABLE` unset.
-3. Run steps 2.2 and 2.3 against the preview branch.
+3. Migrations run automatically on each preview build. Run step 2.3 against the preview branch if you want destinations there.
 4. Push the branch. Vercel builds a preview URL automatically.
 5. Sign in to `/admin` as administrator → Community settings: tick *Community open to the public* and
    *Sign-ups open*. Tick *Community moderator* on any staff who will moderate.
