@@ -24,13 +24,12 @@ export async function up({ db, payload, req }: MigrateUpArgs): Promise<void> {
 }
 
 export async function down({ db, payload, req }: MigrateDownArgs): Promise<void> {
+  // Remove the reference from payload_locked_documents_rels first, then the table it points at.
   await db.execute(sql`
-   ALTER TABLE "redirects" DISABLE ROW LEVEL SECURITY;
-  DROP TABLE "redirects" CASCADE;
-  ALTER TABLE "payload_locked_documents_rels" DROP CONSTRAINT "payload_locked_documents_rels_redirects_fk";
-  
-  DROP INDEX "payload_locked_documents_rels_redirects_id_idx";
-  ALTER TABLE "payload_locked_documents_rels" DROP COLUMN "redirects_id";
-  DROP TYPE "public"."enum_redirects_type";
-  DROP TYPE "public"."enum_redirects_source";`)
+   ALTER TABLE "payload_locked_documents_rels" DROP CONSTRAINT IF EXISTS "payload_locked_documents_rels_redirects_fk";
+  DROP INDEX IF EXISTS "payload_locked_documents_rels_redirects_id_idx";
+  ALTER TABLE "payload_locked_documents_rels" DROP COLUMN IF EXISTS "redirects_id";
+  DROP TABLE IF EXISTS "redirects" CASCADE;
+  DROP TYPE IF EXISTS "public"."enum_redirects_type";
+  DROP TYPE IF EXISTS "public"."enum_redirects_source";`)
 }
