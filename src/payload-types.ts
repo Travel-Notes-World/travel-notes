@@ -92,6 +92,7 @@ export interface Config {
     'rate-limits': RateLimit;
     'metric-counters': MetricCounter;
     'job-runs': JobRun;
+    'totp-attempts': TotpAttempt;
     'payload-kv': PayloadKv;
     'payload-locked-documents': PayloadLockedDocument;
     'payload-preferences': PayloadPreference;
@@ -123,6 +124,7 @@ export interface Config {
     'rate-limits': RateLimitsSelect<false> | RateLimitsSelect<true>;
     'metric-counters': MetricCountersSelect<false> | MetricCountersSelect<true>;
     'job-runs': JobRunsSelect<false> | JobRunsSelect<true>;
+    'totp-attempts': TotpAttemptsSelect<false> | TotpAttemptsSelect<true>;
     'payload-kv': PayloadKvSelect<false> | PayloadKvSelect<true>;
     'payload-locked-documents': PayloadLockedDocumentsSelect<false> | PayloadLockedDocumentsSelect<true>;
     'payload-preferences': PayloadPreferencesSelect<false> | PayloadPreferencesSelect<true>;
@@ -486,6 +488,8 @@ export interface Staff {
    * Tick to let this person moderate the community at /moderation. Administrators can always moderate.
    */
   communityModerator?: boolean | null;
+  totpSecret?: string | null;
+  hasTotp?: boolean | null;
   updatedAt: string;
   createdAt: string;
   email: string;
@@ -1249,6 +1253,15 @@ export interface JobRun {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "totp-attempts".
+ */
+export interface TotpAttempt {
+  id: string;
+  attempts: number;
+  lockUntil?: string | null;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "payload-kv".
  */
 export interface PayloadKv {
@@ -1565,6 +1578,8 @@ export interface StaffSelect<T extends boolean = true> {
   role?: T;
   active?: T;
   communityModerator?: T;
+  totpSecret?: T;
+  hasTotp?: T;
   updatedAt?: T;
   createdAt?: T;
   email?: T;
@@ -2062,6 +2077,15 @@ export interface JobRunsSelect<T extends boolean = true> {
   durationMs?: T;
   updatedAt?: T;
   createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "totp-attempts_select".
+ */
+export interface TotpAttemptsSelect<T extends boolean = true> {
+  id?: T;
+  attempts?: T;
+  lockUntil?: T;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema

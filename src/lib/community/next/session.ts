@@ -7,6 +7,7 @@ import { cache } from 'react'
 
 import type { Member } from '../../../payload-types'
 import { userCanModerate } from '../../../access/community'
+import { staffSecondStepDone } from '../../../access/twoFactor'
 import { cms } from '../db'
 import { toActor } from '../members'
 import type { MemberActor, StaffActor } from '../types'
@@ -30,7 +31,8 @@ export const getViewer = cache(async (): Promise<Viewer> => {
   }
   if (user.collection === 'staff') {
     const s = user as unknown as { id: string; name?: string; role?: string; active?: boolean; communityModerator?: boolean }
-    if (s.active === false) return { member: null, staff: null, sessionId: null }
+    // Staff count as staff on the site only after the two-step login (see src/access/twoFactor.ts).
+    if (s.active === false || !staffSecondStepDone(user)) return { member: null, staff: null, sessionId: null }
     return { member: null, staff: { kind: 'staff', id: s.id, name: s.name ?? 'Staff', canModerate: userCanModerate(user), isAdministrator: s.role === 'administrator' }, sessionId }
   }
   return { member: null, staff: null, sessionId: null }

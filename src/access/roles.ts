@@ -1,5 +1,7 @@
 import type { Access, FieldAccess, PayloadRequest } from 'payload'
 
+import { staffSecondStepDone } from './twoFactor'
+
 /**
  * Editorial roles, lowest to highest (implementation plan §5).
  * contributor: edits own drafts.
@@ -12,8 +14,13 @@ export type Role = (typeof ROLES)[number]
 
 type StaffUser = { id: string; role?: Role | null; active?: boolean | null }
 
+/** The signed-in staff member, only once they have also passed the two-step login (see ./twoFactor). */
 const staffUser = (req: PayloadRequest): StaffUser | null =>
-  req.user && req.user.collection === 'staff' ? (req.user as unknown as StaffUser) : null
+  req.user && req.user.collection === 'staff' && staffSecondStepDone(req.user) ? (req.user as unknown as StaffUser) : null
+
+/** An active staff account that has signed in with its password, whether or not it has entered its code yet. */
+export const isSignedInStaff = (req: PayloadRequest): boolean =>
+  Boolean(req.user && req.user.collection === 'staff' && (req.user as unknown as StaffUser).active !== false)
 
 /** True when the request comes from an active staff member whose role is at least `min`. */
 export const hasRole = (req: PayloadRequest, min: Role): boolean => {
