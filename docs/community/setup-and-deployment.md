@@ -114,5 +114,18 @@ ALLOW_DEMO_SEED=yes npm run community:demo-seed   # "[Demo]" content, localhost 
 npm run dev
 ```
 
+Using a personal Neon branch instead of local Postgres also works (`.env` or `.env.local`, with
+`DATABASE_URL` pointing at your own branch, never production). Notes for that setup:
+
+- Run `npx payload migrate` **before** opening `/admin` or `/community`. Until then the code asks for
+  columns that do not exist yet (for example `column staff.community_moderator does not exist`).
+- `npx payload migrate:status` shows what has run without changing anything.
+- The demo seed refuses any database that is not on localhost, so create test content by hand.
+- A branch copied from production also copies its staff accounts, so `/admin` shows a login form,
+  not "Create first user". Ask the owner for an account rather than resetting a copied one.
+- `/moderation` answers 404 unless you are signed in as staff (by design).
+- Browser extensions (Grammarly, ColorZilla and similar) add attributes to `<html>` and `<body>` and
+  cause hydration warnings in development. Test in a private window to see only real problems.
+
 Tests: `TEST_DATABASE_URL=postgresql://…/tn_test npm run test:community` (82 tests) and
 `npm run test:access` (21 tests).

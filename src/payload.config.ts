@@ -15,6 +15,7 @@ import { Topics } from './collections/Topics'
 import { CommunitySettings } from './globals/CommunitySettings'
 import { LIMITS } from './lib/community/constants'
 import { s3Config } from './lib/community/storage'
+import { payloadEmailAdapter } from './lib/community/email/payload-adapter'
 
 const filename = fileURLToPath(import.meta.url)
 const dirname = path.dirname(filename)
@@ -58,5 +59,7 @@ export default buildConfig({
     push: false,
     migrationDir: path.resolve(dirname, 'migrations'),
   }),
+  // Staff emails (password reset) use the same transport as community email.
+  email: payloadEmailAdapter,
   sharp,
 })
