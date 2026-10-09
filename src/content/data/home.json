@@ -11,8 +11,6 @@
     "quickLinksLabel": "Popular starting points",
     "quickLinks": [
       { "label": "Destinations", "href": "/destinations" },
-      { "label": "Itineraries", "href": "/topics/itineraries" },
-      { "label": "Budget travel", "href": "/topics/budget" },
       { "label": "Traveller questions", "href": "/community/questions" },
       { "label": "Trip reports", "href": "/community/trips" },
       { "label": "Activities", "href": "/activities" }
@@ -36,18 +34,13 @@
   "destinations": {
     "eyebrow": "Where next",
     "title": "Popular destinations",
-    "link": { "label": "All destinations", "href": "/destinations" },
-    "explorePrefix": "Explore"
+    "explorePrefix": "Explore",
+    "guideOne": "1 guide",
+    "guideMany": "guides"
   },
   "ways": {
     "title": "Travel your way",
     "countSuffix": "ways to explore",
-    "topics": [
-      { "label": "Itineraries", "href": "/topics/itineraries" },
-      { "label": "Practical tips", "href": "/topics/tips" },
-      { "label": "Budget travel", "href": "/topics/budget" },
-      { "label": "Gear", "href": "/topics/gear" }
-    ],
     "excludedTravelStyles": ["business"]
   },
   "guides": {
@@ -58,82 +51,18 @@
     "minutesLabel": "min",
     "updatedLabel": "Updated"
   },
-  "comingSoonLabel": "Coming soon",
-  "explorers": [
-    { "eyebrow": "Watch", "title": "Video explorer", "text": "Short destination films from our own trips, linked to the guides they belong to." },
-    { "eyebrow": "See", "title": "Photo explorer", "text": "Photo essays and galleries with original photography, credited and described for everyone." }
-  ],
-  "hub": {
-    "eyebrow": "Destination knowledge hub",
-    "title": "Everything about a place, in one page",
-    "text": "Destination pages are growing to answer the questions travellers actually ask, structured so you (and search engines) find answers fast.",
-    "parts": [
-      { "title": "Attractions", "text": "What is genuinely worth your time, and what isn’t." },
-      { "title": "Hotels", "text": "Where to stay by area, style and budget." },
-      { "title": "Restaurants", "text": "Local picks, not tourist traps." },
-      { "title": "Things to Do", "text": "Experiences recommended by travellers who have been." },
-      { "title": "Transport", "text": "Getting there and around, step by step." },
-      { "title": "Safety & Costs", "text": "Current prices, scams to avoid, real budgets." },
-      { "title": "Best Time to Visit", "text": "Month-by-month weather and crowds." },
-      { "title": "FAQs", "text": "Straight answers to the questions everyone asks." }
-    ]
-  },
-  "hiddenGems": {
-    "eyebrow": "Editor curated",
-    "title": "Hidden gems",
-    "text": "Lesser-known places our editors think deserve the trip, each with an honest guide to getting there."
-  },
-  "worldExplorer": {
-    "eyebrow": "Interactive world explorer",
-    "title": "Pick a continent, go deep",
-    "text": "A clickable world map for browsing guides and traveller posts by region. Until then, start from the destinations page.",
-    "link": { "label": "Browse destinations", "href": "/destinations" }
-  },
-  "planner": {
-    "title": "AI trip planning, grounded in real knowledge",
-    "text": "Tell us where, when and how you like to travel. The planner will draft an itinerary from our guides and real traveller knowledge, not generic AI guesses. Until it arrives, you can save and plan trips in My trips.",
-    "cta": { "label": "Open My trips", "href": "/account/trips" },
-    "exampleLabel": "Example of a planned itinerary",
-    "exampleNote": "Example only · what a planned itinerary could look like",
-    "exampleDays": [
-      { "day": "Day 1", "text": "Arrive Lisbon · Alfama walking route · sunset at a miradouro" },
-      { "day": "Day 2", "text": "Day trip to Sintra, starting early to beat the crowds" },
-      { "day": "Day 3", "text": "Belém pastries · LX Factory · fado in Bairro Alto" }
-    ]
-  },
-  "directory": {
-    "eyebrow": "Business directory",
-    "badge": "Later",
-    "title": "Places to stay, eat & book",
-    "text": "Local travel, holiday and activity businesses, reviewed before they are listed. Planned for when Travel Notes is larger.",
-    "tags": ["Hotels", "Restaurants", "Tours", "Experiences"]
-  },
   "tripReports": {
     "eyebrow": "Trip reports",
     "title": "Real journeys, told well",
-    "emptyText": "First-hand trip reports from members, with real costs and day-by-day plans.",
-    "browse": { "label": "Read trip reports", "href": "/community/trips" },
-    "create": { "label": "Share your trip", "href": "/community/trips/new" }
+    "browse": { "label": "Read trip reports", "href": "/community/trips" }
   },
   "community": {
     "eyebrow": "Community",
-    "closedBadge": "Opening soon",
     "title": "Ask people who’ve been",
     "text": "Travel questions answered by travellers and locals, checked by a moderator before they appear.",
     "answerOne": "1 answer",
     "answerMany": "answers",
-    "browse": { "label": "Browse questions", "href": "/community/questions" },
-    "create": { "label": "Ask the first question", "href": "/community/questions/new" }
-  },
-  "newsletter": {
-    "title": "The Field Notes newsletter",
-    "text": "One email a week: a destination worth knowing, a guide worth reading, and one hidden gem. No noise, unsubscribe anytime.",
-    "emailLabel": "Email address",
-    "placeholder": "you@example.com",
-    "button": "Subscribe",
-    "badge": "Soon",
-    "note": "Sign-ups open shortly",
-    "privacy": { "label": "Privacy", "href": "/privacy" }
+    "browse": { "label": "Browse questions", "href": "/community/questions" }
   },
   "commitments": {
     "title": "Why trust Travel Notes",
