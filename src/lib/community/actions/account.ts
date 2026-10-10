@@ -96,8 +96,8 @@ export async function updateEmailPrefsAction(_: ActionState, form: FormData): Pr
 
 export async function changePasswordAction(_: ActionState, form: FormData): Promise<ActionState> {
   try {
-    const { member } = await getViewer()
-    await changePassword(member!, { current: str(form, 'current'), next: str(form, 'next') })
+    const { member, sessionId } = await getViewer()
+    await changePassword(member!, { current: str(form, 'current'), next: str(form, 'next') }, sessionId)
     return { ok: true, message: 'Your password is changed.' }
   } catch (error) {
     return toState(error)

@@ -1,7 +1,13 @@
 const cities = require('all-the-cities')
+// Small countries have few or no places of 100,000 people, so each is topped up to this many places
+// with its largest towns of at least TOP_UP_MIN people.
+const TOP_UP_TO = 10
+const TOP_UP_MIN = 1000
 const { countries } = require('countries-list')
 const tz = require('tz-lookup')
-const slug = (s) => s.normalize('NFKD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/&/g, ' and ').replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '')
+// Letters that have no accent to strip, so NFKD leaves them as they are (Łódź, Tromsø, Garðabær, Kırıkkale).
+const LETTERS = { ł: 'l', ı: 'i', ð: 'd', đ: 'd', ø: 'o', ħ: 'h', æ: 'ae', œ: 'oe', þ: 'th', ß: 'ss' }
+const slug = (s) => s.normalize('NFKD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/[łıðđøħæœþß]/g, (ch) => LETTERS[ch]).replace(/&/g, ' and ').replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '')
 const keep = cities.filter((c) => c.population >= 100000 || c.featureCode === 'PPLC')
 const outCountries = []
 const usedCountrySlugs = new Set()
@@ -17,7 +23,17 @@ for (const [code, c] of Object.entries(countries)) {
 }
 const outCities = []
 const used = new Map()
-for (const c of keep.sort((a, b) => b.population - a.population)) {
+const kept = new Set(keep.map((c) => c.cityId))
+const perCountry = new Map()
+for (const c of keep) perCountry.set(c.country, (perCountry.get(c.country) || 0) + 1)
+// Appended after the main list so the slugs of the places above never change.
+const topUp = []
+for (const code of Object.keys(countries)) {
+  const room = TOP_UP_TO - (perCountry.get(code) || 0)
+  if (room <= 0) continue
+  topUp.push(...cities.filter((c) => c.country === code && !kept.has(c.cityId) && c.population >= TOP_UP_MIN).sort((a, b) => b.population - a.population).slice(0, room))
+}
+for (const c of [...keep.sort((a, b) => b.population - a.population), ...topUp.sort((a, b) => b.population - a.population)]) {
   if (!countries[c.country]) continue
   const set = used.get(c.country) ?? new Set(); used.set(c.country, set)
   let s = slug(c.name) || `place-${c.cityId}`
@@ -32,7 +48,7 @@ for (const c of keep.sort((a, b) => b.population - a.population)) {
 }
 const data = {
   source: {
-    cities: 'GeoNames (geonames.org), via the npm package all-the-cities 3.1.0. Licence: Creative Commons Attribution 4.0 (CC BY 4.0). Places with at least 100,000 people, plus every national capital.',
+    cities: 'GeoNames (geonames.org), via the npm package all-the-cities 3.1.0. Licence: Creative Commons Attribution 4.0 (CC BY 4.0). Places with at least 100,000 people, plus every national capital, plus each country\'s largest towns of at least 1,000 people until it has 10 places.',
     countries: 'ISO 3166-1 country list from the npm package countries-list 3.4.1 (MIT licence).',
     timeZones: 'Time zones looked up from coordinates with the npm package tz-lookup 6.1.25 (CC0). Approximate near borders; editors can correct any record.',
     generated: new Date().toISOString().slice(0, 10),

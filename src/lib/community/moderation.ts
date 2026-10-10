@@ -1,10 +1,12 @@
-import type { Contribution, Reply } from '../../payload-types'
+import type { Contribution, Member, Reply } from '../../payload-types'
 import { audit } from './audit'
 import { INDEXING_CHOICES, optionValues, type ContributionType, type EventStatus } from './constants'
 import type { Content } from './content'
 import { applyApprovedContent, contributionPath, docToContent } from './contributions'
 import { cms, inTransaction, relId, run, sql, type Tx } from './db'
 import { destinationsByIds, isUuid } from './destinations'
+import { enqueueEmail } from './email/outbox'
+import { emailMode } from './email/transport'
 import { fail, invalid } from './errors'
 import { changeEventStatus, notifyEventChange } from './events'
 import { recountMember } from './members'
@@ -319,6 +321,70 @@ export async function setTrusted(staffIn: StaffActor, memberId: unknown, trusted
     await tx.payload.update({ collection: 'members', id: member.id, data: { trusted }, req: tx.req })
     await audit(tx, { action: 'set_trust', actor: staff, targetType: 'member', targetId: member.id, details: { trusted } })
   })
+  return { ok: true }
+}
+
+/** A member account a moderator can help, with the hidden confirmation fields loaded. Never a deleted one. */
+async function loadMemberForSupport(memberId: unknown): Promise<Member> {
+  if (!isUuid(memberId)) fail('not_found', 'That member could not be found.')
+  const payload = await cms()
+  const member = await payload.findByID({ collection: 'members', id: memberId as string, depth: 0, disableErrors: true, showHiddenFields: true })
+  if (!member || member.status === 'deleted') return fail('not_found', 'That member could not be found.')
+  return member
+}
+
+const requireEmail = () => {
+  if (emailMode() === 'off') fail('unavailable', 'Email is not set up for this site, so nothing can be sent. See the owner dashboard.')
+}
+
+/**
+ * Email the member a link to choose a new password, the same link as "Forgot your password?".
+ * Moderators never see the link or the password, so a moderator cannot take over an account.
+ */
+export async function sendMemberPasswordReset(staffIn: StaffActor, memberId: unknown): Promise<{ ok: true }> {
+  const staff = requireModerator(staffIn)
+  const member = await loadMemberForSupport(memberId)
+  requireEmail()
+  const payload = await cms()
+  const token = await payload.forgotPassword({ collection: 'members', data: { email: member.email }, disableEmail: true })
+  if (!token) fail('unavailable', 'A reset link could not be created. Please try again.')
+  await inTransaction(async (tx) => {
+    await enqueueEmail(tx, { template: 'password_reset', recipient: member.id, data: { token }, idempotencyKey: `reset:${member.id}:${String(token).slice(0, 12)}` })
+    await audit(tx, { action: 'send_password_reset', actor: staff, targetType: 'member', targetId: member.id })
+  })
+  return { ok: true }
+}
+
+/** Send the confirmation link again for a member who has not confirmed their email address. */
+export async function resendMemberVerification(staffIn: StaffActor, memberId: unknown): Promise<{ ok: true }> {
+  const staff = requireModerator(staffIn)
+  const member = await loadMemberForSupport(memberId)
+  if (member._verified !== false) fail('conflict', 'This email address is already confirmed.')
+  requireEmail()
+  const token = member._verificationToken
+  if (!token) fail('conflict', 'This account has no confirmation link to send. If you are sure the address belongs to the member, mark it as confirmed.')
+  await inTransaction(async (tx) => {
+    await enqueueEmail(tx, { template: 'verify_email', recipient: member.id, data: { token }, idempotencyKey: `verify:${member.id}:staff:${Date.now()}` })
+    await audit(tx, { action: 'resend_verification', actor: staff, targetType: 'member', targetId: member.id })
+  })
+  return { ok: true }
+}
+
+/**
+ * Confirm a member's email address by hand, for when the confirmation email cannot reach them.
+ * The moderator writes down how they know the address is the member's; it goes in the audit log.
+ */
+export async function markMemberVerified(staffIn: StaffActor, memberId: unknown, reasonIn: unknown): Promise<{ ok: true }> {
+  const staff = requireModerator(staffIn)
+  const member = await loadMemberForSupport(memberId)
+  if (member._verified !== false) fail('conflict', 'This email address is already confirmed.')
+  const reason = cleanText(reasonIn, 1000)
+  if (reason.length < 5) invalid({ reason: 'Write how you know this address belongs to the member. It goes in the audit log.' })
+  await inTransaction(async (tx) => {
+    await tx.payload.update({ collection: 'members', id: member.id, data: { _verified: true, _verificationToken: null }, req: tx.req })
+    await audit(tx, { action: 'confirm_email', actor: staff, targetType: 'member', targetId: member.id, reason })
+  })
+  await track('member_verified')
   return { ok: true }
 }
 

@@ -8,11 +8,14 @@ import {
   decideReply,
   decideSuggestion,
   markDuplicate,
+  markMemberVerified,
   moderateEventStatus,
   overrideAcceptedAnswer,
   recordFactCheck,
+  resendMemberVerification,
   resolveReport,
   restrictAccount,
+  sendMemberPasswordReset,
   setIndexing,
   setTrusted,
   setVisibility,
@@ -217,6 +220,40 @@ export async function decideSuggestionAction(_: ActionState, form: FormData): Pr
     await decideSuggestion(staff, str(form, 'id'), { decision, destinationId: str(form, 'destinationId'), resolution: str(form, 'resolution') })
     refresh(form, [])
     return { ok: true, message: decision === 'accept' ? 'Suggestion accepted and linked to the destination.' : 'Suggestion turned down.' }
+  } catch (error) {
+    return toState(error, formValues(form))
+  }
+}
+
+/** Email the member a link to choose a new password. The moderator never sees it. */
+export async function sendMemberPasswordResetAction(_: ActionState, form: FormData): Promise<ActionState> {
+  try {
+    const staff = await moderator()
+    await sendMemberPasswordReset(staff, str(form, 'memberId'))
+    refresh(form, [])
+    return { ok: true, message: 'A link to choose a new password has been sent to the member. It works for one hour.' }
+  } catch (error) {
+    return toState(error)
+  }
+}
+
+export async function resendMemberVerificationAction(_: ActionState, form: FormData): Promise<ActionState> {
+  try {
+    const staff = await moderator()
+    await resendMemberVerification(staff, str(form, 'memberId'))
+    refresh(form, [])
+    return { ok: true, message: 'The confirmation email has been sent again.' }
+  } catch (error) {
+    return toState(error)
+  }
+}
+
+export async function markMemberVerifiedAction(_: ActionState, form: FormData): Promise<ActionState> {
+  try {
+    const staff = await moderator()
+    await markMemberVerified(staff, str(form, 'memberId'), str(form, 'reason'))
+    refresh(form, [])
+    return { ok: true, message: 'Email address marked as confirmed. The member can sign in now.' }
   } catch (error) {
     return toState(error, formValues(form))
   }

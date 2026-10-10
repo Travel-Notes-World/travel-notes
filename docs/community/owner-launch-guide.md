@@ -31,7 +31,7 @@ people posting useful things. No feature or number in this release replaces that
   automatically where both exist).
 - Tick *Hub indexable* only for hubs that have several genuinely useful posts. A thin hub page
   that ranks hurts more than it helps.
-- All 4,519 cities exist for posting, but only places with content appear in the directory.
+- All 5,485 cities exist for posting, but only places with content appear in the directory.
 
 ## Content quality
 

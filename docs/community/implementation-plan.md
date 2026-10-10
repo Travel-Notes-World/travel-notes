@@ -36,7 +36,7 @@ tested locally; waiting for owner review, integrations and a preview deployment.
 ### Stage 1: foundations
 - [x] Schema, access rules, migration (tested up/down/up)
 - [x] Community settings switches
-- [x] Destination taxonomy and import script (252 countries, 4,519 cities)
+- [x] Destination taxonomy and import script (252 countries, 5,485 cities)
 - [x] Rate limits, audit log, metrics, settings
 
 ### Stage 2: accounts, questions, moderation
