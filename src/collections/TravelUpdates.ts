@@ -3,6 +3,7 @@ import type { CollectionConfig, Field } from 'payload'
 import { blockPublishBelowPublisher, draftOnlyBelowPublisher } from '../access/publishGuard'
 import { isEditor, isPublisher, publishedOrStaff } from '../access/roles'
 import { DESTINATIONS_TAG, UPDATES_TAG, expireTags, updateTag } from '../lib/content/revalidate'
+import { scheduleFields, scheduleGuard } from '../lib/content/schedule'
 import { UPDATE_CATEGORIES, validSourceUrl } from '../lib/content/updateRules'
 import { addressGone, published } from '../lib/redirects/automatic'
 import { slugField, validateSlug } from './fields'
@@ -24,7 +25,7 @@ export const TravelUpdates: CollectionConfig = {
   labels: { singular: 'Travel update', plural: 'Travel updates' },
   admin: {
     useAsTitle: 'title',
-    defaultColumns: ['title', 'category', 'affectsAustralians', '_status', 'firstPublishedAt'],
+    defaultColumns: ['title', 'category', '_status', 'publishAt', 'firstPublishedAt'],
     group: 'Editorial',
     description: 'Short, dated reports of changes that matter to travellers. Each one needs an official source.',
   },
@@ -48,6 +49,7 @@ export const TravelUpdates: CollectionConfig = {
         }
         return data
       },
+      scheduleGuard,
     ],
     afterChange: [
       async ({ doc, previousDoc, req }) => {
@@ -157,6 +159,7 @@ export const TravelUpdates: CollectionConfig = {
         return new Date(value as string) >= new Date(siblingData.effectiveDate) ? true : 'The end date must be on or after the start date.'
       },
     },
+    ...scheduleFields,
     {
       name: 'firstPublishedAt',
       type: 'date',

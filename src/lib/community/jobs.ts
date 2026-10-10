@@ -6,6 +6,7 @@ import { purgeExpiredRateLimits } from './ratelimit'
 import { sendDigests } from './digest'
 import { deliverPendingContactMessages } from '../contact'
 import { syncPendingSubscribers } from '../newsletter'
+import { publishDue } from '../content/schedule'
 
 /**
  * Scheduled jobs. Every job can be run at any time, any number of times: each one only acts on
@@ -14,6 +15,9 @@ import { syncPendingSubscribers } from '../newsletter'
  *
  * Nothing here runs in memory between requests: on serverless hosting a job is one request.
  */
+/** What a job returns when it had nothing to do; such runs are not recorded. */
+const NOTHING_DUE = 'nothing due'
+
 export const JOBS = {
   outbox: async () => { const r = await deliverOutbox({ limit: 100 }); return `attempted ${r.attempted}, sent ${r.sent}, captured ${r.captured}, suppressed ${r.suppressed}, retrying ${r.retrying}, failed ${r.failed}` },
   events: async () => `marked ${await markEndedEvents()} activities as ended`,
@@ -21,6 +25,12 @@ export const JOBS = {
   'rate-limits': async () => `removed ${await purgeExpiredRateLimits()} finished rate-limit windows`,
   digest: async () => { const r = await sendDigests(); return `queued ${r.queued} digests for ${r.considered} subscribers` },
   newsletter: async () => { const r = await syncPendingSubscribers(); return `newsletter: attempted ${r.attempted}, copied ${r.synced}, still waiting ${r.waiting}` },
+  // Scheduled guides and travel updates. Run every 10 minutes by .github/workflows/scheduled-publish.yml.
+  publish: async () => {
+    const r = await publishDue(await cms())
+    if (r.failed.length) throw new Error(`published ${r.published.length}; could not publish ${r.failed.join(', ')} (reason shown on each document)`)
+    return r.published.length ? `published ${r.published.join(', ')}` : NOTHING_DUE
+  },
   contact: async () => { const r = await deliverPendingContactMessages(); return `contact messages: attempted ${r.attempted}, emailed ${r.sent}, still waiting ${r.waiting}` },
 } as const
 export type JobName = keyof typeof JOBS
@@ -44,14 +54,17 @@ export async function runJob(job: JobName): Promise<JobResult> {
   } finally {
     await run(payload, sql`SELECT pg_advisory_unlock(${key})`).catch(() => undefined)
   }
-  await payload.create({ collection: 'job-runs', data: { job, ok: result.ok, summary: result.summary, durationMs: Date.now() - started } }).catch(() => undefined)
+  // A frequent run with nothing to do is not recorded, so the history stays readable.
+  if (!(result.ok && result.summary === NOTHING_DUE)) {
+    await payload.create({ collection: 'job-runs', data: { job, ok: result.ok, summary: result.summary, durationMs: Date.now() - started } }).catch(() => undefined)
+  }
   return result
 }
 
 /** Everything that should happen once a day. One failing job does not stop the others. */
 export async function runDaily(): Promise<JobResult[]> {
   const results: JobResult[] = []
-  for (const job of ['outbox', 'events', 'photos', 'rate-limits', 'digest', 'contact', 'newsletter'] as JobName[]) results.push(await runJob(job))
+  for (const job of ['publish', 'outbox', 'events', 'photos', 'rate-limits', 'digest', 'contact', 'newsletter'] as JobName[]) results.push(await runJob(job))
   // Keep three months of run history.
   const payload = await cms()
   await run(payload, sql`DELETE FROM "job_runs" WHERE "created_at" < now() - interval '90 days'`).catch(() => undefined)

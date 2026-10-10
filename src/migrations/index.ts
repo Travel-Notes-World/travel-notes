@@ -8,6 +8,7 @@ import * as migration_20261009_150327_newsletter_subscribers from './20261009_15
 import * as migration_20261009_152739_redirects from './20261009_152739_redirects';
 import * as migration_20261009_160847_article_search from './20261009_160847_article_search';
 import * as migration_20261009_163759_travel_updates from './20261009_163759_travel_updates';
+import * as migration_20261010_062047_scheduled_publishing from './20261010_062047_scheduled_publishing';
 
 export const migrations = [
   {
@@ -58,6 +59,11 @@ export const migrations = [
   {
     up: migration_20261009_163759_travel_updates.up,
     down: migration_20261009_163759_travel_updates.down,
-    name: '20261009_163759_travel_updates'
+    name: '20261009_163759_travel_updates',
+  },
+  {
+    up: migration_20261010_062047_scheduled_publishing.up,
+    down: migration_20261010_062047_scheduled_publishing.down,
+    name: '20261010_062047_scheduled_publishing'
   },
 ];
