@@ -6,7 +6,7 @@
       { "label": "Travel Guides", "href": "/guides" },
       { "label": "Community", "href": "/community" },
       { "label": "Activities", "href": "/activities" },
-      { "label": "Photography", "href": null },
+      { "label": "Travel Updates", "href": "/updates" },
       { "label": "Trip Planner", "href": null }
     ],
     "businessLink": { "label": "For Businesses", "href": "/advertise" },
