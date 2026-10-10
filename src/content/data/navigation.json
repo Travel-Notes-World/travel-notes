@@ -1,6 +1,6 @@
 {
   "header": {
-    "homeLabel": "Travel Notes home",
+    "homeSuffix": "home",
     "nav": [
       { "label": "Destinations", "href": "/destinations" },
       { "label": "Travel Guides", "href": "/guides" },

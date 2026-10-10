@@ -5,11 +5,12 @@ import { buildSearchText, parseContent, type Content } from './content'
 import { cms, inTransaction, relId, relIds, run, sql, type Tx } from './db'
 import { destinationsByIds, isUuid, withAncestors } from './destinations'
 import { fail, invalid } from './errors'
+import { newShortId } from './ids'
 import { recountMember, requireActive } from './members'
 import { track } from './metrics'
 import { limit } from './ratelimit'
 import { assertSubmissionsOpen } from './settings'
-import { cleanLine, newShortId, slugify } from './text'
+import { cleanLine, slugify } from './text'
 import type { MemberActor } from './types'
 
 export const contributionPath = (doc: { type: string; shortId: string; slug: string }): string => `${TYPE_PATH[doc.type as ContributionType]}/${doc.shortId}-${doc.slug}`

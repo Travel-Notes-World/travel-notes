@@ -1,5 +1,3 @@
-import { randomInt } from 'node:crypto'
-
 import { LIMITS } from './constants'
 
 /**
@@ -89,10 +87,6 @@ export function slugify(input: string, max = 80): string {
     .replace(/-$/, '')
   return slug || 'post'
 }
-
-const ID_ALPHABET = '23456789abcdefghjkmnpqrstuvwxyz' // no 0/o, 1/l/i: easy to read aloud and retype
-/** A short, stable public id. It contains no hyphen, so "id-slug" addresses split cleanly. */
-export const newShortId = (length = 9): string => Array.from({ length }, () => ID_ALPHABET[randomInt(ID_ALPHABET.length)]).join('')
 
 /** Read the stable id from an "id-slug" address segment. */
 export const shortIdFromSegment = (segment: string): string => decodeURIComponent(segment).split('-')[0].toLowerCase()
