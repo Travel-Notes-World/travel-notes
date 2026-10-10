@@ -1,17 +1,21 @@
 import Link from "next/link";
 
 import navigation from "@/content/data/navigation.json";
+import { getPublishedTopicSlugs } from "@/lib/content/topics";
 
 import { Logo } from "./SiteHeader";
 
 /**
  * Labels and links live in src/content/data/navigation.json. Links with a null href are features
  * that are not built yet; they are shown as "Soon", not as links. The footer stays brand navy in
- * both themes, so its white text never depends on the colour scheme.
+ * both themes, so its white text never depends on the colour scheme. A link to a topic page
+ * (/topics/…) is shown only while that topic is published, so the footer never leads to a 404.
  */
 const { footer } = navigation;
 
-export function SiteFooter() {
+export async function SiteFooter() {
+  const topics = await getPublishedTopicSlugs();
+  const shown = (href: string | null) => !href?.startsWith("/topics/") || topics.has(href.slice("/topics/".length));
   return (
     <footer className="bg-brand-navy text-white">
       <div className="mx-auto max-w-wide px-4 md:px-8 xl:px-14 pt-14 pb-8">
@@ -23,7 +27,7 @@ export function SiteFooter() {
           {footer.groups.map((g) => (
             <nav key={g.title} aria-label={g.title} className="flex flex-col gap-[9px] text-[13.5px]">
               <p className="m-0 mb-1 text-[12px] font-semibold tracking-[1.5px] uppercase text-brand-gold">{g.title}</p>
-              {g.links.map(({ href, label }) =>
+              {g.links.filter(({ href }) => shown(href)).map(({ href, label }) =>
                 href ? (
                   <Link key={label} href={href} className="text-white/80 hover:text-white no-underline">{label}</Link>
                 ) : (

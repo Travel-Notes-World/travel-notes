@@ -16,6 +16,8 @@ if (!testUrl) {
 }
 process.env.DATABASE_URL = testUrl
 process.env.PAYLOAD_SECRET = process.env.PAYLOAD_SECRET || 'test-only-secret'
+// These tests are about roles, not the two-step login, which has its own tests (two-factor.test.ts). Ignored in production builds.
+process.env.STAFF_2FA = process.env.STAFF_2FA ?? 'off'
 process.env.EMAIL_TRANSPORT = 'capture'
 // The tests post far more than a person would; the limiter itself is tested separately with its own small limit.
 process.env.COMMUNITY_RATE_LIMIT_MULTIPLIER = '1000'
@@ -48,7 +50,7 @@ export async function setup(): Promise<void> {
   await run(payload, sql`UPDATE "contributions" SET "published_revision_id" = NULL, "pending_revision_id" = NULL, "question_accepted_answer_id" = NULL, "question_duplicate_of_id" = NULL`)
   await run(payload, sql`UPDATE "members" SET "avatar_id" = NULL`)
   for (const collection of COMMUNITY_TABLES) await payload.delete({ collection, where: { id: { exists: true } } })
-  for (const collection of ['articles', 'topics', 'destinations', 'authors', 'staff'] as const) await payload.delete({ collection, where: { id: { exists: true } } })
+  for (const collection of ['travel-updates', 'articles', 'topics', 'destinations', 'authors', 'staff'] as const) await payload.delete({ collection, where: { id: { exists: true } } })
 
   staff.admin = await payload.create({ collection: 'staff', data: { name: 'Admin', email: `admin-${stamp}@example.test`, password: 'x'.repeat(16), role: 'contributor' } as Any })
   staff.moderator = await payload.create({ collection: 'staff', data: { name: 'Moderator', email: `mod-${stamp}@example.test`, password: 'x'.repeat(16), role: 'contributor', communityModerator: true } as Any })

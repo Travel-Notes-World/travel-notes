@@ -5,6 +5,7 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
+    "vercel-build": "node scripts/vercel-build.mjs",
     "start": "next start",
     "lint": "eslint",
     "payload": "payload",
@@ -14,7 +15,9 @@
     "generate:importmap": "payload generate:importmap",
     "test:access": "node --import tsx --test --test-force-exit tests/access.test.ts",
     "test:community": "node --import tsx --test --test-force-exit --test-concurrency=1 tests/community/*.test.ts",
+    "bench:search": "node --import tsx scripts/bench-search.ts",
     "destinations:import": "node --env-file-if-exists=.env --env-file-if-exists=.env.local --import tsx scripts/import-destinations.ts",
+    "staff:reset-2fa": "node --import tsx scripts/reset-staff-2fa.ts",
     "community:demo-seed": "node --env-file-if-exists=.env --env-file-if-exists=.env.local --import tsx scripts/community-demo-seed.ts"
   },
   "dependencies": {
@@ -24,8 +27,10 @@
     "@payloadcms/storage-s3": "3.90.2",
     "@payloadcms/ui": "3.90.2",
     "graphql": "16.14.2",
-    "next": "16.3.6",
+    "next": "16.3.8",
     "payload": "3.90.2",
+    "payload-totp": "3.0.6",
+    "pg": "8.20.0",
     "react": "19.2.8",
     "react-dom": "19.2.8",
     "sharp": "0.35.5"
@@ -36,7 +41,7 @@
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "eslint": "^9",
-    "eslint-config-next": "16.3.6",
+    "eslint-config-next": "16.3.8",
     "tailwindcss": "^4",
     "tsx": "4.23.15",
     "typescript": "^5"

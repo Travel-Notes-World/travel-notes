@@ -1,0 +1,38 @@
+# Publishes scheduled guides and travel updates ("Publish at" in the CMS).
+#
+# Vercel Hobby only allows a daily timer, so GitHub's timer calls the site's publish job every
+# 10 minutes instead (free for public repositories). The job only acts on drafts whose time has
+# come, and a database lock stops overlapping runs, so an extra or late call is harmless.
+# The daily Vercel cron (/cron/daily) also runs it, as a backup.
+#
+# Needs the repository secret CRON_SECRET, with the same value as CRON_SECRET in Vercel (Production).
+name: Scheduled publishing
+
+on:
+  schedule:
+    # Minutes chosen off the hour: GitHub delays runs at :00 most.
+    - cron: "4,14,24,34,44,54 * * * *"
+  workflow_dispatch: {}
+
+permissions: {}
+
+concurrency:
+  group: scheduled-publish
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Run the publish job
+        env:
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+        run: |
+          if [ -z "$CRON_SECRET" ]; then
+            echo "::error::The CRON_SECRET repository secret is not set."
+            exit 1
+          fi
+          curl --fail-with-body --silent --show-error --retry 2 --retry-delay 20 --max-time 120 \
+            -H "Authorization: Bearer $CRON_SECRET" \
+            https://travelnotesworld.com/cron/publish

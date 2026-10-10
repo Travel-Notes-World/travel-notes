@@ -6,11 +6,11 @@
       { "label": "Travel Guides", "href": "/guides" },
       { "label": "Community", "href": "/community" },
       { "label": "Activities", "href": "/activities" },
-      { "label": "Photography", "href": null },
+      { "label": "Travel Updates", "href": "/updates" },
       { "label": "Trip Planner", "href": null }
     ],
     "businessLink": { "label": "For Businesses", "href": "/advertise" },
-    "subscribe": { "label": "Subscribe", "href": "/#newsletter" },
+    "subscribe": { "label": "Subscribe", "href": "/newsletter" },
     "searchLabel": "Search",
     "menuLabel": "Menu"
   },
@@ -22,6 +22,7 @@
         "links": [
           { "label": "Destinations", "href": "/destinations" },
           { "label": "Travel Guides", "href": "/guides" },
+          { "label": "Travel Updates", "href": "/updates" },
           { "label": "Itineraries", "href": "/topics/itineraries" },
           { "label": "Practical tips", "href": "/topics/tips" },
           { "label": "Photography", "href": null },

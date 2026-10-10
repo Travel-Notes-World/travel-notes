@@ -72,6 +72,20 @@ export async function withAncestors(ids: string[], payload?: Payload): Promise<s
   return [...all]
 }
 
+/** The given published destination plus every published place inside it, so Japan also covers Kyoto. */
+export async function withDescendants(id: string, payload?: Payload): Promise<string[]> {
+  if (!isUuid(id)) return []
+  const p = payload ?? (await cms())
+  const all = new Set([id])
+  let frontier = [id]
+  for (let depth = 0; depth < 4 && frontier.length; depth++) {
+    const found = await p.find({ collection: 'destinations', where: { and: [{ parent: { in: frontier } }, published] }, limit: 0, pagination: false, depth: 0, select: {} })
+    frontier = found.docs.map((d) => d.id).filter((child) => !all.has(child))
+    for (const child of frontier) all.add(child)
+  }
+  return [...all]
+}
+
 /**
  * Find destinations by name or alternative name. The person always chooses from the results;
  * nothing is picked for them from their network address.

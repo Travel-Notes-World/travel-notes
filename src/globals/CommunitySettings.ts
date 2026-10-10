@@ -13,7 +13,7 @@ export const CommunitySettings: GlobalConfig = {
   slug: 'community-settings',
   label: 'Community settings',
   admin: { group: 'Administration' },
-  access: { read: ({ req }) => req.user?.collection === 'staff', update: ({ req }) => hasRole(req, 'administrator'), readVersions: ({ req }) => hasRole(req, 'administrator') },
+  access: { read: ({ req }) => hasRole(req, 'contributor'), update: ({ req }) => hasRole(req, 'administrator'), readVersions: ({ req }) => hasRole(req, 'administrator') },
   versions: { max: 100 },
   fields: [
     { name: 'publicAccess', type: 'checkbox', defaultValue: false, admin: { description: 'ON: everyone can read approved community pages. OFF: only signed-in staff can see them.' } },

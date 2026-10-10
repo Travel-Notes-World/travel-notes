@@ -10,7 +10,7 @@ import sharp from 'sharp'
 
 import {
   activityInput, administrator, approvedReply, asUser, captured, moderator, newMember, openCommunity, payload, places, published, questionInput, rejects, setup,
-  tripInput, visibleRows, type Any,
+  tripInput, unique, visibleRows, type Any,
 } from './helpers'
 
 let author: Any, reader: Any, third: Any
@@ -607,6 +607,38 @@ describe('12. search, filters and pagination with a realistic volume', () => {
   })
 })
 
+describe('12b. editorial guides found by destination', () => {
+  const paragraph = (text: string) => ({ root: { type: 'root', format: '', indent: 0, version: 1, direction: 'ltr', children: [{ type: 'paragraph', format: '', indent: 0, version: 1, direction: 'ltr', textFormat: 0, textStyle: '', children: [{ type: 'text', text, format: 0, style: '', mode: 'normal', detail: 0, version: 1 }] }] } })
+  const guide = async (slug: string, destination: Any, status: 'published' | 'draft', authorId: string) =>
+    payload.create({
+      collection: 'articles',
+      data: { slug, title: slug, deck: 'Deck', excerpt: 'Excerpt', type: 'destination-guide', body: paragraph(slug), primaryAuthor: authorId, primaryDestination: destination.id, seo: { title: slug, description: 'Description' }, _status: status } as Any,
+      draft: status === 'draft',
+    })
+
+  before(async () => {
+    const writer = await payload.create({ collection: 'authors', data: { name: 'Guide writer', slug: unique('guide-writer-'), biography: 'Bio' } as Any })
+    await guide(unique('kyoto-guide-'), places.kyoto, 'published', writer.id)
+    await guide(unique('kyoto-draft-'), places.kyoto, 'draft', writer.id)
+    await guide(unique('bangkok-guide-'), places.bangkok, 'published', writer.id)
+  })
+
+  const guidePaths = async (destinationId: string | null) =>
+    (await S.search({ type: 'guide', destinationId })).guides.items.map((g: Any) => g.path.replace(/^\/stories\//, '').replace(/-[a-z0-9]+$/, ''))
+
+  it('lists published guides for a destination without any words typed, never drafts', async () => {
+    assert.deepEqual(await guidePaths(places.kyoto.id), ['kyoto-guide'])
+    assert.deepEqual(await guidePaths(places.bangkok.id), ['bangkok-guide'])
+  })
+  it('includes guides about places inside the chosen destination', async () => {
+    assert.deepEqual(await guidePaths(places.japan.id), ['kyoto-guide'])
+    assert.deepEqual(await guidePaths(places.thailand.id), ['bangkok-guide'])
+  })
+  it('needs words or a destination: an empty guide search returns nothing', async () => {
+    assert.deepEqual(await guidePaths(null), [])
+  })
+})
+
 describe('14. notifications and email', () => {
   it('a member who switched reply email off is told in the app but gets no email', async () => {
     const post = await published(author, 'question', questionInput({ title: 'A question whose author has reply email switched off' }))
@@ -726,7 +758,7 @@ describe('14. notifications and email', () => {
 
   it('scheduled jobs record each run and do not overlap', async () => {
     const results = await JOBS.runDaily()
-    assert.deepEqual(results.map((r: Any) => r.job), ['outbox', 'events', 'photos', 'rate-limits', 'digest'])
+    assert.deepEqual(results.map((r: Any) => r.job), ['publish', 'outbox', 'events', 'photos', 'rate-limits', 'digest', 'contact', 'newsletter'])
     assert.ok(results.every((r: Any) => r.ok), JSON.stringify(results))
     assert.ok((await payload.count({ collection: 'job-runs' })).totalDocs >= 5)
     const { hit } = await import('../../src/lib/community/ratelimit')

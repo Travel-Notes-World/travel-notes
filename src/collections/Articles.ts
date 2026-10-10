@@ -3,7 +3,11 @@ import { Forbidden } from 'payload'
 
 import { blockPublishBelowPublisher, draftOnlyBelowPublisher } from '../access/publishGuard'
 import { hasRole, isPublisher, isStaff, nobodyField, staffOnlyField } from '../access/roles'
+import { TRAVEL_STYLES } from '../lib/community/constants'
 import { ARTICLES_TAG, articleTag, expireTags } from '../lib/content/revalidate'
+import { lexicalPlainText } from '../lib/content/plainText'
+import { scheduleFields, scheduleGuard } from '../lib/content/schedule'
+import { addressGone, published } from '../lib/redirects/automatic'
 import { seoFields, slugField } from './fields'
 
 export const ARTICLE_TYPES = [
@@ -43,7 +47,7 @@ export const Articles: CollectionConfig = {
   slug: 'articles',
   admin: {
     useAsTitle: 'title',
-    defaultColumns: ['title', 'type', 'editorialState', '_status', 'updatedAt'],
+    defaultColumns: ['title', 'type', 'editorialState', '_status', 'publishAt', 'updatedAt'],
     group: 'Editorial',
   },
   access: {
@@ -75,27 +79,37 @@ export const Articles: CollectionConfig = {
           throw new Forbidden(req.t)
         }
 
+        // The body's readable text, for guide search (title > summary > body). Never shown or returned.
+        data.searchText = lexicalPlainText(data.body ?? originalDoc?.body)
+
         // Stamp the first publication time once and keep it.
         if (data._status === 'published' && !data.firstPublishedAt && !originalDoc?.firstPublishedAt) {
           data.firstPublishedAt = new Date().toISOString()
         }
         return data
       },
+      scheduleGuard,
     ],
     // Refresh the public pages whenever a change touches what readers can see:
     // publish, an edit to a published article, a slug change, or a withdrawal.
     afterChange: [
-      async ({ doc, previousDoc }) => {
+      async ({ doc, previousDoc, req }) => {
         if (doc._status === 'published' || previousDoc?._status === 'published') {
           const slugs = [doc.slug, previousDoc?.slug].filter((s): s is string => typeof s === 'string' && s.length > 0)
           await expireTags([ARTICLES_TAG, ...slugs.map(articleTag)])
         }
+        // Keep redirects in step: an address change on a published article redirects the old one.
+        if (doc._status === 'published') await published(req, 'articles', doc, '/stories/')
         return doc
       },
     ],
     afterDelete: [
-      async ({ doc }) => {
-        if (typeof doc?.slug === 'string') await expireTags([ARTICLES_TAG, articleTag(doc.slug)])
+      async ({ doc, req }) => {
+        if (typeof doc?.slug === 'string') {
+          await expireTags([ARTICLES_TAG, articleTag(doc.slug)])
+          // A deleted article that readers could see is gone (410), not just missing.
+          if (doc._status === 'published') await addressGone(req, `/stories/${doc.slug}`)
+        }
         return doc
       },
     ],
@@ -222,6 +236,15 @@ export const Articles: CollectionConfig = {
     { name: 'additionalDestinations', type: 'relationship', relationTo: 'destinations', hasMany: true, admin: { position: 'sidebar' } },
     { name: 'topics', type: 'relationship', relationTo: 'topics', hasMany: true, admin: { position: 'sidebar' } },
     {
+      name: 'travelStyles',
+      type: 'select',
+      hasMany: true,
+      // The same styles members choose for community posts, so /search?style=… finds both.
+      options: TRAVEL_STYLES.map((s) => ({ label: s.label, value: s.value })),
+      admin: { position: 'sidebar', description: 'Optional. The kinds of trip this guide suits, for example Budget or Family.' },
+    },
+    ...scheduleFields,
+    {
       name: 'firstPublishedAt',
       type: 'date',
       index: true,
@@ -245,6 +268,14 @@ export const Articles: CollectionConfig = {
       // Staff ids are never shown to readers and cannot be changed through any interface.
       access: { read: staffOnlyField, create: nobodyField, update: nobodyField },
       admin: { position: 'sidebar', readOnly: true },
+    },
+    {
+      // Plain text of the body, set by the hook above. The database builds the weighted search index
+      // ("search_vector", see migration 20261009_160847_article_search) from title, deck, excerpt and this.
+      name: 'searchText',
+      type: 'textarea',
+      access: { read: nobodyField, create: nobodyField, update: nobodyField },
+      admin: { hidden: true },
     },
   ],
 }

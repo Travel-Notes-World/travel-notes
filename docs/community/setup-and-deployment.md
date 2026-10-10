@@ -18,8 +18,12 @@ code or documents.
 | `RESEND_API_KEY` | Required for real email | production | From Resend → API Keys. |
 | `EMAIL_FROM` | Required for real email | production | For example `Travel Notes <community@your-domain>`; the domain must be verified in Resend. |
 | `EMAIL_REPLY_TO` | Optional | production | Where replies to community email go. |
+| `CONTACT_INBOX` | Required to receive contact-form email | production | The address that receives messages from `/contact` (for example `hello@your-domain`). It must be able to *receive* email: Resend only sends. Without it, messages are still saved in the CMS (Inbox → Contact messages) and the daily job emails them once it is set. |
+| `RESEND_CONTACTS_API_KEY` | Required for the newsletter | production | A Resend API key with **Full access** (contacts need it; the normal `RESEND_API_KEY` can only send). Used only to add confirmed newsletter subscribers. |
+| `RESEND_NEWSLETTER_SEGMENT_ID` | Required for the newsletter | production | The Resend segment the weekly newsletter is sent to. Without these two, confirmed sign-ups are kept in the CMS (Inbox → Newsletter subscribers) and copied by the daily job once they are set. |
 | `S3_BUCKET`, `S3_ENDPOINT`, `S3_ACCESS_KEY_ID`, `S3_SECRET_ACCESS_KEY` | Required for photos on Vercel | all that allow uploads | Cloudflare R2 (or other S3-compatible) bucket. Without them photo upload says it is unavailable; everything else works. |
 | `S3_REGION` | Optional | | Defaults to `auto` (correct for R2). |
+| `PREVIEW_DATABASE_IS_SEPARATE` | Preview only | preview | `yes` lets preview builds run database migrations. Set it only when Preview's `DATABASE_URL` is its own Neon branch (`preview`), never production. Without it, preview builds skip migrations. |
 | `CRON_SECRET` | Required | production | At least 16 random characters. Vercel sends it to `/cron/daily` automatically. Without it the daily job refuses to run and the dashboard says so. |
 | `ALLOW_EMAIL_CAPTURE` | Never on the live site | test servers only | Lets a production build on a test machine use `capture`. |
 | `COMMUNITY_RATE_LIMIT_MULTIPLIER` | Never in production | tests/local | Raises rate limits for automated tests; ignored in production. |
@@ -52,13 +56,16 @@ disposable database.
 
 ## 3. Preview deployment (for review)
 
-1. In Neon create a branch `preview-community` from production.
+1. In Neon the branch `preview` (a copy of production, created 9 Oct 2026) is Preview's database.
+   Its `neondb_owner` password differs from production's. To refresh it with current production data,
+   use *Reset from parent* in Neon.
 2. In Vercel, set **Preview**-scoped variables:
-   - `DATABASE_URL` = the preview branch;
+   - `DATABASE_URL` = the `preview` branch (pooled connection string);
+   - `PREVIEW_DATABASE_IS_SEPARATE=yes`, so preview builds apply migrations to that branch;
    - `EMAIL_TRANSPORT=capture`;
    - optionally the `S3_*` variables for a test bucket.
    - Leave `NEXT_PUBLIC_INDEXABLE` unset.
-3. Run steps 2.2 and 2.3 against the preview branch.
+3. Migrations run automatically on each preview build. Run step 2.3 against the preview branch if you want destinations there.
 4. Push the branch. Vercel builds a preview URL automatically.
 5. Sign in to `/admin` as administrator → Community settings: tick *Community open to the public* and
    *Sign-ups open*. Tick *Community moderator* on any staff who will moderate.
@@ -92,6 +99,25 @@ Emails are sent straight away when they are created. The daily job only retries 
 Hobby a failed email can wait up to a day. On Vercel Pro you can run `/cron/outbox` every 10 minutes.
 
 To run a job by hand: `curl -H "Authorization: Bearer $CRON_SECRET" https://<site>/cron/daily`.
+
+### Scheduled publishing
+
+Guides and travel updates have **Publish at** in the CMS sidebar. A publisher sets the time and
+clicks **Save draft** (not Publish); the `publish` job publishes the latest draft once the time has
+come. Only publishers can set the time; any later save by an editor or contributor cancels it, so
+unreviewed text never goes live by itself. If a publish fails (for example a required field is
+empty), the time is cleared and the reason appears on the document as a note.
+
+Vercel Hobby only runs a daily timer, so `.github/workflows/scheduled-publish.yml` calls
+`/cron/publish` every 10 minutes (GitHub Actions, free for this public repository). It needs the
+repository secret **`CRON_SECRET`** with the same value as `CRON_SECRET` in Vercel Production
+(GitHub → Settings → Secrets and variables → Actions). The daily Vercel run also publishes anything
+due, as a backup. GitHub may start a timed run a few minutes late, and turns timed workflows off
+after 60 days without any commit to the repository; re-enable it under Actions if that happens.
+Runs with nothing due are not recorded in the job history.
+
+The newsletter is scheduled in Resend itself: Broadcasts → create the email → type a time in the
+**When** box. `/updates/weekly` lists the week's travel updates to copy into it.
 
 ## 6. Rollback
 
@@ -130,3 +156,21 @@ Using a personal Neon branch instead of local Postgres also works (`.env` or `.e
 
 Tests: `TEST_DATABASE_URL=postgresql://…/tn_test npm run test:community` (82 tests) and
 `npm run test:access` (21 tests).
+
+## 8. Staff two-step login (2FA)
+
+Every staff account must use an authenticator app (Google Authenticator, Microsoft Authenticator,
+1Password, Bitwarden and similar) in addition to its password.
+
+- **First sign-in after this was switched on:** after the password, the CMS shows a QR code. Scan it
+  with the app (or use "Add code manually"), then type the 6-digit code. Done once per account.
+- **Every later sign-in:** password, then the current 6-digit code from the app.
+- **Until the code is entered** the account has no staff rights anywhere (CMS, API, moderation
+  console). The rule is in `src/access/twoFactor.ts`; it is enforced in `hasRole`,
+  `userCanModerate` and the site session, so visitors and community members are not affected.
+- **Wrong codes** count towards the same lockout as wrong passwords (5 tries, 15 minutes).
+- **Lost phone:** after confirming by phone that the request is genuine, an administrator runs
+  `DATABASE_URL=… PAYLOAD_SECRET=… npm run staff:reset-2fa -- person@example.com`. The person sets
+  up the app again at their next sign-in.
+- **Tests** switch it off with `STAFF_2FA=off`, which a production build ignores.
+  `tests/community/two-factor.test.ts` runs with it on.

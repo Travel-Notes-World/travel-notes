@@ -69,10 +69,14 @@ export interface Config {
   blocks: {};
   collections: {
     articles: Article;
+    'travel-updates': TravelUpdate;
     destinations: Destination;
     topics: Topic;
+    redirects: Redirect;
     authors: Author;
     staff: Staff;
+    'contact-messages': ContactMessage;
+    'newsletter-subscribers': NewsletterSubscriber;
     members: Member;
     contributions: Contribution;
     replies: Reply;
@@ -91,6 +95,7 @@ export interface Config {
     'rate-limits': RateLimit;
     'metric-counters': MetricCounter;
     'job-runs': JobRun;
+    'totp-attempts': TotpAttempt;
     'payload-kv': PayloadKv;
     'payload-locked-documents': PayloadLockedDocument;
     'payload-preferences': PayloadPreference;
@@ -99,10 +104,14 @@ export interface Config {
   collectionsJoins: {};
   collectionsSelect: {
     articles: ArticlesSelect<false> | ArticlesSelect<true>;
+    'travel-updates': TravelUpdatesSelect<false> | TravelUpdatesSelect<true>;
     destinations: DestinationsSelect<false> | DestinationsSelect<true>;
     topics: TopicsSelect<false> | TopicsSelect<true>;
+    redirects: RedirectsSelect<false> | RedirectsSelect<true>;
     authors: AuthorsSelect<false> | AuthorsSelect<true>;
     staff: StaffSelect<false> | StaffSelect<true>;
+    'contact-messages': ContactMessagesSelect<false> | ContactMessagesSelect<true>;
+    'newsletter-subscribers': NewsletterSubscribersSelect<false> | NewsletterSubscribersSelect<true>;
     members: MembersSelect<false> | MembersSelect<true>;
     contributions: ContributionsSelect<false> | ContributionsSelect<true>;
     replies: RepliesSelect<false> | RepliesSelect<true>;
@@ -121,6 +130,7 @@ export interface Config {
     'rate-limits': RateLimitsSelect<false> | RateLimitsSelect<true>;
     'metric-counters': MetricCountersSelect<false> | MetricCountersSelect<true>;
     'job-runs': JobRunsSelect<false> | JobRunsSelect<true>;
+    'totp-attempts': TotpAttemptsSelect<false> | TotpAttemptsSelect<true>;
     'payload-kv': PayloadKvSelect<false> | PayloadKvSelect<true>;
     'payload-locked-documents': PayloadLockedDocumentsSelect<false> | PayloadLockedDocumentsSelect<true>;
     'payload-preferences': PayloadPreferencesSelect<false> | PayloadPreferencesSelect<true>;
@@ -285,6 +295,32 @@ export interface Article {
   additionalDestinations?: (string | Destination)[] | null;
   topics?: (string | Topic)[] | null;
   /**
+   * Optional. The kinds of trip this guide suits, for example Budget or Family.
+   */
+  travelStyles?:
+    | (
+        | 'budget'
+        | 'mid_range'
+        | 'luxury'
+        | 'backpacking'
+        | 'family'
+        | 'adventure'
+        | 'slow'
+        | 'road_trip'
+        | 'city_break'
+        | 'food'
+        | 'business'
+      )[]
+    | null;
+  /**
+   * Publishers only. Set a time and save as draft: it goes live by itself within about 15 minutes of this time. An editor saving the draft afterwards cancels the schedule.
+   */
+  publishAt?: string | null;
+  /**
+   * Why the last scheduled publish did not happen.
+   */
+  scheduleNote?: string | null;
+  /**
    * Set automatically on first publication.
    */
   firstPublishedAt?: string | null;
@@ -297,6 +333,7 @@ export interface Article {
    */
   reviewedAt?: string | null;
   createdBy?: (string | null) | Staff;
+  searchText?: string | null;
   updatedAt: string;
   createdAt: string;
   _status?: ('draft' | 'published') | null;
@@ -484,6 +521,8 @@ export interface Staff {
    * Tick to let this person moderate the community at /moderation. Administrators can always moderate.
    */
   communityModerator?: boolean | null;
+  totpSecret?: string | null;
+  hasTotp?: boolean | null;
   updatedAt: string;
   createdAt: string;
   email: string;
@@ -503,6 +542,188 @@ export interface Staff {
     | null;
   password?: string | null;
   collection: 'staff';
+}
+/**
+ * Short, dated reports of changes that matter to travellers. Each one needs an official source.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "travel-updates".
+ */
+export interface TravelUpdate {
+  id: string;
+  /**
+   * Say what changed, plainly. For example: "Japan starts charging a departure tax of ¥3,000 from 1 July".
+   */
+  title: string;
+  /**
+   * One or two sentences: what changed, for whom, and from when. Shown in lists, the newsletter and search results.
+   */
+  summary: string;
+  /**
+   * Optional. What it means for travellers and what to do now.
+   */
+  body?: {
+    root: {
+      type: string;
+      children: {
+        type: any;
+        version: number;
+        [k: string]: unknown;
+      }[];
+      direction: ('ltr' | 'rtl') | null;
+      format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | '';
+      indent: number;
+      version: number;
+    };
+    [k: string]: unknown;
+  } | null;
+  /**
+   * The official source first (government, airline, park authority). At least one is required.
+   */
+  sources: {
+    /**
+     * For example: Smartraveller, Japan Ministry of Foreign Affairs.
+     */
+    name: string;
+    url: string;
+    id?: string | null;
+  }[];
+  /**
+   * Only after a real change or correction: what changed since first publication. Set "Updated on" too.
+   */
+  updateNote?: string | null;
+  /**
+   * Used in the address: /updates/your-slug
+   */
+  slug: string;
+  category: 'entry-rules' | 'flights-routes' | 'closures' | 'safety' | 'fees' | 'events' | 'other';
+  /**
+   * Tick when Australian passport holders or flights from Australia are directly affected.
+   */
+  affectsAustralians?: boolean | null;
+  /**
+   * Where it applies. Shown on these destination pages and the places inside them. Leave empty for worldwide.
+   */
+  destinations?: (string | Destination)[] | null;
+  author: string | Author;
+  /**
+   * Optional. When the change starts.
+   */
+  effectiveDate?: string | null;
+  /**
+   * Optional. When it ends (for a closure or a temporary rule). After this date it leaves destination pages.
+   */
+  endDate?: string | null;
+  /**
+   * Publishers only. Set a time and save as draft: it goes live by itself within about 15 minutes of this time. An editor saving the draft afterwards cancels the schedule.
+   */
+  publishAt?: string | null;
+  /**
+   * Why the last scheduled publish did not happen.
+   */
+  scheduleNote?: string | null;
+  /**
+   * Set automatically on first publication.
+   */
+  firstPublishedAt?: string | null;
+  /**
+   * Set only for a real change or correction, with a note above.
+   */
+  editorialUpdatedAt?: string | null;
+  /**
+   * Leave empty to use the title and summary.
+   */
+  seo?: {
+    title?: string | null;
+    description?: string | null;
+    /**
+     * Tick to ask search engines not to index this update.
+     */
+    noindex?: boolean | null;
+  };
+  updatedAt: string;
+  createdAt: string;
+  _status?: ('draft' | 'published') | null;
+}
+/**
+ * Send an old address to a new one, or mark it as gone. Changes are live within about a minute.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "redirects".
+ */
+export interface Redirect {
+  id: string;
+  /**
+   * The old address, for example /stories/old-name. Saved in lower case without a trailing slash.
+   */
+  from: string;
+  type: 'permanent' | 'temporary' | 'gone';
+  /**
+   * The new address: a site address such as /stories/new-name, or a full https:// address.
+   */
+  to?: string | null;
+  source?: ('manual' | 'automatic') | null;
+  /**
+   * Optional. Why this redirect exists.
+   */
+  note?: string | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * Messages sent through the contact form. Reply from your own email; mark the message handled here.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "contact-messages".
+ */
+export interface ContactMessage {
+  id: string;
+  subject: string;
+  name: string;
+  email: string;
+  topic: 'general' | 'correction' | 'advertising' | 'pitch' | 'privacy' | 'other';
+  /**
+   * The article or page the message is about, if the visitor gave one.
+   */
+  pageUrl?: string | null;
+  message: string;
+  status: 'new' | 'handled' | 'spam';
+  /**
+   * Private note for staff, for example what was done.
+   */
+  note?: string | null;
+  emailStatus: 'pending' | 'sent' | 'captured' | 'failed';
+  emailAttempts: number;
+  emailError?: string | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * Weekly email sign-ups. Write and send newsletters in Resend (Broadcasts); unsubscribes are handled there.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "newsletter-subscribers".
+ */
+export interface NewsletterSubscriber {
+  id: string;
+  email: string;
+  status: 'pending' | 'confirmed';
+  requestedAt: string;
+  /**
+   * When they pressed "Confirm" in the email: the consent record.
+   */
+  confirmedAt?: string | null;
+  /**
+   * The page they signed up on.
+   */
+  source?: string | null;
+  tokenHash?: string | null;
+  tokenExpiresAt?: string | null;
+  syncStatus: 'not-needed' | 'pending' | 'synced' | 'failed';
+  syncAttempts: number;
+  syncError?: string | null;
+  updatedAt: string;
+  createdAt: string;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
@@ -592,6 +813,7 @@ export interface Media {
   rightsConfirmedAt: string;
   contribution?: (string | null) | Contribution;
   purpose: 'photo' | 'avatar';
+  _objectKey?: string | null;
   updatedAt: string;
   createdAt: string;
   url?: string | null;
@@ -1221,6 +1443,15 @@ export interface JobRun {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "totp-attempts".
+ */
+export interface TotpAttempt {
+  id: string;
+  attempts: number;
+  lockUntil?: string | null;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "payload-kv".
  */
 export interface PayloadKv {
@@ -1248,6 +1479,10 @@ export interface PayloadLockedDocument {
         value: string | Article;
       } | null)
     | ({
+        relationTo: 'travel-updates';
+        value: string | TravelUpdate;
+      } | null)
+    | ({
         relationTo: 'destinations';
         value: string | Destination;
       } | null)
@@ -1256,12 +1491,24 @@ export interface PayloadLockedDocument {
         value: string | Topic;
       } | null)
     | ({
+        relationTo: 'redirects';
+        value: string | Redirect;
+      } | null)
+    | ({
         relationTo: 'authors';
         value: string | Author;
       } | null)
     | ({
         relationTo: 'staff';
         value: string | Staff;
+      } | null)
+    | ({
+        relationTo: 'contact-messages';
+        value: string | ContactMessage;
+      } | null)
+    | ({
+        relationTo: 'newsletter-subscribers';
+        value: string | NewsletterSubscriber;
       } | null)
     | ({
         relationTo: 'members';
@@ -1438,10 +1685,52 @@ export interface ArticlesSelect<T extends boolean = true> {
   primaryDestination?: T;
   additionalDestinations?: T;
   topics?: T;
+  travelStyles?: T;
+  publishAt?: T;
+  scheduleNote?: T;
   firstPublishedAt?: T;
   editorialUpdatedAt?: T;
   reviewedAt?: T;
   createdBy?: T;
+  searchText?: T;
+  updatedAt?: T;
+  createdAt?: T;
+  _status?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "travel-updates_select".
+ */
+export interface TravelUpdatesSelect<T extends boolean = true> {
+  title?: T;
+  summary?: T;
+  body?: T;
+  sources?:
+    | T
+    | {
+        name?: T;
+        url?: T;
+        id?: T;
+      };
+  updateNote?: T;
+  slug?: T;
+  category?: T;
+  affectsAustralians?: T;
+  destinations?: T;
+  author?: T;
+  effectiveDate?: T;
+  endDate?: T;
+  publishAt?: T;
+  scheduleNote?: T;
+  firstPublishedAt?: T;
+  editorialUpdatedAt?: T;
+  seo?:
+    | T
+    | {
+        title?: T;
+        description?: T;
+        noindex?: T;
+      };
   updatedAt?: T;
   createdAt?: T;
   _status?: T;
@@ -1507,6 +1796,19 @@ export interface TopicsSelect<T extends boolean = true> {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "redirects_select".
+ */
+export interface RedirectsSelect<T extends boolean = true> {
+  from?: T;
+  type?: T;
+  to?: T;
+  source?: T;
+  note?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "authors_select".
  */
 export interface AuthorsSelect<T extends boolean = true> {
@@ -1533,6 +1835,8 @@ export interface StaffSelect<T extends boolean = true> {
   role?: T;
   active?: T;
   communityModerator?: T;
+  totpSecret?: T;
+  hasTotp?: T;
   updatedAt?: T;
   createdAt?: T;
   email?: T;
@@ -1550,6 +1854,43 @@ export interface StaffSelect<T extends boolean = true> {
         createdAt?: T;
         expiresAt?: T;
       };
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "contact-messages_select".
+ */
+export interface ContactMessagesSelect<T extends boolean = true> {
+  subject?: T;
+  name?: T;
+  email?: T;
+  topic?: T;
+  pageUrl?: T;
+  message?: T;
+  status?: T;
+  note?: T;
+  emailStatus?: T;
+  emailAttempts?: T;
+  emailError?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "newsletter-subscribers_select".
+ */
+export interface NewsletterSubscribersSelect<T extends boolean = true> {
+  email?: T;
+  status?: T;
+  requestedAt?: T;
+  confirmedAt?: T;
+  source?: T;
+  tokenHash?: T;
+  tokenExpiresAt?: T;
+  syncStatus?: T;
+  syncAttempts?: T;
+  syncError?: T;
+  updatedAt?: T;
+  createdAt?: T;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
@@ -1774,6 +2115,7 @@ export interface MediaSelect<T extends boolean = true> {
   rightsConfirmedAt?: T;
   contribution?: T;
   purpose?: T;
+  _objectKey?: T;
   updatedAt?: T;
   createdAt?: T;
   url?: T;
@@ -2010,6 +2352,15 @@ export interface JobRunsSelect<T extends boolean = true> {
   durationMs?: T;
   updatedAt?: T;
   createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "totp-attempts_select".
+ */
+export interface TotpAttemptsSelect<T extends boolean = true> {
+  id?: T;
+  attempts?: T;
+  lockUntil?: T;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema

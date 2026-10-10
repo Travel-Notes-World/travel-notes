@@ -3,6 +3,7 @@ import { ValidationError } from 'payload'
 
 import { blockPublishBelowPublisher, draftOnlyBelowPublisher } from '../access/publishGuard'
 import { administratorOnlyField, isEditor, isPublisher, publishedOrStaff } from '../access/roles'
+import { DESTINATIONS_TAG, expireTags } from '../lib/content/revalidate'
 import { normaliseSlug, seoFields, validateSlug } from './fields'
 
 const MAX_DEPTH = 4
@@ -49,6 +50,19 @@ export const Destinations: CollectionConfig = {
         }
         data.path = segments.join('/')
         return data
+      },
+    ],
+    // Refresh destination pages and the index when a change touches what readers can see.
+    afterChange: [
+      async ({ doc, previousDoc }) => {
+        if (doc._status === 'published' || previousDoc?._status === 'published') await expireTags([DESTINATIONS_TAG])
+        return doc
+      },
+    ],
+    afterDelete: [
+      async ({ doc }) => {
+        await expireTags([DESTINATIONS_TAG])
+        return doc
       },
     ],
   },

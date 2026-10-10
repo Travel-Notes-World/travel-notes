@@ -79,3 +79,30 @@ describe('account deletion removes private contact details and choices', () => {
     void moderator
   })
 })
+
+describe('staff password reset email', () => {
+  it('contains a full link on the site’s own address, not a bare /admin path', async () => {
+    const saved = { t: process.env.EMAIL_TRANSPORT, k: process.env.RESEND_API_KEY, f: process.env.EMAIL_FROM }
+    const realFetch = globalThis.fetch
+    let body: Any = null
+    process.env.EMAIL_TRANSPORT = 'resend'
+    process.env.RESEND_API_KEY = 're_test_not_real'
+    process.env.EMAIL_FROM = 'Travel Notes <hello@example.test>'
+    globalThis.fetch = (async (_url: string, init: Any) => { body = JSON.parse(init.body); return new Response('{}', { status: 200 }) }) as Any
+    try {
+      await payload.forgotPassword({ collection: 'staff', data: { email: staff.editor.email } })
+    } finally {
+      globalThis.fetch = realFetch
+      process.env.EMAIL_TRANSPORT = saved.t
+      if (saved.k === undefined) delete process.env.RESEND_API_KEY
+      else process.env.RESEND_API_KEY = saved.k
+      if (saved.f === undefined) delete process.env.EMAIL_FROM
+      else process.env.EMAIL_FROM = saved.f
+    }
+    const { siteUrl } = await import('../../src/lib/site')
+    assert.ok(body, 'an email was sent')
+    assert.equal(body.subject, 'Reset your Travel Notes CMS password')
+    assert.match(body.html, new RegExp(`href="${siteUrl.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}/admin/reset/[a-f0-9]+"`))
+    assert.ok(!body.html.includes('href="/admin'), 'no bare relative link')
+  })
+})
