@@ -8,14 +8,17 @@
  *
  *   TEST_DATABASE_URL=postgresql://user:pass@127.0.0.1:5432/tn_test npm run bench:search
  *
- * Timing is printed, not asserted: a busy machine makes timings noisy. The target is p95 under
- * 150 ms on a developer machine.
+ * Timing is printed, not asserted: a busy machine makes timings noisy. The targets are p95 under
+ * 150 ms for a full guide search and under 50 ms for suggestions as you type, on a developer
+ * machine. The suggestion test also seeds 1,500 extra places, like the imported destination list.
  */
 import { payload, places, setup, type Any } from '../tests/community/helpers'
 
 const ARTICLES = 500
 const RUNS_PER_QUERY = 5
 const TARGET_P95_MS = 150
+const SUGGEST_TARGET_P95_MS = 50
+const PLACES = 1500
 
 const WORDS = `temple shrine garden market street food noodle ramen sushi tea ceremony ferry island beach
   snorkel dive hike trail mountain summit lake river boat train rail pass bus airport taxi scooter cycling
@@ -121,6 +124,32 @@ async function main() {
   console.log(`Plan for a rare term (1 of ${ARTICLES} articles match): ${/articles_search_vector_idx/.test(rare) ? 'GIN index' : 'NOT the GIN index'}\n`)
   console.log(plan, '\n')
   console.log(rare)
+
+  // Suggestions as you type, against a realistic number of places.
+  const SG = await import('../src/lib/content/suggest')
+  const syllables = ['ka', 'to', 'mi', 'ra', 'no', 'sa', 'lu', 'pe', 'an', 'go', 'ri', 'ba', 'el', 'vo', 'shi', 'tan', 'mar', 'del', 'por', 'san']
+  const placeStarted = Date.now()
+  for (let i = 0; i < PLACES; i++) {
+    const name = `${pick(syllables)}${pick(syllables)}${pick(syllables)}`.replace(/^./, (c) => c.toUpperCase()) + (i % 7 === 0 ? ` ${pick(syllables)}${pick(syllables)}` : '')
+    await payload.create({ collection: 'destinations', data: { name, slug: `bench-place-${i}`, kind: 'city', parent: places.japan.id, timeZone: 'Asia/Tokyo', summary: 'Bench place.', seo: { title: name, description: 'Bench' }, _status: 'published' } as Any })
+  }
+  await run(payload, sql`VACUUM ANALYZE "destinations"`)
+  console.log(`\nSeeded ${PLACES} extra places in ${((Date.now() - placeStarted) / 1000).toFixed(0)} s.`)
+  const typed = ['ky', 'kyo', 'kyot', 'kyoto', 'kyto', 'japn', 'jap', 'ban', 'bangk', 'thai', 'tem', 'temple', 'ferry', 'market', 'mar', 'san', 'zzzz', 'visa', 'del por', 'night mar']
+  const suggestTimes: number[] = []
+  for (const q of typed) {
+    for (let r = 0; r < RUNS_PER_QUERY; r++) {
+      const t = performance.now()
+      await SG.suggest(payload, q)
+      suggestTimes.push(performance.now() - t)
+    }
+  }
+  suggestTimes.sort((a, b) => a - b)
+  const sp95 = quantile(suggestTimes, 0.95)
+  console.log(`Suggestions (${typed.length} inputs x ${RUNS_PER_QUERY} runs, places + guides + updates, loaded with visitor permissions): median ${ms(quantile(suggestTimes, 0.5))}, p95 ${ms(sp95)}`)
+  console.log(`Target p95 under ${SUGGEST_TARGET_P95_MS} ms: ${sp95 < SUGGEST_TARGET_P95_MS ? 'met' : 'NOT met'}`)
+  const placePlan = (await run(payload, sql`EXPLAIN ANALYZE SELECT "id" FROM "destinations" WHERE "_status" = 'published' AND ("name" ILIKE ${'%kyto%'} OR "name" % ${'kyto'})`)).rows.map((r: Any) => r['QUERY PLAN']).join('\n')
+  console.log(`Place lookup plan: ${/destinations_name_trgm_idx/.test(placePlan) ? 'trigram index' : 'NOT the trigram index'}\n${placePlan}`)
   await payload.destroy?.()
   process.exit(0)
 }
