@@ -95,6 +95,25 @@ Hobby a failed email can wait up to a day. On Vercel Pro you can run `/cron/outb
 
 To run a job by hand: `curl -H "Authorization: Bearer $CRON_SECRET" https://<site>/cron/daily`.
 
+### Scheduled publishing
+
+Guides and travel updates have **Publish at** in the CMS sidebar. A publisher sets the time and
+clicks **Save draft** (not Publish); the `publish` job publishes the latest draft once the time has
+come. Only publishers can set the time; any later save by an editor or contributor cancels it, so
+unreviewed text never goes live by itself. If a publish fails (for example a required field is
+empty), the time is cleared and the reason appears on the document as a note.
+
+Vercel Hobby only runs a daily timer, so `.github/workflows/scheduled-publish.yml` calls
+`/cron/publish` every 10 minutes (GitHub Actions, free for this public repository). It needs the
+repository secret **`CRON_SECRET`** with the same value as `CRON_SECRET` in Vercel Production
+(GitHub → Settings → Secrets and variables → Actions). The daily Vercel run also publishes anything
+due, as a backup. GitHub may start a timed run a few minutes late, and turns timed workflows off
+after 60 days without any commit to the repository; re-enable it under Actions if that happens.
+Runs with nothing due are not recorded in the job history.
+
+The newsletter is scheduled in Resend itself: Broadcasts → create the email → type a time in the
+**When** box. `/updates/weekly` lists the week's travel updates to copy into it.
+
 ## 6. Rollback
 
 - **Code:** in Vercel → Deployments, "Promote" the previous production deployment (instant).

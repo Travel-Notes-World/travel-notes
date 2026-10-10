@@ -6,6 +6,7 @@ import { hasRole, isPublisher, isStaff, nobodyField, staffOnlyField } from '../a
 import { TRAVEL_STYLES } from '../lib/community/constants'
 import { ARTICLES_TAG, articleTag, expireTags } from '../lib/content/revalidate'
 import { lexicalPlainText } from '../lib/content/plainText'
+import { scheduleFields, scheduleGuard } from '../lib/content/schedule'
 import { addressGone, published } from '../lib/redirects/automatic'
 import { seoFields, slugField } from './fields'
 
@@ -46,7 +47,7 @@ export const Articles: CollectionConfig = {
   slug: 'articles',
   admin: {
     useAsTitle: 'title',
-    defaultColumns: ['title', 'type', 'editorialState', '_status', 'updatedAt'],
+    defaultColumns: ['title', 'type', 'editorialState', '_status', 'publishAt', 'updatedAt'],
     group: 'Editorial',
   },
   access: {
@@ -87,6 +88,7 @@ export const Articles: CollectionConfig = {
         }
         return data
       },
+      scheduleGuard,
     ],
     // Refresh the public pages whenever a change touches what readers can see:
     // publish, an edit to a published article, a slug change, or a withdrawal.
@@ -241,6 +243,7 @@ export const Articles: CollectionConfig = {
       options: TRAVEL_STYLES.map((s) => ({ label: s.label, value: s.value })),
       admin: { position: 'sidebar', description: 'Optional. The kinds of trip this guide suits, for example Budget or Family.' },
     },
+    ...scheduleFields,
     {
       name: 'firstPublishedAt',
       type: 'date',

@@ -758,7 +758,7 @@ describe('14. notifications and email', () => {
 
   it('scheduled jobs record each run and do not overlap', async () => {
     const results = await JOBS.runDaily()
-    assert.deepEqual(results.map((r: Any) => r.job), ['outbox', 'events', 'photos', 'rate-limits', 'digest', 'contact', 'newsletter'])
+    assert.deepEqual(results.map((r: Any) => r.job), ['publish', 'outbox', 'events', 'photos', 'rate-limits', 'digest', 'contact', 'newsletter'])
     assert.ok(results.every((r: Any) => r.ok), JSON.stringify(results))
     assert.ok((await payload.count({ collection: 'job-runs' })).totalDocs >= 5)
     const { hit } = await import('../../src/lib/community/ratelimit')

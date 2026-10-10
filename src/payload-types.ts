@@ -313,6 +313,14 @@ export interface Article {
       )[]
     | null;
   /**
+   * Publishers only. Set a time and save as draft: it goes live by itself within about 15 minutes of this time. An editor saving the draft afterwards cancels the schedule.
+   */
+  publishAt?: string | null;
+  /**
+   * Why the last scheduled publish did not happen.
+   */
+  scheduleNote?: string | null;
+  /**
    * Set automatically on first publication.
    */
   firstPublishedAt?: string | null;
@@ -514,6 +522,7 @@ export interface Staff {
    */
   communityModerator?: boolean | null;
   totpSecret?: string | null;
+  hasTotp?: boolean | null;
   updatedAt: string;
   createdAt: string;
   email: string;
@@ -605,6 +614,14 @@ export interface TravelUpdate {
    * Optional. When it ends (for a closure or a temporary rule). After this date it leaves destination pages.
    */
   endDate?: string | null;
+  /**
+   * Publishers only. Set a time and save as draft: it goes live by itself within about 15 minutes of this time. An editor saving the draft afterwards cancels the schedule.
+   */
+  publishAt?: string | null;
+  /**
+   * Why the last scheduled publish did not happen.
+   */
+  scheduleNote?: string | null;
   /**
    * Set automatically on first publication.
    */
@@ -1666,6 +1683,8 @@ export interface ArticlesSelect<T extends boolean = true> {
   additionalDestinations?: T;
   topics?: T;
   travelStyles?: T;
+  publishAt?: T;
+  scheduleNote?: T;
   firstPublishedAt?: T;
   editorialUpdatedAt?: T;
   reviewedAt?: T;
@@ -1698,6 +1717,8 @@ export interface TravelUpdatesSelect<T extends boolean = true> {
   author?: T;
   effectiveDate?: T;
   endDate?: T;
+  publishAt?: T;
+  scheduleNote?: T;
   firstPublishedAt?: T;
   editorialUpdatedAt?: T;
   seo?:
@@ -1812,6 +1833,7 @@ export interface StaffSelect<T extends boolean = true> {
   active?: T;
   communityModerator?: T;
   totpSecret?: T;
+  hasTotp?: T;
   updatedAt?: T;
   createdAt?: T;
   email?: T;
