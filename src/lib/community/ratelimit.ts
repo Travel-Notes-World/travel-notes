@@ -23,6 +23,7 @@ const RULES = {
   upload: { limit: 40, seconds: 86_400, message: 'You have reached today’s limit for photo uploads.' },
   suggestion: { limit: 10, seconds: 86_400, message: 'You have reached today’s limit for destination suggestions.' },
   search_ip: { limit: 90, seconds: 60, message: 'Too many searches. Please wait a minute.' },
+  suggest_ip: { limit: 240, seconds: 60, message: 'Too many searches. Please wait a minute.' },
   contact_ip: { limit: 5, seconds: 3600, message: 'You have sent several messages in a short time. Please wait an hour, or email us directly.' },
   contact_all: { limit: 300, seconds: 86_400, message: 'The contact form is very busy right now. Please try again tomorrow, or email us directly.' },
   newsletter_ip: { limit: 10, seconds: 3600, message: 'Too many sign-up attempts. Please try again in an hour.' },

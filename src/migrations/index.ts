@@ -9,6 +9,7 @@ import * as migration_20261009_152739_redirects from './20261009_152739_redirect
 import * as migration_20261009_160847_article_search from './20261009_160847_article_search';
 import * as migration_20261009_163759_travel_updates from './20261009_163759_travel_updates';
 import * as migration_20261010_062047_scheduled_publishing from './20261010_062047_scheduled_publishing';
+import * as migration_20261010_083000_search_trigram from './20261010_083000_search_trigram';
 
 export const migrations = [
   {
@@ -64,6 +65,11 @@ export const migrations = [
   {
     up: migration_20261010_062047_scheduled_publishing.up,
     down: migration_20261010_062047_scheduled_publishing.down,
-    name: '20261010_062047_scheduled_publishing'
+    name: '20261010_062047_scheduled_publishing',
+  },
+  {
+    up: migration_20261010_083000_search_trigram.up,
+    down: migration_20261010_083000_search_trigram.down,
+    name: '20261010_083000_search_trigram'
   },
 ];
