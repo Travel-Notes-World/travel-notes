@@ -38,7 +38,7 @@ export function FormMessage({ state, successTitle = "Saved" }: { state: ActionSt
       <p className="t-ui m-0">{error ? "There is a problem" : successTitle}</p>
       <p className="t-body-sm m-0 mt-1">{state.message}</p>
       {error && fieldCount > 0 && <p className="t-body-sm m-0 mt-1">{fieldCount === 1 ? "1 field needs attention." : `${fieldCount} fields need attention.`}</p>}
-      {state.code === "auth" && <p className="t-body-sm m-0 mt-2"><Link href="/account/sign-in" target="_blank" className="text-marine-600">Sign in again in a new tab</Link></p>}
+      {state.code === "auth" && <p className="t-body-sm m-0 mt-2"><Link href="/account/sign-in" target="_blank" className="text-marine-600 underline">Sign in again in a new tab</Link></p>}
     </div>
   );
 }
@@ -181,7 +181,7 @@ export function DestinationPicker({ name = "destinations", label = "Destinations
         </ul>
       )}
       <FieldError id={`${id}-error`} message={error} />
-      <p className="t-body-sm text-ink-600 mt-2 mb-0">Not in the list? <Link href="/account/suggest-destination" className="text-marine-600" target="_blank">Suggest a destination</Link> (opens in a new tab). A moderator adds it; you can save your draft meanwhile.</p>
+      <p className="t-body-sm text-ink-600 mt-2 mb-0">Not in the list? <Link href="/account/suggest-destination" className="text-marine-600 underline" target="_blank">Suggest a destination</Link> (opens in a new tab). A moderator adds it; you can save your draft meanwhile.</p>
     </fieldset>
   );
 }

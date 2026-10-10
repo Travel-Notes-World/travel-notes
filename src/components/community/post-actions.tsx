@@ -165,7 +165,7 @@ export function RemoveReplyButton({ replyId, returnTo }: { replyId: string; retu
 export function SignInTo({ action, returnTo }: { action: string; returnTo: string }) {
   return (
     <p className="t-body-sm m-0">
-      <Link href={`/account/sign-in?next=${encodeURIComponent(returnTo)}`} className="text-marine-600">Sign in</Link> or <Link href="/account/sign-up" className="text-marine-600">create an account</Link> to {action}.
+      <Link href={`/account/sign-in?next=${encodeURIComponent(returnTo)}`} className="text-marine-600 underline">Sign in</Link> or <Link href="/account/sign-up" className="text-marine-600 underline">create an account</Link> to {action}.
     </p>
   );
 }

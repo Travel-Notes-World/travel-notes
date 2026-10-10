@@ -72,7 +72,7 @@ export default async function TripsPage({ searchParams }: Props) {
         <CardList cards={result.items} label="Trip reports" />
       ) : (
         <EmptyState title={filtered ? "No trip reports match these filters yet." : "No trip reports yet."} action={<Link href="/community/trips/new" className={buttonClass}>Share your trip</Link>}>
-          {filtered ? <p className="m-0">Try another destination or style, or <Link href="/community/trips" className="text-marine-600">see all trip reports</Link>.</p> : "Trip reports appear here after a moderator approves them."}
+          {filtered ? <p className="m-0">Try another destination or style, or <Link href="/community/trips" className="text-marine-600 underline">see all trip reports</Link>.</p> : "Trip reports appear here after a moderator approves them."}
         </EmptyState>
       )}
       <Pagination page={result.page} totalPages={result.totalPages} href={href} />

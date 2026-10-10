@@ -167,7 +167,7 @@ export function EventFacts({ activity: a, path }: { activity: ActivityInfo; path
           {a.format === "online" ? (
             <>
               <span className="block">Online</span>
-              {a.bookingUrl && <a href={a.bookingUrl} rel={rel} target="_blank" className="text-marine-600 break-words">Joining or booking link<span className="sr-only"> (opens in a new tab)</span></a>}
+              {a.bookingUrl && <a href={a.bookingUrl} rel={rel} target="_blank" className="text-marine-600 underline break-words">Joining or booking link<span className="sr-only"> (opens in a new tab)</span></a>}
             </>
           ) : (
             <>
@@ -223,7 +223,7 @@ export function EventFacts({ activity: a, path }: { activity: ActivityInfo; path
 export function Attendees({ activity, people }: { activity: ActivityInfo; people: { handle: string; displayName: string; status: string }[] }) {
   const going = people.filter((p) => p.status === "going");
   const interested = people.filter((p) => p.status === "interested");
-  const names = (list: typeof people) => list.map((p, i) => <span key={p.handle}>{i > 0 && ", "}<Link href={`/travellers/${p.handle}`} className="text-marine-600">{p.displayName}</Link></span>);
+  const names = (list: typeof people) => list.map((p, i) => <span key={p.handle}>{i > 0 && ", "}<Link href={`/travellers/${p.handle}`} className="text-marine-600 underline">{p.displayName}</Link></span>);
   return (
     <section aria-labelledby="attendees-heading" className="mt-8">
       <h2 id="attendees-heading" className="t-heading-3 m-0">Who is going</h2>
@@ -348,7 +348,7 @@ export function OrganiserStatusForm({ postId, status, returnTo, flash }: { postI
   return (
     <section id="organiser" aria-labelledby="organiser-heading" className="mt-8 border border-dashed border-line-500 rounded-md p-5 scroll-mt-24">
       <h2 id="organiser-heading" className="t-heading-3 m-0">For you as the organiser</h2>
-      <p className="t-body-sm text-ink-600 mt-1 mb-0">Only you see this. To change the date, time or place, <Link href={`/account/posts/${postId}`} className="text-marine-600">edit your listing</Link>; a moderator checks the change before it appears.</p>
+      <p className="t-body-sm text-ink-600 mt-1 mb-0">Only you see this. To change the date, time or place, <Link href={`/account/posts/${postId}`} className="text-marine-600 underline">edit your listing</Link>; a moderator checks the change before it appears.</p>
       <ResultMessage flash={flash} messages={STATUS_MESSAGES} />
       {changeable ? (
         <form action={submitEventStatus} className="mt-3">

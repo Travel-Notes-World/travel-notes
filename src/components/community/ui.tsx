@@ -158,7 +158,7 @@ export function EmptyState({ title, children, action }: { title: string; childre
 export function CommunityLabel() {
   return (
     <p className="t-body-sm text-ink-600 m-0">
-      Written by a member of the community, not by the Travel Notes editorial team. <Link href="/community/guidelines" className="text-marine-600">How community posts work</Link>
+      Written by a member of the community, not by the Travel Notes editorial team. <Link href="/community/guidelines" className="text-marine-600 underline">How community posts work</Link>
     </p>
   );
 }
@@ -175,7 +175,7 @@ export function CommunityClosed() {
   return (
     <PageShell narrow>
       <PageHeader eyebrow="Community" title="The community is not open yet" intro="Travel Notes will open its traveller community soon: questions, trip reports and activities from people around the world." />
-      <p className="t-body-sm"><Link href="/" className="text-marine-600">Back to the travel guides</Link></p>
+      <p className="t-body-sm"><Link href="/" className="text-marine-600 underline">Back to the travel guides</Link></p>
     </PageShell>
   );
 }

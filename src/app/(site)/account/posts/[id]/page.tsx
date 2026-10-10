@@ -57,7 +57,7 @@ export default async function OwnPostPage({ params, searchParams }: { params: Pr
 
         <p className="t-body-sm m-0 flex flex-wrap items-center gap-3">
           <span>Status:</span> <StatusBadge state={post.state} />
-          {post.publicPath && <Link href={post.publicPath} className="text-marine-600">See the public page</Link>}
+          {post.publicPath && <Link href={post.publicPath} className="text-marine-600 underline">See the public page</Link>}
         </p>
 
         {post.note && ["changes_requested", "rejected", "hidden"].includes(post.state) && (
@@ -67,8 +67,8 @@ export default async function OwnPostPage({ params, searchParams }: { params: Pr
         )}
         {post.state === "pending" && <Notice tone="info" title="Waiting for review">A moderator will check it soon. To change something first, withdraw it: it goes back to your drafts.</Notice>}
         {published && post.editPending && <Notice tone="info" title="Your edit is waiting for review">The form below shows your edited version. The public page still shows the approved version until a moderator approves the edit.</Notice>}
-        {post.state === "rejected" && <Notice tone="info" title="Not accepted">This post was not published. You can delete it, or write a new post that follows the <Link href="/community/guidelines" className="text-marine-600">community rules</Link>.</Notice>}
-        {post.state === "hidden" && <Notice tone="warning" title="Hidden by a moderator">This post is not public at the moment. Contact us through the <Link href="/contact" className="text-marine-600">contact page</Link> if you think this is a mistake.</Notice>}
+        {post.state === "rejected" && <Notice tone="info" title="Not accepted">This post was not published. You can delete it, or write a new post that follows the <Link href="/community/guidelines" className="text-marine-600 underline">community rules</Link>.</Notice>}
+        {post.state === "hidden" && <Notice tone="warning" title="Hidden by a moderator">This post is not public at the moment. Contact us through the <Link href="/contact" className="text-marine-600 underline">contact page</Link> if you think this is a mistake.</Notice>}
         {post.state === "removed" && <Notice tone="info" title="Removed">This post is no longer public.</Notice>}
       </div>
 

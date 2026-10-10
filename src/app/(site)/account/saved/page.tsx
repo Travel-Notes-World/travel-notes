@@ -43,7 +43,7 @@ export default async function SavedPage() {
       <section aria-labelledby="guides-heading" className="mt-12">
         <h2 id="guides-heading" className="t-heading-2 m-0">Travel guides <span className="text-ink-600 font-normal">({bookmarks.guides.length})</span></h2>
         {bookmarks.guides.length === 0 ? (
-          <p className="t-body-sm text-ink-600 mt-2">No saved guides. Browse the <Link href="/stories" className="text-marine-600">Travel Notes guides</Link>.</p>
+          <p className="t-body-sm text-ink-600 mt-2">No saved guides. Browse the <Link href="/stories" className="text-marine-600 underline">Travel Notes guides</Link>.</p>
         ) : (
           <ul className="list-none m-0 p-0 mt-4 grid gap-6 max-w-[860px]">
             {bookmarks.guides.map((g) => (
@@ -60,9 +60,9 @@ export default async function SavedPage() {
 
       <section aria-labelledby="follows-heading" className="mt-12">
         <h2 id="follows-heading" className="t-heading-2 m-0">Destinations you follow <span className="text-ink-600 font-normal">({follows.length})</span></h2>
-        <p className="t-body-sm text-ink-600 mt-2 max-w-measure">New posts about these places can come in your destination digest email, if you switch it on in <Link href="/account/settings#email" className="text-marine-600">settings</Link>.</p>
+        <p className="t-body-sm text-ink-600 mt-2 max-w-measure">New posts about these places can come in your destination digest email, if you switch it on in <Link href="/account/settings#email" className="text-marine-600 underline">settings</Link>.</p>
         {follows.length === 0 ? (
-          <p className="t-body-sm text-ink-600">You do not follow any destinations yet. Use the Follow button on a <Link href="/destinations" className="text-marine-600">destination page</Link>.</p>
+          <p className="t-body-sm text-ink-600">You do not follow any destinations yet. Use the Follow button on a <Link href="/destinations" className="text-marine-600 underline">destination page</Link>.</p>
         ) : (
           <ul className="list-none m-0 p-0 mt-4 grid gap-4 max-w-[860px]">
             {follows.map((d) => (

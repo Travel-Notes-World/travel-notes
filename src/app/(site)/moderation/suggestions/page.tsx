@@ -20,7 +20,7 @@ export default async function SuggestionsPage() {
     <>
       <PageHeader
         title="Destination suggestions"
-        intro={<>Members suggest places that are not in the destination list. Check the place exists and is not already listed under another name. To add a new place, <Link href="/admin/collections/destinations/create" className="text-marine-600">create and publish it in the CMS</Link> first, then accept the suggestion here.</>}
+        intro={<>Members suggest places that are not in the destination list. Check the place exists and is not already listed under another name. To add a new place, <Link href="/admin/collections/destinations/create" className="text-marine-600 underline">create and publish it in the CMS</Link> first, then accept the suggestion here.</>}
       />
       {items.length ? (
         <ol className="list-none m-0 p-0 grid gap-4" aria-label="Suggestions waiting">

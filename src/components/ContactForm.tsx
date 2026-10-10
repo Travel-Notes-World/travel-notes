@@ -54,7 +54,7 @@ export function ContactForm({ defaultTopic = "", defaultPageUrl = "" }: { defaul
         <input id="website" name="website" type="text" tabIndex={-1} autoComplete="off" />
       </div>
       <p className="t-body-sm text-ink-600 mt-5 mb-0">
-        We keep your message so we can answer it and follow up. Read how we handle personal information in our <Link href="/privacy" className="text-marine-600">privacy notice</Link>.
+        We keep your message so we can answer it and follow up. Read how we handle personal information in our <Link href="/privacy" className="text-marine-600 underline">privacy notice</Link>.
       </p>
       <div className="mt-6"><SubmitButton pendingText="Sending…">Send message</SubmitButton></div>
     </form>

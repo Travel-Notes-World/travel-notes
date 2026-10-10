@@ -120,7 +120,7 @@ function ItinerarySection({ detail }: { detail: TripDetail }) {
                     {(s.destination || s.place) && (
                       <p className="t-body-sm text-ink-600 m-0 mt-1">
                         {s.place}{s.place && s.destination ? ", " : ""}
-                        {s.destination && <Link href={`/community/${s.destination.path}`} className="text-marine-600">{s.destination.label}</Link>}
+                        {s.destination && <Link href={`/community/${s.destination.path}`} className="text-marine-600 underline">{s.destination.label}</Link>}
                       </p>
                     )}
                     {s.timeNote && <p className="t-body-sm m-0 mt-1"><span className="text-ink-600">Getting there and timing:</span> {s.timeNote}</p>}
@@ -210,7 +210,7 @@ export default async function TripPage({ params, searchParams }: Props) {
 
         {detail.days.length > 0 && (
           <div className="mt-6 bg-paper-100 rounded-md p-4">
-            {copyError && <div className="mb-3"><Notice tone="error" title="The itinerary was not copied">Please try again. If it still does not work, you may already have the most trip plans an account can keep; remove one from <Link href="/account/trips" className="text-marine-600">your trips</Link> first.</Notice></div>}
+            {copyError && <div className="mb-3"><Notice tone="error" title="The itinerary was not copied">Please try again. If it still does not work, you may already have the most trip plans an account can keep; remove one from <Link href="/account/trips" className="text-marine-600 underline">your trips</Link> first.</Notice></div>}
             {viewer.member ? (
               <form action={copyItineraryAction}>
                 <input type="hidden" name="contributionId" value={post.id} />
