@@ -45,8 +45,8 @@ function PostRow({ item }: { item: OwnItem }) {
         </div>
       )}
       <p className="t-body-sm m-0 mt-2 flex flex-wrap gap-x-4">
-        <Link href={`/account/posts/${item.id}`} className="text-marine-600">{["draft", "changes_requested", "published"].includes(item.state) ? "Edit" : "View"}<span className="sr-only">: {item.title || "untitled draft"}</span></Link>
-        {item.path && <Link href={item.path} className="text-marine-600">See the public page<span className="sr-only">: {item.title}</span></Link>}
+        <Link href={`/account/posts/${item.id}`} className="text-marine-600 underline">{["draft", "changes_requested", "published"].includes(item.state) ? "Edit" : "View"}<span className="sr-only">: {item.title || "untitled draft"}</span></Link>
+        {item.path && <Link href={item.path} className="text-marine-600 underline">See the public page<span className="sr-only">: {item.title}</span></Link>}
         {item.state === "published" && item.type === "question" && <span className="text-ink-600">{item.replyCount === 1 ? "1 answer" : `${item.replyCount} answers`}</span>}
       </p>
     </li>
@@ -83,7 +83,7 @@ export default async function AccountPage({ searchParams }: { searchParams: Prom
           <Link href="/activities/new" className={secondaryButtonClass}>Add an activity</Link>
         </div>
         <p className="t-body-sm text-ink-600 mt-4 mb-0">
-          {unread > 0 ? <Link href="/account/notifications" className="text-marine-600">{unread === 1 ? "1 unread notification" : `${unread} unread notifications`}</Link> : "No unread notifications."}
+          {unread > 0 ? <Link href="/account/notifications" className="text-marine-600 underline">{unread === 1 ? "1 unread notification" : `${unread} unread notifications`}</Link> : "No unread notifications."}
         </p>
       </section>
 
@@ -118,7 +118,7 @@ export default async function AccountPage({ searchParams }: { searchParams: Prom
           <h2 id="plans-heading" className="t-heading-2 m-0">Your trip plans</h2>
           <p className="t-body-sm text-ink-600 mt-1">Private: only you can see them.</p>
           {plans.length === 0 ? (
-            <p className="t-body-sm">No plans yet. <Link href="/account/trips" className="text-marine-600">Start a plan</Link>, or copy the itinerary from a trip report you like.</p>
+            <p className="t-body-sm">No plans yet. <Link href="/account/trips" className="text-marine-600 underline">Start a plan</Link>, or copy the itinerary from a trip report you like.</p>
           ) : (
             <ul className="list-none m-0 p-0 grid gap-3">
               {plans.slice(0, 5).map((plan) => (
@@ -129,13 +129,13 @@ export default async function AccountPage({ searchParams }: { searchParams: Prom
               ))}
             </ul>
           )}
-          {plans.length > 0 && <p className="t-body-sm mt-4"><Link href="/account/trips" className="text-marine-600">All plans{plans.length > 5 ? ` (${plans.length})` : ""}</Link></p>}
+          {plans.length > 0 && <p className="t-body-sm mt-4"><Link href="/account/trips" className="text-marine-600 underline">All plans{plans.length > 5 ? ` (${plans.length})` : ""}</Link></p>}
           <h2 className="t-heading-3 mt-10 mb-0">More</h2>
           <ul className="t-body-sm mt-2 pl-5">
-            <li><Link href="/account/saved" className="text-marine-600">Saved posts and followed destinations</Link></li>
-            <li><Link href="/account/suggest-destination" className="text-marine-600">Suggest a destination</Link></li>
-            <li><Link href={`/travellers/${member.handle}`} className="text-marine-600">Your public profile</Link></li>
-            <li><Link href="/community/guidelines" className="text-marine-600">Community rules</Link></li>
+            <li><Link href="/account/saved" className="text-marine-600 underline">Saved posts and followed destinations</Link></li>
+            <li><Link href="/account/suggest-destination" className="text-marine-600 underline">Suggest a destination</Link></li>
+            <li><Link href={`/travellers/${member.handle}`} className="text-marine-600 underline">Your public profile</Link></li>
+            <li><Link href="/community/guidelines" className="text-marine-600 underline">Community rules</Link></li>
           </ul>
         </aside>
       </div>

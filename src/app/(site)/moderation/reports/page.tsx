@@ -48,7 +48,7 @@ export default async function ReportsPage({ searchParams }: { searchParams: Prom
                 <p className="t-ui m-0">{reportCategoryLabel(r.category)}</p>
                 <p className="t-body-sm m-0 mt-1 text-ink-600">About a {r.targetType}{r.contributionTitle ? ` on “${r.contributionTitle}”` : ""} · reported by {r.reporterName} · {formatDateTime(r.createdAt)}{status === "open" ? ` · open for ${formatAge(r.createdAt)}` : ""}</p>
                 {r.details ? <UserText text={r.details} className="t-body-sm mt-2" /> : <p className="t-body-sm text-ink-600 m-0 mt-2">No details given.</p>}
-                {link && <p className="t-body-sm m-0 mt-2"><Link href={link.href} className="text-marine-600">{link.label}</Link></p>}
+                {link && <p className="t-body-sm m-0 mt-2"><Link href={link.href} className="text-marine-600 underline">{link.label}</Link></p>}
                 {status === "open" ? <div className="mt-3"><ReportResolveForm reportId={r.id} /></div> : r.resolution && <p className="t-body-sm m-0 mt-2"><span className="t-ui">Outcome:</span> {r.resolution}</p>}
               </li>
             );

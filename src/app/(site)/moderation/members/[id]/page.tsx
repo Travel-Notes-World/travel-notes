@@ -40,7 +40,7 @@ export default async function MemberPage({ params }: { params: Promise<{ id: str
           <div><dt className="t-ui">Published replies</dt><dd className="m-0">{m.counts.replies}</dd></div>
           <div><dt className="t-ui">Reports about this member</dt><dd className="m-0">{m.counts.reportsAgainst}</dd></div>
         </dl>
-        {m.status !== "deleted" && m.counts.published > 0 && <p className="t-body-sm mt-3 mb-0"><Link href={`/travellers/${m.handle}`} className="text-marine-600">Public profile</Link></p>}
+        {m.status !== "deleted" && m.counts.published > 0 && <p className="t-body-sm mt-3 mb-0"><Link href={`/travellers/${m.handle}`} className="text-marine-600 underline">Public profile</Link></p>}
       </Panel>
       <Panel title={m.status === "suspended" ? "Lift the suspension" : "Suspend this account"}>
         <RestrictForm memberId={m.id} status={m.status} />
@@ -56,7 +56,7 @@ export default async function MemberPage({ params }: { params: Promise<{ id: str
               <li key={p.id} className="t-body-sm flex flex-wrap items-center gap-2 min-w-0">
                 <StatusBadge state={p.state} />
                 <span className="text-ink-600">{typeLabel(p.type)}</span>
-                <Link href={`/moderation/posts/${p.id}`} className="text-marine-600 break-words">{p.title || "(no title)"}</Link>
+                <Link href={`/moderation/posts/${p.id}`} className="text-marine-600 underline break-words">{p.title || "(no title)"}</Link>
                 <span className="text-ink-600">updated {formatDateTime(p.updatedAt)}</span>
               </li>
             ))}

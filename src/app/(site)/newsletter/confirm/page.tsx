@@ -25,7 +25,7 @@ export default async function ConfirmPage({ searchParams }: { searchParams: Prom
         </>
       ) : (
         <p className="t-deck mt-3 max-w-measure">
-          This link has expired or was already used. If you are not subscribed yet, <Link href="/newsletter" className="text-marine-600">sign up again</Link>.
+          This link has expired or was already used. If you are not subscribed yet, <Link href="/newsletter" className="text-marine-600 underline">sign up again</Link>.
         </p>
       )}
     </div>

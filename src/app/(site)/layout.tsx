@@ -5,16 +5,20 @@ import { SiteFooter } from "@/components/SiteFooter";
 import "../globals.css";
 
 // Self-hosted variable fonts (SIL Open Font License, via Fontsource) — no request to Google at runtime.
+// Cut down with fonttools (`varLib.instancer`) to what the site uses, so pages download about 150 KB of fonts
+// instead of 330 KB: Newsreader weight 400–700 (optical size kept, so headings at every size look the same),
+// Newsreader italic fixed at weight 400 and optical size 24 (it only sets the logo and quotes, at 24–26 px), and
+// Instrument Sans weight 400–700 at normal width.
 const newsreader = localFont({
   src: [
-    { path: "../../fonts/newsreader-latin-standard-normal.woff2", style: "normal", weight: "200 800" },
-    { path: "../../fonts/newsreader-latin-standard-italic.woff2", style: "italic", weight: "200 800" },
+    { path: "../../fonts/newsreader-latin-wght400-700.woff2", style: "normal", weight: "400 700" },
+    { path: "../../fonts/newsreader-latin-italic-wght400.woff2", style: "italic", weight: "400" },
   ],
   variable: "--font-newsreader",
   display: "swap",
 });
 const instrumentSans = localFont({
-  src: [{ path: "../../fonts/instrument-sans-latin-standard-normal.woff2", style: "normal", weight: "400 700" }],
+  src: [{ path: "../../fonts/instrument-sans-latin-wght400-700.woff2", style: "normal", weight: "400 700" }],
   variable: "--font-instrument",
   display: "swap",
 });

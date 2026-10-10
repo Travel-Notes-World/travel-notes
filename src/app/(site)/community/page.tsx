@@ -76,9 +76,10 @@ export default async function CommunityPage({ searchParams }: Props) {
         <h2 id="sections-heading" className="sr-only">Community sections</h2>
         <ul className="grid gap-4 md:grid-cols-3 list-none m-0 p-0">
           {ENTRY_POINTS.map((e) => (
-            <li key={e.href} className="border border-paper-200 rounded-md p-4 bg-paper-000">
+            <li key={e.href} className="relative border border-paper-200 rounded-md p-4 bg-paper-000">
               <h3 className="t-card-title m-0">
-                <Link href={e.href} className="text-ink-900 no-underline hover:underline decoration-ochre-500 underline-offset-4">{e.title}</Link>
+                {/* The link covers the whole card, so the tap target is the card, not just the title. */}
+                <Link href={e.href} className="text-ink-900 no-underline hover:underline decoration-ochre-500 underline-offset-4 after:absolute after:inset-0 after:rounded-md">{e.title}</Link>
               </h3>
               <p className="t-body-sm text-ink-600 mt-1 mb-0">{e.text}</p>
             </li>
@@ -111,7 +112,7 @@ export default async function CommunityPage({ searchParams }: Props) {
               </>
             ) : (
               <EmptyState title={`No places match “${place}”.`} action={<Link href="/community/questions/new" className={secondaryButtonClass}>Ask a question anyway</Link>}>
-                Check the spelling or try the country name. If the place is missing, you can <Link href="/account/suggest-destination" className="text-marine-600">suggest it</Link>; a moderator checks every new place before it is added.
+                Check the spelling or try the country name. If the place is missing, you can <Link href="/account/suggest-destination" className="text-marine-600 underline">suggest it</Link>; a moderator checks every new place before it is added.
               </EmptyState>
             )}
           </div>
@@ -159,10 +160,10 @@ export default async function CommunityPage({ searchParams }: Props) {
 
       <footer className="mt-12 border-t border-paper-200 pt-6 grid gap-2">
         <p className="t-body-sm text-ink-600 m-0 max-w-measure">
-          Every member post follows the <Link href="/community/guidelines" className="text-marine-600">community guidelines</Link> and can be reported to the moderators.
+          Every member post follows the <Link href="/community/guidelines" className="text-marine-600 underline">community guidelines</Link> and can be reported to the moderators.
         </p>
         <p className="t-body-sm text-ink-600 m-0">
-          Place data from <a href="https://www.geonames.org/" className="text-marine-600">GeoNames</a>, licensed <a href="https://creativecommons.org/licenses/by/4.0/" rel="license" className="text-marine-600">CC BY 4.0</a>.
+          Place data from <a href="https://www.geonames.org/" className="text-marine-600 underline">GeoNames</a>, licensed <a href="https://creativecommons.org/licenses/by/4.0/" rel="license" className="text-marine-600 underline">CC BY 4.0</a>.
         </p>
       </footer>
     </PageShell>

@@ -22,8 +22,8 @@ export default async function PendingRepliesPage({ searchParams }: { searchParam
         <ol className="list-none m-0 p-0 grid gap-4" aria-label="Replies waiting">
           {items.map((r) => (
             <li key={r.id} className="border border-line-500 rounded-md p-4 bg-paper-000 min-w-0">
-              <p className="t-meta text-ink-600 m-0">{r.isReplyToReply ? "Comment on an answer" : "Answer or comment"} on: <Link href={`/moderation/posts/${r.contributionId}`} className="text-marine-600">{r.contributionTitle || "(untitled post)"}</Link>{r.contributionPath && <> · <Link href={r.contributionPath} className="text-marine-600">public page</Link></>}</p>
-              <p className="t-body-sm m-0 mt-1">By {r.authorId ? <Link href={`/moderation/members/${r.authorId}`} className="text-marine-600">{r.authorName}</Link> : r.authorName} · {formatDateTime(r.createdAt)} · waiting {formatAge(r.createdAt)}</p>
+              <p className="t-meta text-ink-600 m-0">{r.isReplyToReply ? "Comment on an answer" : "Answer or comment"} on: <Link href={`/moderation/posts/${r.contributionId}`} className="text-marine-600 underline">{r.contributionTitle || "(untitled post)"}</Link>{r.contributionPath && <> · <Link href={r.contributionPath} className="text-marine-600 underline">public page</Link></>}</p>
+              <p className="t-body-sm m-0 mt-1">By {r.authorId ? <Link href={`/moderation/members/${r.authorId}`} className="text-marine-600 underline">{r.authorName}</Link> : r.authorName} · {formatDateTime(r.createdAt)} · waiting {formatAge(r.createdAt)}</p>
               <UserText text={r.body} className="t-body-sm mt-3" />
               <div className="mt-3"><ReplyDecisionForm replyId={r.id} state="pending" /></div>
             </li>

@@ -28,7 +28,7 @@ export default async function MembersPage({ searchParams }: { searchParams: Prom
         <ul className="list-none m-0 p-0 grid gap-2" aria-label="Members">
           {members.map((m) => (
             <li key={m.id} className="border border-line-500 rounded-md p-3 bg-paper-000 t-body-sm min-w-0 break-words">
-              <Link href={`/moderation/members/${m.id}`} className="t-ui text-marine-600">{m.displayName}</Link> @{m.handle} · {m.email} · {memberStatusLabel(m.status)}
+              <Link href={`/moderation/members/${m.id}`} className="t-ui text-marine-600 underline">{m.displayName}</Link> @{m.handle} · {m.email} · {memberStatusLabel(m.status)}
             </li>
           ))}
         </ul>

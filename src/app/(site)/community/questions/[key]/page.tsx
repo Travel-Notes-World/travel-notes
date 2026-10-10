@@ -48,7 +48,7 @@ export default async function QuestionPage({ params, searchParams }: Props) {
         <h1 className="t-heading-1 mt-2 mb-0">{post.title}</h1>
         <PostMeta page={page} />
         <div className="mt-3"><CommunityLabel /></div>
-        {q.duplicateOf && <div className="mt-6"><Notice tone="info" title="Answered elsewhere">An earlier thread covers this question: <Link href={q.duplicateOf.path} className="text-marine-600">{q.duplicateOf.title}</Link>. The discussion here is kept as it was.</Notice></div>}
+        {q.duplicateOf && <div className="mt-6"><Notice tone="info" title="Answered elsewhere">An earlier thread covers this question: <Link href={q.duplicateOf.path} className="text-marine-600 underline">{q.duplicateOf.title}</Link>. The discussion here is kept as it was.</Notice></div>}
         {context.length > 0 && <ul className="mt-6 flex flex-wrap gap-2 list-none m-0 p-0" aria-label="Trip details">{context.map((c) => <li key={c} className="t-body-sm bg-paper-100 rounded-sm px-3 py-1">{c}</li>)}</ul>}
         <UserText text={post.body} className="mt-6" />
         <PostToolbar page={page} />

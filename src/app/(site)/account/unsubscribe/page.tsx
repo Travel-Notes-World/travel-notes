@@ -37,14 +37,14 @@ export default async function UnsubscribePage({ searchParams }: { searchParams: 
     body = (
       <Notice tone="success" title="You are unsubscribed">
         <p>We will not send you {CATEGORY_TEXT[done]} any more. You still see notifications on the site.</p>
-        <p>Changed your mind? Switch it back on in your <Link href="/account/settings#email" className="text-marine-600">email settings</Link> (sign-in needed).</p>
+        <p>Changed your mind? Switch it back on in your <Link href="/account/settings#email" className="text-marine-600 underline">email settings</Link> (sign-in needed).</p>
       </Notice>
     );
   } else if (params.invalid || params.failed) {
     body = (
       <Notice tone="error" title={params.failed ? "That did not work" : "This link is not valid"}>
         <p>{params.failed ? "Something went wrong on our side. Please try the link in your email again in a moment." : "The unsubscribe link may be incomplete. Copy the whole link from the email, or sign in and change your email settings."}</p>
-        <p><Link href="/account/settings#email" className="text-marine-600">Go to email settings</Link></p>
+        <p><Link href="/account/settings#email" className="text-marine-600 underline">Go to email settings</Link></p>
       </Notice>
     );
   } else if (m && s && isCategory(c)) {
@@ -61,7 +61,7 @@ export default async function UnsubscribePage({ searchParams }: { searchParams: 
   } else {
     body = (
       <Notice tone="info" title="Use the link in your email">
-        <p>Emails you can switch off have an unsubscribe link at the bottom. You can also sign in and choose which emails you get in your <Link href="/account/settings#email" className="text-marine-600">email settings</Link>.</p>
+        <p>Emails you can switch off have an unsubscribe link at the bottom. You can also sign in and choose which emails you get in your <Link href="/account/settings#email" className="text-marine-600 underline">email settings</Link>.</p>
       </Notice>
     );
   }

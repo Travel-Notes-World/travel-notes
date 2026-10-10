@@ -22,9 +22,9 @@ export default async function SignInPage({ searchParams }: { searchParams: Promi
       {params.reset && <div className="mb-6"><Notice tone="success" title="Password changed">Sign in with your new password.</Notice></div>}
       <SignInForm next={next} />
       <p className="t-body-sm mt-8">
-        New here? {settings.signupsOpen ? <Link href="/account/sign-up" className="text-marine-600">Create an account</Link> : "Sign-up opens soon."}
+        New here? {settings.signupsOpen ? <Link href="/account/sign-up" className="text-marine-600 underline">Create an account</Link> : "Sign-up opens soon."}
       </p>
-      <p className="t-body-sm text-ink-600">Travel Notes staff sign in to the <Link href="/admin" className="text-marine-600">CMS</Link> instead.</p>
+      <p className="t-body-sm text-ink-600">Travel Notes staff sign in to the <Link href="/admin" className="text-marine-600 underline">CMS</Link> instead.</p>
     </PageShell>
   );
 }

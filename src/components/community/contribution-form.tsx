@@ -127,7 +127,7 @@ export function ContributionForm({
         {published ? (
           <p className="t-body-sm text-ink-600 max-w-measure">Your changes go to a moderator first. The published version stays as it is until they are approved.</p>
         ) : (
-          <p className="t-body-sm text-ink-600 max-w-measure">A moderator reviews every new post before it appears. You can save a draft and come back to it from <Link href="/account" className="text-marine-600">your account</Link>.</p>
+          <p className="t-body-sm text-ink-600 max-w-measure">A moderator reviews every new post before it appears. You can save a draft and come back to it from <Link href="/account" className="text-marine-600 underline">your account</Link>.</p>
         )}
         <div className="mt-4 flex flex-wrap gap-3">
           <SubmitButton name="intent" value="submit" pendingText="Sending…">{published ? "Send changes for review" : submitLabel}</SubmitButton>
@@ -166,7 +166,7 @@ function SimilarQuestions({ formRef }: { formRef: React.RefObject<HTMLFormElemen
     <div role="status" className="mt-3 bg-paper-100 rounded-md p-4 max-w-measure">
       <p className="t-ui m-0">These questions may already help</p>
       <ul className="mt-2 mb-0 pl-5 t-body-sm">
-        {items.map((i) => <li key={i.path}><Link href={i.path} target="_blank" className="text-marine-600">{i.title}</Link> <span className="text-ink-600">({i.answers === 1 ? "1 answer" : `${i.answers} answers`})</span></li>)}
+        {items.map((i) => <li key={i.path}><Link href={i.path} target="_blank" className="text-marine-600 underline">{i.title}</Link> <span className="text-ink-600">({i.answers === 1 ? "1 answer" : `${i.answers} answers`})</span></li>)}
       </ul>
     </div>
   );
