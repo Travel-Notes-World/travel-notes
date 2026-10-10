@@ -21,6 +21,8 @@ export function Placeholder({ tone, alt, image, className = "", priority = false
       />
     );
   }
+  // With no description the colour block is decoration, so it is hidden from screen readers rather than announced as an unnamed image.
+  if (!alt) return <div aria-hidden="true" className={className} style={{ background: tone }} />;
   return <div role="img" aria-label={alt} className={className} style={{ background: tone }} />;
 }
 
