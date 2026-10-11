@@ -109,7 +109,7 @@ export default async function AuthorPage({ params }: { params: Promise<{ slug: s
           <ul className="mt-3 flex flex-wrap gap-x-6 gap-y-2 list-none m-0 p-0">
             {links.map((l) => (
               <li key={l.url}>
-                <a href={l.url} rel="me noopener noreferrer" className="t-ui text-marine-600">{l.label}</a>
+                <a href={l.url} rel="me noopener noreferrer" className="t-ui text-marine-600 underline min-h-11 inline-flex items-center">{l.label}</a>
               </li>
             ))}
           </ul>

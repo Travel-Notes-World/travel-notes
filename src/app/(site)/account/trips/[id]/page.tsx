@@ -48,7 +48,7 @@ export default async function PlanPage({ params, searchParams }: { params: Promi
         {query.copied && <Notice tone="success" title="Itinerary copied">This is your own copy. Changing it does not change the original trip report.</Notice>}
         {view.source && (
           <p className="t-body-sm m-0 bg-paper-100 rounded-sm p-3">
-            Based on {view.source.path ? <Link href={view.source.path} className="text-marine-600">{view.source.title}</Link> : <span>“{view.source.title}” (no longer public)</span>} by {view.source.authorName}
+            Based on {view.source.path ? <Link href={view.source.path} className="text-marine-600 underline">{view.source.title}</Link> : <span>“{view.source.title}” (no longer public)</span>} by {view.source.authorName}
             {view.source.copiedAt ? `, copied on ${formatDay(view.source.copiedAt)}` : ""}.
           </p>
         )}

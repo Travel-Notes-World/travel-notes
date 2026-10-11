@@ -1,18 +1,19 @@
+import Image from "next/image";
 import type { CommonsImage } from "@/lib/content/images";
 
-/** Wikimedia Commons delivers a resized derivative at any width via Special:FilePath. */
-export const commonsSrc = (file: string, width: number) =>
-  `https://commons.wikimedia.org/wiki/Special:FilePath/${encodeURIComponent(file.replace(/ /g, "_"))}?width=${width}`;
-
-export function Placeholder({ tone, alt, image, className = "", priority = false }:
-  { tone: string; alt: string; image?: CommonsImage; className?: string; priority?: boolean }) {
+/**
+ * A licensed photo, or a colour block until one exists. Photos go through next/image, so they come from this
+ * site in AVIF/WebP at the width the screen needs. `priority` loads the photo first (for the main image of a
+ * page) without a preload hint: a hint would travel in the page's prefetch data and make every page that links
+ * here download the photo too.
+ */
+export function Placeholder({ tone, alt, image, className = "", priority = false, sizes = "(min-width: 1024px) 60vw, 100vw" }:
+  { tone: string; alt: string; image?: CommonsImage; className?: string; priority?: boolean; sizes?: string }) {
   if (image) {
     return (
-      // eslint-disable-next-line @next/next/no-img-element -- remote licensed imagery; next/image + R2 pipeline replaces this in Phase 1
-      <img
-        src={commonsSrc(image.file, 1200)}
-        srcSet={`${commonsSrc(image.file, 480)} 480w, ${commonsSrc(image.file, 768)} 768w, ${commonsSrc(image.file, 1200)} 1200w, ${commonsSrc(image.file, 1800)} 1800w`}
-        sizes="(min-width: 1024px) 60vw, 100vw"
+      <Image
+        src={image.src}
+        sizes={sizes}
         alt={image.alt}
         loading={priority ? "eager" : "lazy"}
         fetchPriority={priority ? "high" : "auto"}
@@ -31,7 +32,7 @@ export function Credit({ image, caption }: { image?: CommonsImage; caption?: str
   return (
     <>
       {caption ? `${caption} ` : ""}Photo: {image.author}, via Wikimedia Commons,{" "}
-      <a href={image.licenseUrl} className="text-marine-600" rel="license">{image.license}</a>.
+      <a href={image.licenseUrl} className="text-marine-600 underline" rel="license">{image.license}</a>.
     </>
   );
 }

@@ -61,7 +61,7 @@ export default async function AuditLogPage({ searchParams }: { searchParams: Pro
         </Field>
         <div className="mt-4 flex flex-wrap items-center gap-3 sm:col-span-3">
           <button type="submit" className={secondaryButtonClass}>Filter</button>
-          {(action || target || actor || post) && <Link href="/moderation/log" className="t-ui text-marine-600">Clear filters</Link>}
+          {(action || target || actor || post) && <Link href="/moderation/log" className="t-ui text-marine-600 underline min-h-11 inline-flex items-center">Clear filters</Link>}
           {post && <span className="t-body-sm text-ink-600">Showing one post only.</span>}
         </div>
       </form>
@@ -86,7 +86,7 @@ export default async function AuditLogPage({ searchParams }: { searchParams: Pro
                     <td className="py-2 pr-3 whitespace-nowrap">{formatDateTime(item.at)}</td>
                     <td className="py-2 pr-3">{actionLabel(item.action)}</td>
                     <td className="py-2 pr-3">{item.actor}</td>
-                    <td className="py-2 pr-3">{link ? <Link href={link} className="text-marine-600">{item.targetType}</Link> : item.targetType}</td>
+                    <td className="py-2 pr-3">{link ? <Link href={link} className="text-marine-600 underline">{item.targetType}</Link> : item.targetType}</td>
                     <td className="py-2 break-words">{item.reason}</td>
                   </tr>
                 );

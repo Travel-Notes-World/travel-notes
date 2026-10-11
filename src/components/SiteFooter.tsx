@@ -25,13 +25,13 @@ export async function SiteFooter() {
             <p className="m-0 text-[13.5px] leading-[1.6] text-white/70 max-w-[260px]">{footer.tagline}</p>
           </div>
           {footer.groups.map((g) => (
-            <nav key={g.title} aria-label={g.title} className="flex flex-col gap-[9px] text-[13.5px]">
-              <p className="m-0 mb-1 text-[12px] font-semibold tracking-[1.5px] uppercase text-brand-gold">{g.title}</p>
+            <nav key={g.title} aria-label={g.title} className="flex flex-col items-start text-[13.5px]">
+              <p className="m-0 mb-2 text-[12px] font-semibold tracking-[1.5px] uppercase text-brand-gold">{g.title}</p>
               {g.links.filter(({ href }) => shown(href)).map(({ href, label }) =>
                 href ? (
-                  <Link key={label} href={href} className="text-white/80 hover:text-white no-underline">{label}</Link>
+                  <Link key={label} href={href} className="inline-flex items-center min-h-11 min-w-11 text-white/80 hover:text-white no-underline">{label}</Link>
                 ) : (
-                  <span key={label} className="text-white/55">{label} <span className="text-[10px] font-semibold tracking-[0.5px] uppercase text-white/70 border border-white/30 rounded-full px-[6px] py-[1px] ml-1">Soon</span></span>
+                  <span key={label} className="py-3 text-white/55">{label} <span className="text-[10px] font-semibold tracking-[0.5px] uppercase text-white/70 border border-white/30 rounded-full px-[6px] py-[1px] ml-1">Soon</span></span>
                 ),
               )}
             </nav>
@@ -39,8 +39,8 @@ export async function SiteFooter() {
         </div>
         <div className="flex flex-wrap gap-4 justify-between items-center pt-[22px] border-t border-white/15 text-[12.5px] text-white/60">
           <span>© {new Date().getFullYear()} {footer.copyright}</span>
-          <nav aria-label="Legal" className="flex flex-wrap gap-5">
-            {footer.legal.map(({ href, label }) => <Link key={href} href={href} className="text-white/60 hover:text-white no-underline">{label}</Link>)}
+          <nav aria-label="Legal" className="flex flex-wrap gap-x-5">
+            {footer.legal.map(({ href, label }) => <Link key={href} href={href} className="inline-flex items-center justify-center min-h-11 min-w-11 text-white/60 hover:text-white no-underline">{label}</Link>)}
           </nav>
         </div>
       </div>

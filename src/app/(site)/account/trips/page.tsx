@@ -31,7 +31,7 @@ export default async function TripsPage({ searchParams }: { searchParams: Promis
         {plans.length === 0 ? (
           <div className="mt-4">
             <EmptyState title="No plans yet">
-              Start one below, or open a <Link href="/community/trips" className="text-marine-600">trip report</Link> and copy its itinerary into your own plan. Copying never changes the original report.
+              Start one below, or open a <Link href="/community/trips" className="text-marine-600 underline">trip report</Link> and copy its itinerary into your own plan. Copying never changes the original report.
             </EmptyState>
           </div>
         ) : (

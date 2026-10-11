@@ -158,7 +158,7 @@ export default async function HubPage({ params }: Props) {
             </section>
           )}
           <p className="t-body-sm text-ink-600 m-0">
-            Posts here are written by members, not by Travel Notes. <Link href="/community/guidelines" className="text-marine-600">How community posts work</Link>
+            Posts here are written by members, not by Travel Notes. <Link href="/community/guidelines" className="text-marine-600 underline">How community posts work</Link>
           </p>
         </aside>
       </div>

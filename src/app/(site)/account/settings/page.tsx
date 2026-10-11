@@ -23,18 +23,18 @@ export default async function SettingsPage() {
 
       <nav aria-label="On this page" className="mb-2">
         <ul className="flex flex-wrap gap-x-5 list-none m-0 p-0 t-body-sm">
-          <li><a href="#profile" className="text-marine-600">Profile</a></li>
-          <li><a href="#email" className="text-marine-600">Email</a></li>
-          <li><a href="#password" className="text-marine-600">Password</a></li>
-          <li><a href="#data" className="text-marine-600">Your data</a></li>
-          <li><a href="#delete" className="text-marine-600">Delete account</a></li>
+          <li><a href="#profile" className="text-marine-600 underline">Profile</a></li>
+          <li><a href="#email" className="text-marine-600 underline">Email</a></li>
+          <li><a href="#password" className="text-marine-600 underline">Password</a></li>
+          <li><a href="#data" className="text-marine-600 underline">Your data</a></li>
+          <li><a href="#delete" className="text-marine-600 underline">Delete account</a></li>
         </ul>
       </nav>
 
       <section id="profile" aria-labelledby="profile-heading" className="mt-8">
         <h2 id="profile-heading" className="t-heading-2 m-0">Public profile</h2>
         <p className="t-body-sm text-ink-600 mt-2 max-w-measure">
-          Other travellers see these on your posts and on <Link href={`/travellers/${account.handle}`} className="text-marine-600">your profile page</Link>. Your email address is never shown.
+          Other travellers see these on your posts and on <Link href={`/travellers/${account.handle}`} className="text-marine-600 underline">your profile page</Link>. Your email address is never shown.
         </p>
         <dl className="t-body-sm mt-4 grid gap-1 max-w-measure">
           <div className="flex flex-wrap gap-x-2"><dt className="t-ui">Profile address:</dt><dd className="m-0 break-all">/travellers/{account.handle}</dd></div>
@@ -46,7 +46,7 @@ export default async function SettingsPage() {
 
       <section id="email" aria-labelledby="email-heading" className={sectionClass}>
         <h2 id="email-heading" className="t-heading-2 m-0">Email</h2>
-        <p className="t-body-sm text-ink-600 mt-2 max-w-measure">We send email to <strong className="text-ink-900 break-all">{account.email}</strong>. To follow a destination, use the Follow button on its page; see <Link href="/account/saved" className="text-marine-600">what you follow</Link>.</p>
+        <p className="t-body-sm text-ink-600 mt-2 max-w-measure">We send email to <strong className="text-ink-900 break-all">{account.email}</strong>. To follow a destination, use the Follow button on its page; see <Link href="/account/saved" className="text-marine-600 underline">what you follow</Link>.</p>
         <EmailPrefsForm prefs={account.emailPrefs} />
       </section>
 
@@ -74,7 +74,7 @@ export default async function SettingsPage() {
             <li>you choose below whether your published posts and replies stay (shown as written by “Deleted member”) or are removed too;</li>
             <li>records of moderation decisions and reports are kept without your name or email, so the site stays safe.</li>
           </ul>
-          <p>You may want to <a href="#data" className="text-marine-600">download your data</a> first. Deleting cannot be undone.</p>
+          <p>You may want to <a href="#data" className="text-marine-600 underline">download your data</a> first. Deleting cannot be undone.</p>
         </div>
         <details className="mt-4">
           <summary className="t-ui text-signal-error cursor-pointer min-h-11 inline-flex items-center">I want to delete my account</summary>

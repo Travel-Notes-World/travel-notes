@@ -136,7 +136,7 @@ export function PlanEditor({ id, title, startDate, endDate, notes, days: initial
                         <fieldset className="border-0 p-0 m-0 min-w-0">
                           <legend className="t-ui p-0">Stop {s + 1} of day {d + 1}</legend>
                           {stop.saved && (
-                            <p className="t-body-sm m-0 mt-1">From the community: <Link href={stop.saved.path} className="text-marine-600">{stop.saved.title}</Link></p>
+                            <p className="t-body-sm m-0 mt-1">From the community: <Link href={stop.saved.path} className="text-marine-600 underline">{stop.saved.title}</Link></p>
                           )}
                           {!stop.saved && stop.savedContribution && <p className="t-body-sm text-ink-600 m-0 mt-1">The post this came from is no longer public.</p>}
                           <div className="grid gap-x-6 sm:grid-cols-2">

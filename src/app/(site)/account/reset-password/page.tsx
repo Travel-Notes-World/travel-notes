@@ -11,7 +11,7 @@ export default async function ResetPasswordPage({ searchParams }: { searchParams
   return (
     <PageShell narrow>
       <PageHeader eyebrow="Community account" title="Choose a new password" />
-      {token ? <ResetPasswordForm token={token} /> : <Notice tone="error" title="This link is incomplete">Ask for a <Link href="/account/forgot-password" className="text-marine-600">new reset link</Link>.</Notice>}
+      {token ? <ResetPasswordForm token={token} /> : <Notice tone="error" title="This link is incomplete">Ask for a <Link href="/account/forgot-password" className="text-marine-600 underline">new reset link</Link>.</Notice>}
     </PageShell>
   );
 }

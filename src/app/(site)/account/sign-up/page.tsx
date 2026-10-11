@@ -34,7 +34,7 @@ export default async function SignUpPage({ searchParams }: { searchParams: Promi
           <SignUpForm />
         </>
       )}
-      <p className="t-body-sm mt-8">Already have an account? <Link href="/account/sign-in" className="text-marine-600">Sign in</Link></p>
+      <p className="t-body-sm mt-8">Already have an account? <Link href="/account/sign-in" className="text-marine-600 underline">Sign in</Link></p>
     </PageShell>
   );
 }

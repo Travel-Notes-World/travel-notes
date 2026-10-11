@@ -38,7 +38,7 @@ export default async function NotificationsPage({ searchParams }: { searchParams
 
       {list.items.length === 0 ? (
         <EmptyState title={requested > 1 ? "No notifications on this page" : "No notifications yet"}>
-          You will see a notification here when someone answers your post, when a moderator decides on something you sent, and when an activity you responded to changes. Choose which of these also come by email in <Link href="/account/settings#email" className="text-marine-600">settings</Link>.
+          You will see a notification here when someone answers your post, when a moderator decides on something you sent, and when an activity you responded to changes. Choose which of these also come by email in <Link href="/account/settings#email" className="text-marine-600 underline">settings</Link>.
         </EmptyState>
       ) : (
         <ul className="list-none m-0 p-0 grid gap-0 max-w-[860px]" aria-label="Notifications, newest first">

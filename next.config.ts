@@ -37,6 +37,10 @@ const securityHeaders = [
 const nextConfig: NextConfig = {
   // Do not advertise "Next.js, Payload" on every response.
   poweredByHeader: false,
+  images: {
+    // AVIF first (about a third smaller than WebP for photos); browsers without it get WebP.
+    formats: ["image/avif", "image/webp"],
+  },
   experimental: {
     serverActions: {
       // Member photos are sent through a server action. They are capped at 4 MB

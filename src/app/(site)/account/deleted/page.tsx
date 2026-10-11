@@ -9,7 +9,7 @@ export default function DeletedPage() {
   return (
     <PageShell narrow>
       <PageHeader eyebrow="Community account" title="Your account is deleted" intro="Your sign-in details, profile and private data have been deleted, and you are signed out." />
-      <p className="t-body-sm"><Link href="/" className="text-marine-600">Back to Travel Notes</Link></p>
+      <p className="t-body-sm"><Link href="/" className="text-marine-600 underline">Back to Travel Notes</Link></p>
     </PageShell>
   );
 }

@@ -103,7 +103,7 @@ export default async function ModerationDashboard() {
 
       <Section title="Email">
         <dl className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 m-0">
-          <Stat label="Mode" value={<span className="t-ui">{EMAIL_MODE[d.email.mode] ?? d.email.mode}</span>} note={d.email.mode === "capture" ? <Link href="/moderation/inbox" className="text-marine-600">Open the test inbox</Link> : undefined} />
+          <Stat label="Mode" value={<span className="t-ui">{EMAIL_MODE[d.email.mode] ?? d.email.mode}</span>} note={d.email.mode === "capture" ? <Link href="/moderation/inbox" className="text-marine-600 underline">Open the test inbox</Link> : undefined} />
           <Stat label="Waiting to send" value={d.email.pending} note={d.email.oldestPendingMinutes !== null ? `Oldest waiting ${formatHours(d.email.oldestPendingMinutes / 60)}` : undefined} />
           <Stat label="Failed after all retries" value={d.email.failed} note={d.email.failed ? "Check the email provider and the job log." : undefined} />
         </dl>
@@ -145,7 +145,7 @@ export default async function ModerationDashboard() {
           <li>Most posts one member can have waiting: {d.settings.maxPendingPerMember}</li>
           <li>Replies from trusted members published without review: {d.settings.autoApproveTrustedReplies ? "yes" : "no"}</li>
         </ul>
-        <p className="t-body-sm"><Link href="/admin/globals/community-settings" className="text-marine-600">Change settings in the CMS</Link></p>
+        <p className="t-body-sm"><Link href="/admin/globals/community-settings" className="text-marine-600 underline">Change settings in the CMS</Link></p>
       </Section>
     </>
   );

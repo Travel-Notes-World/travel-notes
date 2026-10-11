@@ -220,7 +220,7 @@ export default async function ReviewPostPage({ params }: { params: Promise<{ id:
           <span className="flex flex-wrap items-center gap-3 t-body-sm">
             <StatusBadge state={doc.state} />
             {doc.submittedAt && <span>Sent {formatDateTime(doc.submittedAt)} (waiting {formatAge(doc.submittedAt)})</span>}
-            {view.path && <Link href={view.path} className="text-marine-600">Open the public page</Link>}
+            {view.path && <Link href={view.path} className="text-marine-600 underline">Open the public page</Link>}
           </span>
         }
       />
@@ -252,7 +252,7 @@ export default async function ReviewPostPage({ params }: { params: Promise<{ id:
           <div className="t-body-sm">
             <p className="m-0"><strong>{view.author.name}</strong> (@{view.author.handle}) · {view.author.email} · {view.author.status}</p>
             {member && <p className="m-0 mt-1 text-ink-600">{member.counts.published} published, {member.counts.pending} waiting, {member.counts.rejected} not accepted, {member.counts.replies} published replies. {member.trusted ? "Trusted." : "Not marked as trusted."}</p>}
-            <p className="m-0 mt-2"><Link href={`/moderation/members/${view.author.id}`} className="text-marine-600">Author overview and account actions</Link></p>
+            <p className="m-0 mt-2"><Link href={`/moderation/members/${view.author.id}`} className="text-marine-600 underline">Author overview and account actions</Link></p>
           </div>
         ) : <p className="t-body-sm m-0">The author account no longer exists.</p>}
       </Panel>
@@ -323,7 +323,7 @@ export default async function ReviewPostPage({ params }: { params: Promise<{ id:
             ))}
           </ul>
         ) : <p className="t-body-sm m-0">No reports.</p>}
-        {view.reports.some((r) => r.status === "open") && <p className="t-body-sm mt-3 mb-0"><Link href="/moderation/reports" className="text-marine-600">Resolve reports</Link></p>}
+        {view.reports.some((r) => r.status === "open") && <p className="t-body-sm mt-3 mb-0"><Link href="/moderation/reports" className="text-marine-600 underline">Resolve reports</Link></p>}
       </Panel>
 
       <Panel title="Replies">
@@ -359,7 +359,7 @@ export default async function ReviewPostPage({ params }: { params: Promise<{ id:
             ))}
           </ol>
         ) : <p className="t-body-sm m-0">Nothing recorded yet.</p>}
-        <p className="t-body-sm mt-3 mb-0"><Link href={`/moderation/log?post=${doc.id}`} className="text-marine-600">Open in the audit log</Link></p>
+        <p className="t-body-sm mt-3 mb-0"><Link href={`/moderation/log?post=${doc.id}`} className="text-marine-600 underline">Open in the audit log</Link></p>
       </Panel>
     </>
   );

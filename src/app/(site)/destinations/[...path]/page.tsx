@@ -82,8 +82,8 @@ export default async function DestinationRoute({ params }: Props) {
         </h1>
         {place.summary && <p className="t-deck mt-3 mb-0">{place.summary}</p>}
         {communityOpen && (
-          <p className="t-body-sm mt-4 mb-0">
-            <Link href={`/community/${place.path}`} className="text-marine-600 underline">Traveller questions and trip reports about {place.name}</Link>
+          <p className="t-body-sm mt-2 mb-0">
+            <Link href={`/community/${place.path}`} className="inline-flex items-center min-h-11 text-marine-600 underline">Traveller questions and trip reports about {place.name}</Link>
           </p>
         )}
       </header>

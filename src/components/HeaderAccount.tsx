@@ -19,7 +19,7 @@ export function HeaderAccount() {
       .catch(() => { if (!cancelled) setSession({ signedIn: false }); });
     return () => { cancelled = true; };
   }, []);
-  const base = "t-ui text-ink-600 hover:text-ink-900 no-underline py-2 whitespace-nowrap";
+  const base = "inline-flex items-center min-h-11 t-ui text-ink-600 hover:text-ink-900 no-underline whitespace-nowrap";
   if (session?.signedIn && session.kind === "staff") {
     return session.moderator ? <Link href="/moderation" className={base}>Moderation</Link> : <Link href="/admin" className={base}>Admin</Link>;
   }

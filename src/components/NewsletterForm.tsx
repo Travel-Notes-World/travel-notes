@@ -28,7 +28,7 @@ export function NewsletterForm({ source }: { source: string }) {
         <input id="newsletter-website" name="website" type="text" tabIndex={-1} autoComplete="off" />
       </div>
       <p className="t-body-sm text-ink-600 mt-4 mb-0">
-        We will email you to confirm. One email a week; unsubscribe with one click at any time. See our <Link href="/privacy" className="text-marine-600">privacy notice</Link>.
+        We will email you to confirm. One email a week; unsubscribe with one click at any time. See our <Link href="/privacy" className="text-marine-600 underline">privacy notice</Link>.
       </p>
       <div className="mt-5"><SubmitButton pendingText="Sending…">Subscribe</SubmitButton></div>
     </form>
@@ -66,7 +66,7 @@ export function NewsletterConfirmForm({ token }: { token: string }) {
     return (
       <div>
         <FormMessage state={state} successTitle="Done" />
-        {!state.ok && <p className="t-body-sm mt-4"><Link href="/newsletter" className="text-marine-600">Sign up again</Link></p>}
+        {!state.ok && <p className="t-body-sm mt-4"><Link href="/newsletter" className="text-marine-600 underline">Sign up again</Link></p>}
       </div>
     );
   }

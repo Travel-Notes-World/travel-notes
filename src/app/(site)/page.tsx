@@ -24,7 +24,7 @@ export const revalidate = 300;
 const wrap = "mx-auto max-w-wide px-4 md:px-8 xl:px-14";
 const navy = "text-navy-900";
 const h2 = `m-0 font-display font-medium ${navy} tracking-[-1px] text-[30px] md:text-[40px] leading-[1.1]`;
-const chip = "inline-flex items-center text-[12.5px] font-medium text-navy-900 bg-paper-000 border border-line-400 rounded-full px-3.25 py-1.5 no-underline hover:border-marine-600 hover:text-marine-600";
+const chip = "inline-flex items-center min-h-11 text-[12.5px] font-medium text-navy-900 bg-paper-000 border border-line-400 rounded-full px-3.25 py-1.5 no-underline hover:border-marine-600 hover:text-marine-600";
 const goldButton = "inline-flex items-center justify-center text-[15px] font-semibold text-brand-navy bg-ochre-500 hover:bg-ochre-600 px-6.5 py-3.25 rounded-[9px] no-underline";
 const outlineButton = "inline-flex items-center justify-center text-[15px] font-semibold text-navy-900 border-[1.5px] border-navy-900 px-6.5 py-3 rounded-[9px] no-underline hover:bg-navy-900 hover:text-on-marine";
 const textLink = "text-[14.5px] font-semibold text-marine-600 hover:text-navy-900 no-underline";
@@ -87,7 +87,7 @@ export default async function HomePage() {
                 <svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden="true" className="shrink-0 text-navy-900"><circle cx="8" cy="8" r="6" stroke="currentColor" strokeWidth="1.8" /><line x1="12.5" y1="12.5" x2="17" y2="17" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" /></svg>
                 <label htmlFor="home-search" className="sr-only">{heroText.search.label}</label>
                 <input id="home-search" name="q" type="search" placeholder={heroText.search.placeholder} className="flex-1 min-w-0 min-h-11 bg-transparent text-[15.5px] text-ink-900 placeholder:text-ink-400 outline-none" />
-                <button type="submit" className="text-[14.5px] font-semibold text-on-marine bg-marine-600 hover:bg-navy-900 px-5.5 py-2.75 rounded-[9px]">{heroText.search.button}</button>
+                <button type="submit" className="min-h-11 text-[14.5px] font-semibold text-on-marine bg-marine-600 hover:bg-navy-900 px-5.5 py-2.75 rounded-[9px]">{heroText.search.button}</button>
               </form>
               <ul className="flex flex-wrap gap-2 list-none m-0 p-0" aria-label={heroText.quickLinksLabel}>
                 {heroText.quickLinks.map((l) => <li key={l.href}><Link href={l.href} className={chip}>{l.label}</Link></li>)}
@@ -100,9 +100,9 @@ export default async function HomePage() {
           </div>
           <div className="relative mx-4 md:mx-8 mb-10 lg:mt-10 lg:ml-12 xl:mr-14">
             <figure className="m-0">
-              <Placeholder image={hero} tone={heroText.imageTone} alt={hero.alt} priority className="block w-full h-[300px] md:h-105 lg:h-130 rounded-2xl" />
+              <Placeholder image={hero} tone={heroText.imageTone} alt={hero.alt} priority sizes="(min-width: 1440px) 740px, (min-width: 1024px) calc(100vw - 700px), calc(100vw - 32px)" className="block w-full h-[300px] md:h-105 lg:h-130 rounded-2xl" />
               <figcaption className="mt-2 text-[11.5px] text-ink-400 text-right">
-                {heroText.imageCaption}. Photo: {hero.author}, via Wikimedia Commons, <a href={hero.licenseUrl} rel="license" className="text-marine-600">{hero.license}</a>
+                {heroText.imageCaption}. Photo: {hero.author}, via Wikimedia Commons, <a href={hero.licenseUrl} rel="license" className="text-marine-600 underline">{hero.license}</a>
               </figcaption>
             </figure>
             {latest && (

@@ -12,9 +12,9 @@ export function PostToolbar({ page }: { page: PostPage }) {
     <div className="mt-6 flex flex-wrap items-center gap-x-4 gap-y-2">
       {viewer.member && state ? <BookmarkButton targetType="contribution" targetId={post.id} on={state.bookmarked} returnTo={returnTo} /> : null}
       {viewer.member && state && !state.isAuthor ? <ReportButton targetType="contribution" targetId={post.id} label="Report this post" /> : null}
-      {viewer.member && state?.isAuthor ? <Link href={`/account/posts/${post.id}`} className="t-ui text-marine-600">Edit or manage your post</Link> : null}
+      {viewer.member && state?.isAuthor ? <Link href={`/account/posts/${post.id}`} className="t-ui text-marine-600 underline min-h-11 inline-flex items-center">Edit or manage your post</Link> : null}
       {!viewer.member && !viewer.staff ? <SignInTo action="save or report this post" returnTo={returnTo} /> : null}
-      {viewer.staff?.canModerate ? <Link href={`/moderation/posts/${post.id}`} className="t-ui text-marine-600">Open in moderation</Link> : null}
+      {viewer.staff?.canModerate ? <Link href={`/moderation/posts/${post.id}`} className="t-ui text-marine-600 underline min-h-11 inline-flex items-center">Open in moderation</Link> : null}
     </div>
   );
 }
@@ -66,7 +66,7 @@ export function RepliesSection({ page, answersPage, kind }: { page: PostPage; an
         ))}
       </ol>
       <Pagination page={replies.page} totalPages={replies.totalPages} href={(p) => (p === 1 ? post.path : `${post.path}?answers=${p}`)} />
-      {answersPage > 1 && <p className="t-body-sm mt-4"><Link href={post.path} className="text-marine-600">Back to the first page of {noun}s</Link></p>}
+      {answersPage > 1 && <p className="t-body-sm mt-4"><Link href={post.path} className="text-marine-600 underline">Back to the first page of {noun}s</Link></p>}
 
       {ownPending.length > 0 && (
         <div className="mt-8 grid gap-3">
@@ -86,7 +86,7 @@ export function RepliesSection({ page, answersPage, kind }: { page: PostPage; an
         ) : (
           <div className="mt-3"><SignInTo action={kind === "answer" ? "answer" : "reply"} returnTo={returnTo} /></div>
         )}
-        <p className="t-body-sm text-ink-600 mt-3">New {noun === "reply" ? "replies" : `${noun}s`} are checked by a moderator before they appear. Please follow the <Link href="/community/guidelines" className="text-marine-600">community rules</Link>.</p>
+        <p className="t-body-sm text-ink-600 mt-3">New {noun === "reply" ? "replies" : `${noun}s`} are checked by a moderator before they appear. Please follow the <Link href="/community/guidelines" className="text-marine-600 underline">community rules</Link>.</p>
       </div>
     </section>
   );
@@ -99,7 +99,7 @@ export function RelatedGuides({ guides }: { guides: GuideLink[] }) {
       <h2 id="guides-heading" className="t-heading-3 m-0">Travel Notes guides</h2>
       <p className="t-body-sm text-ink-600 mt-1">Written and checked by our editorial team.</p>
       <ul className="list-none m-0 p-0 mt-3 grid gap-3">
-        {guides.map((g) => <li key={g.path}><Link href={g.path} className="t-ui text-marine-600">{g.title}</Link><p className="t-body-sm text-ink-600 m-0">{g.excerpt}</p></li>)}
+        {guides.map((g) => <li key={g.path}><Link href={g.path} className="t-ui text-marine-600 underline min-h-11 inline-flex items-center">{g.title}</Link><p className="t-body-sm text-ink-600 m-0">{g.excerpt}</p></li>)}
       </ul>
     </aside>
   );

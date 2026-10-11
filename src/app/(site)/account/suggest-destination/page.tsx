@@ -23,7 +23,7 @@ export default async function SuggestDestinationPage() {
       <AccountNav unread={unread} />
       <SuggestDestinationForm />
       <p className="t-body-sm text-ink-600 mt-8 max-w-measure">
-        While you wait, you can save your post as a draft and add the place later. Find your drafts on <Link href="/account" className="text-marine-600">your account page</Link>.
+        While you wait, you can save your post as a draft and add the place later. Find your drafts on <Link href="/account" className="text-marine-600 underline">your account page</Link>.
       </p>
     </PageShell>
   );

@@ -40,7 +40,7 @@ export default async function NewActivityPage({ searchParams }: { searchParams: 
           <ActivityForm id={null} initial={initial} topics={await topicOptions()} />
         </>
       )}
-      <p className="t-body-sm text-ink-600 mt-8">By posting you agree to the <Link href="/community/guidelines" className="text-marine-600">community rules</Link>.</p>
+      <p className="t-body-sm text-ink-600 mt-8">By posting you agree to the <Link href="/community/guidelines" className="text-marine-600 underline">community rules</Link>.</p>
     </PageShell>
   );
 }

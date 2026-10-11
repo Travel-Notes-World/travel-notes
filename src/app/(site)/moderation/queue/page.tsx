@@ -58,7 +58,7 @@ export default async function QueuePage({ searchParams }: Props) {
               <p className="t-meta text-ink-600 m-0">{typeLabel(item.type)} · {item.kind === "edit" ? "Edit to a published post" : "New submission"}</p>
               <p className="t-card-title m-0 mt-1 break-words"><Link href={`/moderation/posts/${item.id}`} className="text-ink-900">{item.title || "(no title)"}</Link></p>
               <p className="t-body-sm text-ink-600 m-0 mt-1">
-                By {item.authorId ? <Link href={`/moderation/members/${item.authorId}`} className="text-marine-600">{item.authorName}</Link> : item.authorName}
+                By {item.authorId ? <Link href={`/moderation/members/${item.authorId}`} className="text-marine-600 underline">{item.authorName}</Link> : item.authorName}
                 {item.submittedAt && <> · sent {formatDateTime(item.submittedAt)} · waiting {formatAge(item.submittedAt)}</>}
               </p>
             </li>

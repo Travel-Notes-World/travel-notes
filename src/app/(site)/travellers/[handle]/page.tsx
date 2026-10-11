@@ -92,7 +92,7 @@ export default async function TravellerPage({ params, searchParams }: Props) {
         <Pagination page={posts.page} totalPages={posts.totalPages} href={(p) => (p > 1 ? `${base}?page=${p}` : base)} />
       </section>
       <p className="t-body-sm text-ink-600 mt-10 mb-0">
-        Profiles are written by members themselves, not by the Travel Notes editorial team. <Link href="/community/guidelines" className="text-marine-600">Community guidelines</Link>
+        Profiles are written by members themselves, not by the Travel Notes editorial team. <Link href="/community/guidelines" className="text-marine-600 underline">Community guidelines</Link>
       </p>
     </PageShell>
   );

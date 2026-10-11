@@ -32,7 +32,7 @@ export default async function VerifyPage({ searchParams }: { searchParams: Promi
       <PageHeader eyebrow="Community account" title="Confirm your email address" />
       {failed ? (
         <>
-          <Notice tone="error" title="This link did not work">It may have been used already or copied incompletely. If you already confirmed, you can <Link href="/account/sign-in" className="text-marine-600">sign in</Link>.</Notice>
+          <Notice tone="error" title="This link did not work">It may have been used already or copied incompletely. If you already confirmed, you can <Link href="/account/sign-in" className="text-marine-600 underline">sign in</Link>.</Notice>
           <ResendVerificationForm />
         </>
       ) : (

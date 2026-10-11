@@ -15,7 +15,7 @@ export function ComingSoon({ area, title, summary, needs }: { area: string; titl
         <p className="t-body-sm mt-1 m-0">This page is a placeholder. It is not live yet because it depends on:</p>
         <ul className="t-body-sm mt-2 mb-0 pl-6">{needs.map((n) => <li key={n}>{n}</li>)}</ul>
       </div>
-      <p className="mt-8"><Link href="/" className="t-ui text-marine-600">Back to the homepage</Link></p>
+      <p className="mt-8"><Link href="/" className="t-ui text-marine-600 underline min-h-11 inline-flex items-center">Back to the homepage</Link></p>
     </div>
   );
 }
