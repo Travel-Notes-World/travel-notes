@@ -40,10 +40,10 @@ export default async function QuestionPage({ params, searchParams }: Props) {
       <JsonLd data={[questionJsonLd(post, page.replies.items), breadcrumbJsonLd(crumbs)].filter(Boolean)} />
       <Breadcrumbs items={crumbs} />
       <article className="mt-6 max-w-measure">
-        <p className="t-meta text-ink-400 m-0 flex flex-wrap gap-x-3">
+        <p className="t-meta text-ink-400 m-0 flex flex-wrap items-center gap-x-3">
           <span className="text-ochre-700">Traveller question</span>
           {post.question?.resolved ? <span className="text-signal-success">✓ Resolved</span> : <span>Open</span>}
-          {post.destinations.map((d) => <Link key={d.id} href={`/community/${d.path}`} className="text-ink-400 hover:text-marine-600">{d.label}</Link>)}
+          {post.destinations.map((d) => <Link key={d.id} href={`/community/${d.path}`} className="inline-flex items-center min-h-11 text-ink-600 underline decoration-line-400 underline-offset-4 hover:text-marine-600">{d.label}</Link>)}
         </p>
         <h1 className="t-heading-1 mt-2 mb-0">{post.title}</h1>
         <PostMeta page={page} />

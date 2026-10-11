@@ -2,17 +2,16 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import type { ReactNode } from "react";
 
-import { Notice, PageHeader, PageShell } from "@/components/community/ui";
+import { PageHeader, PageShell } from "@/components/community/ui";
 
 /**
- * Community guidelines. DRAFT text for the owner and a legal reviewer; it makes no legal promises.
- * Kept out of search engines until the owner approves the final wording.
+ * Community guidelines: the rules members agree to at sign-up, in plain language. The legal terms
+ * (licence for posts, liability) are in /terms; this page links to them.
  */
 export const metadata: Metadata = {
-  title: "Community guidelines (draft)",
+  title: "Community guidelines",
   description: "How the Travel Notes community works: what you can post, how moderation and reports work, and how pages appear in search engines.",
   alternates: { canonical: "/community/guidelines" },
-  robots: { index: false, follow: true },
 };
 
 const SECTIONS = [
@@ -44,9 +43,7 @@ export default function GuidelinesPage() {
     <PageShell narrow>
       <PageHeader eyebrow="Community" title="Community guidelines" intro={<p className="m-0">Simple rules so that the community stays useful, honest and kind.</p>} />
 
-      <Notice tone="warning" title="Draft – awaiting owner and legal review">
-        <p>This text is a working draft. It has not yet been approved by the owner of Travel Notes or checked by a lawyer, and it may change. It does not replace the <Link href="/terms" className="text-marine-600 underline">terms of use</Link> or the <Link href="/privacy" className="text-marine-600 underline">privacy policy</Link>.</p>
-      </Notice>
+      <p className="t-meta text-ink-600 mt-4 mb-0">Last updated <time dateTime="2026-10-11">11 October 2026</time>. These guidelines sit alongside our <Link href="/terms" className="text-marine-600 underline">terms of use</Link> and <Link href="/privacy" className="text-marine-600 underline">privacy policy</Link>.</p>
 
       <nav aria-labelledby="contents-heading" className="mt-8">
         <h2 id="contents-heading" className="t-ui m-0">On this page</h2>
@@ -144,7 +141,7 @@ export default function GuidelinesPage() {
       </Section>
 
       <Section id="your-content">
-        <p>You keep ownership of what you write. By posting, you let Travel Notes show your post on the site, including next to editorial guides and in search results on the site. The final wording of this permission is part of the terms of use, which are still being reviewed.</p>
+        <p>You keep ownership of what you write. By posting, you let Travel Notes show your post on the site, including next to editorial guides, in search results on the site and in our emails. The exact permission is in the <Link href="/terms#your-content" className="text-marine-600 underline">terms of use</Link>.</p>
         <p>You can edit your posts (edits are checked first) and remove them from your account. If you delete your account, your private data is deleted. Your approved public posts stay on the site under the name “Deleted member” unless you choose to remove them as well when you delete the account.</p>
       </Section>
 

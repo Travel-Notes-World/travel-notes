@@ -61,7 +61,7 @@ export default async function MemberPage({ params }: { params: Promise<{ id: str
               <li key={p.id} className="t-body-sm flex flex-wrap items-center gap-2 min-w-0">
                 <StatusBadge state={p.state} />
                 <span className="text-ink-600">{typeLabel(p.type)}</span>
-                <Link href={`/moderation/posts/${p.id}`} className="text-marine-600 underline break-words">{p.title || "(no title)"}</Link>
+                <Link href={`/moderation/posts/${p.id}`} className="inline-flex items-center min-h-11 text-marine-600 underline break-words">{p.title || "(no title)"}</Link>
                 <span className="text-ink-600">updated {formatDateTime(p.updatedAt)}</span>
               </li>
             ))}

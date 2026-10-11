@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 
 import { Breadcrumbs } from "@/components/Breadcrumbs";
 import { AccountNav } from "@/components/community/account-nav";
+import { ForgetDraftBackups } from "@/components/community/client";
 import { EventStatusForm, RemovePublishedForm } from "@/components/community/account-forms";
 import { ActivityForm } from "@/components/community/activity-form";
 import { QuestionForm } from "@/components/community/contribution-form";
@@ -51,6 +52,7 @@ export default async function OwnPostPage({ params, searchParams }: { params: Pr
       <AccountNav current="dashboard" unread={unread} />
 
       <div className="grid gap-4 mb-8 max-w-measure">
+        {(query.sent || query.saved) && <ForgetDraftBackups keys={[`tn-draft:${post.type}:new`, ...(query.sent ? [`tn-draft:${post.type}:${post.id}`] : [])]} />}
         {query.sent === "new" && <Notice tone="success" title="Sent for review">Thank you. A moderator will check your post. You will get a notification when they decide.</Notice>}
         {query.sent === "edit" && <Notice tone="success" title="Changes sent for review">The public version stays as it is until a moderator approves your changes.</Notice>}
         {query.saved && <Notice tone="success" title="Draft saved">Only you can see it. Come back to it any time from your account.</Notice>}

@@ -17,5 +17,7 @@ The community needs to be open (Community settings: public access and sign-ups t
 seed does this). `PLAYWRIGHT_PATH` can point at a global Playwright install. Screenshots go to
 `$E2E_OUT/shots` (default: this folder; git-ignored).
 
+Staff sign in through `staff-login.cjs` with the real two-step code (the first run sets the demo admin up and keeps its code secret in `$E2E_OUT/shots/.totp-*`). If a run says there is no saved secret, reset the demo admin with `npm run staff:reset-2fa`.
+
 Sign-up is limited to 6 per hour from one address, and the limit cannot be loosened in a production
 build. Between repeated local runs, clear it: `psql "$E2E_DATABASE_URL" -c 'delete from rate_limits'`.

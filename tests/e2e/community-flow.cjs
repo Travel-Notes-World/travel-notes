@@ -3,6 +3,7 @@
 const { chromium } = require(process.env.PLAYWRIGHT_PATH || 'playwright');
 const { execSync } = require('child_process');
 const path = require('path');
+const { staffSignIn } = require('./staff-login.cjs');
 
 const BASE = process.env.E2E_BASE_URL || 'http://localhost:3100';
 const OUT = path.join(process.env.E2E_OUT || __dirname, 'shots');
@@ -131,8 +132,8 @@ async function pick(page, place) {
 
   // 6. Moderator approves everything through the console
   const mod = await browser.newContext({ viewport: { width: 1280, height: 900 } });
-  const login = await mod.request.post(`${BASE}/api/staff/login`, { data: { email: 'admin@example.test', password: 'demo-admin-password' } });
-  check('staff can sign in', login.ok(), `status=${login.status()}`);
+  const staffOk = await staffSignIn(mod, { base: BASE, email: 'admin@example.test', password: 'demo-admin-password', out: OUT }).then(() => true, (e) => (console.log(e.message), false));
+  check('staff can sign in', staffOk);
   const mpage = await mod.newPage();
   mpage.on('pageerror', (e) => errors.push(`mod pageerror: ${e.message}`));
   await mpage.goto(`${BASE}/moderation`);

@@ -79,6 +79,19 @@ export function useDraftBackup(key: string, enabled = true) {
   return { formRef, restorable, clear };
 }
 
+/**
+ * Forget the browser copies of a post once the server has it (after "Submit for review" or the
+ * first "Save draft"), so a later new post does not offer to bring back text that was already sent.
+ */
+export function ForgetDraftBackups({ keys }: { keys: string[] }) {
+  useEffect(() => {
+    for (const key of keys) {
+      try { window.localStorage.removeItem(key); } catch { /* storage may be blocked */ }
+    }
+  }, [keys]);
+  return null;
+}
+
 /** Offer to bring back text kept in this browser from an earlier attempt. */
 export function RestoreBanner({ restorable, onRestore, onDiscard }: { restorable: Record<string, string> | null; onRestore: () => void; onDiscard: () => void }) {
   if (!restorable || !Object.values(restorable).some((v) => v && v.length > 20)) return null;

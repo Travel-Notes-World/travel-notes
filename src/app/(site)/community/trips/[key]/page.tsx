@@ -46,28 +46,31 @@ function CostsSection({ detail, partySize }: { detail: TripDetail; partySize: nu
         {detail.nights !== null && <li className="t-body-sm bg-paper-100 rounded-sm px-3 py-1">{plural(detail.nights, "night", "nights")}</li>}
         {detail.hasEstimates && <li className="t-body-sm bg-paper-100 rounded-sm px-3 py-1">Includes estimates</li>}
       </ul>
+      {/* The table area is focusable so keyboard users can scroll a wide table on small screens. */}
       {costs.length > 0 && (
-        <div className="mt-4 overflow-x-auto">
+        <div className="mt-4 overflow-x-auto" tabIndex={0} role="region" aria-label="Trip costs">
           <table className="w-full border-collapse t-body-sm">
             <caption className="sr-only">Costs reported by the traveller, grouped by category</caption>
             <thead>
               <tr className="border-b-2 border-line-500 text-left">
                 <th scope="col" className="py-2 pr-3 t-ui">Item</th>
                 <th scope="col" className="py-2 pr-3 t-ui">Amount</th>
-                <th scope="col" className="py-2 pr-3 t-ui">Type</th>
                 <th scope="col" className="py-2 t-ui text-right">Line total</th>
               </tr>
             </thead>
             {groups.map((g) => (
               <tbody key={g.value}>
-                <tr><th scope="rowgroup" colSpan={4} className="pt-4 pb-1 text-left t-ui text-ink-600">{g.label}</th></tr>
+                <tr><th scope="rowgroup" colSpan={3} className="pt-4 pb-1 text-left t-ui text-ink-600">{g.label}</th></tr>
                 {g.lines.map((l, i) => {
                   const basis = l.basis !== "total" ? ` ${labelOf(COST_BASES, l.basis).toLowerCase()}` : "";
                   return (
                     <tr key={i} className="border-b border-paper-200 align-top">
-                      <td className="py-2 pr-3">{l.note || g.label}{l.date ? <span className="block text-ink-600">{formatDate(l.date)}</span> : null}</td>
-                      <td className="py-2 pr-3 whitespace-nowrap">{formatMoney(l.amountMinor, l.currency)}{basis}{l.quantity > 1 ? ` × ${l.quantity}` : ""}</td>
-                      <td className="py-2 pr-3">{l.kind === "estimate" ? "Estimate" : "Actual spend"}</td>
+                      <td className="py-2 pr-3">
+                        {l.note || g.label}
+                        {l.date ? <span className="block text-ink-600">{formatDate(l.date)}</span> : null}
+                        <span className="block text-ink-600">{l.kind === "estimate" ? "Estimate" : "Actual spend"}</span>
+                      </td>
+                      <td className="py-2 pr-3 sm:whitespace-nowrap">{formatMoney(l.amountMinor, l.currency)}{basis}{l.quantity > 1 ? ` × ${l.quantity}` : ""}</td>
                       <td className="py-2 text-right whitespace-nowrap">{formatMoney(l.amountMinor * l.quantity, l.currency)}</td>
                     </tr>
                   );
@@ -77,7 +80,7 @@ function CostsSection({ detail, partySize }: { detail: TripDetail; partySize: nu
             <tfoot>
               {totals.map((t, i) => (
                 <tr key={t.currency} className={i === 0 ? "border-t-2 border-line-500" : ""}>
-                  <th scope="row" colSpan={3} className="py-2 pr-3 text-left t-ui">Total in {t.currency}{scope ? ` (${scope.toLowerCase()})` : ""}</th>
+                  <th scope="row" colSpan={2} className="py-2 pr-3 text-left t-ui">Total in {t.currency}{scope ? ` (${scope.toLowerCase()})` : ""}</th>
                   <td className="py-2 text-right t-ui whitespace-nowrap">{formatMoney(t.totalMinor, t.currency)}</td>
                 </tr>
               ))}
@@ -195,9 +198,9 @@ export default async function TripPage({ params, searchParams }: Props) {
       <JsonLd data={[tripJsonLd(post, page.replies.items), breadcrumbJsonLd(crumbs)]} />
       <Breadcrumbs items={crumbs} />
       <article className="mt-6 max-w-measure">
-        <p className="t-meta text-ink-400 m-0 flex flex-wrap gap-x-3">
+        <p className="t-meta text-ink-400 m-0 flex flex-wrap items-center gap-x-3">
           <span className="text-ochre-700">Trip report</span>
-          {post.destinations.map((d) => <Link key={d.id} href={`/community/${d.path}`} className="text-ink-400 hover:text-marine-600">{d.label}</Link>)}
+          {post.destinations.map((d) => <Link key={d.id} href={`/community/${d.path}`} className="inline-flex items-center min-h-11 text-ink-600 underline decoration-line-400 underline-offset-4 hover:text-marine-600">{d.label}</Link>)}
         </p>
         <h1 className="t-heading-1 mt-2 mb-0">{post.title}</h1>
         <PostMeta page={page} />
