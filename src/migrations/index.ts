@@ -11,6 +11,7 @@ import * as migration_20261009_160847_article_search from './20261009_160847_art
 import * as migration_20261009_163759_travel_updates from './20261009_163759_travel_updates';
 import * as migration_20261010_062047_scheduled_publishing from './20261010_062047_scheduled_publishing';
 import * as migration_20261010_083000_search_trigram from './20261010_083000_search_trigram';
+import * as migration_20261011_074339_destination_pages from './20261011_074339_destination_pages';
 
 export const migrations = [
   {
@@ -76,6 +77,11 @@ export const migrations = [
   {
     up: migration_20261010_083000_search_trigram.up,
     down: migration_20261010_083000_search_trigram.down,
-    name: '20261010_083000_search_trigram'
+    name: '20261010_083000_search_trigram',
+  },
+  {
+    up: migration_20261011_074339_destination_pages.up,
+    down: migration_20261011_074339_destination_pages.down,
+    name: '20261011_074339_destination_pages'
   },
 ];

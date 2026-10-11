@@ -2,7 +2,9 @@ import config from '@payload-config'
 import { unstable_cache } from 'next/cache'
 import { getPayload, type Payload } from 'payload'
 
-import type { Destination } from '@/payload-types'
+import type { Destination, Image } from '@/payload-types'
+
+import { factLabel, monthRanges, monthRatings, type MonthRating, type Month, utcOffsetLabel } from './destinationFacts'
 
 import { ARTICLES_TAG, DESTINATIONS_TAG, UPDATES_TAG } from './revalidate'
 import { findStoriesForDestinations, type Story } from './stories'
@@ -29,7 +31,7 @@ const MAX_DEPTH = 4
 const PATH = /^[a-z0-9]+(?:-[a-z0-9]+)*(?:\/[a-z0-9]+(?:-[a-z0-9]+)*){0,3}$/
 
 const visitor = { draft: false, overrideAccess: false } as const
-const placeFields = { name: true, path: true, kind: true, summary: true, accentColour: true, hubIndexable: true, parent: true } as const
+const placeFields = { name: true, path: true, kind: true, summary: true, accentColour: true, hubIndexable: true, parent: true, heroImage: true } as const
 
 export type Place = {
   id: string
@@ -39,8 +41,50 @@ export type Place = {
   summary: string
   accent: string | null
   hubIndexable: boolean
+  /** Id of the main photo, if the destination has one. Loaded separately as a {@link Photo}. */
+  imageId: string | null
 }
-export type PlaceWithGuides = Place & { guides: number }
+export type PlaceWithGuides = Place & { guides: number; image?: Photo | null }
+
+/** An editorial photo ready to show: the sizes to choose from and the credit line. */
+export type Photo = {
+  src: string
+  /** "url 480w, url 960w, ..." from the stored sizes, smallest first. */
+  srcSet: string
+  width: number
+  height: number
+  alt: string
+  caption: string | null
+  credit: string
+  licence: Image['licence']
+  licenceUrl: string | null
+  sourceUrl: string | null
+  /** Focal point in percent, for object-position when the photo is cropped. */
+  focus: { x: number; y: number }
+}
+
+export type Fact = { kind: string; label: string; value: string; source: { name: string; url: string } | null }
+export type Faq = { question: string; answer: string }
+
+/** Everything the "Plan your trip" parts of the page need, all optional so an empty field shows nothing. */
+export type Planning = {
+  photo: Photo | null
+  goodFor: string | null
+  timeNeeded: string | null
+  months: { month: Month; rating: MonthRating }[] | null
+  bestRange: string
+  goodRange: string
+  whenToGo: string | null
+  facts: Fact[]
+  factsCheckedAt: string | null
+  sources: { name: string; url: string }[]
+  faqs: Faq[]
+  author: { name: string; slug: string } | null
+  location: { latitude: number; longitude: number; source: string | null } | null
+  timeZone: { name: string; offset: string } | null
+  seo: { title: string | null; description: string | null }
+  updatedAt: string | null
+}
 export type ListedPlace = PlaceWithGuides & { parentName: string | null }
 
 export type DestinationPage = {
@@ -57,9 +101,10 @@ export type DestinationPage = {
   placeTotal: number
   /** "What's changed": the newest travel updates that still apply here, in a place inside it, or in the country or region it is in. */
   updates: UpdateView[]
+  planning: Planning
 }
 
-type PlaceDoc = Pick<Destination, 'id' | 'name' | 'path' | 'slug' | 'kind' | 'summary' | 'accentColour' | 'hubIndexable' | 'parent'>
+type PlaceDoc = Pick<Destination, 'id' | 'name' | 'path' | 'slug' | 'kind' | 'summary' | 'accentColour' | 'hubIndexable' | 'parent' | 'heroImage'>
 
 const relId = (value: unknown): string | null =>
   typeof value === 'string' ? value : value && typeof value === 'object' && 'id' in value ? String((value as { id: unknown }).id) : null
@@ -85,7 +130,102 @@ const toPlace = (d: PlaceDoc): Place => ({
   summary: editorSummary(d.name, d.summary),
   accent: d.accentColour || null,
   hubIndexable: Boolean(d.hubIndexable),
+  imageId: relId(d.heroImage),
 })
+
+const SIZE_ORDER = ['thumb', 'card', 'large'] as const
+
+/** Turn a stored editorial photo into what the page needs. A photo without a file is skipped. */
+export function toPhoto(img: Image | null | undefined): Photo | null {
+  if (!img?.url || !img.width || !img.height) return null
+  const candidates = [
+    // The thumbnail is cropped to 3:2, so it is only offered when the original has the same shape.
+    ...SIZE_ORDER.map((name) => img.sizes?.[name]).filter((s, i) => s?.url && s.width && (i > 0 || Math.abs((s.height ?? 0) / s.width - img.height! / img.width!) < 0.02)),
+    { url: img.url, width: img.width },
+  ] as { url: string; width: number }[]
+  const seen = new Set<number>()
+  const srcSet = candidates
+    .filter((c) => c.url && c.width && !seen.has(c.width) && seen.add(c.width))
+    .sort((a, b) => a.width - b.width)
+    .map((c) => `${c.url} ${c.width}w`)
+    .join(', ')
+  const pct = (v: number | null | undefined) => (typeof v === 'number' && v >= 0 && v <= 100 ? v : 50)
+  return {
+    src: img.sizes?.large?.url || img.url,
+    srcSet,
+    width: img.width,
+    height: img.height,
+    alt: img.alt,
+    caption: img.caption || null,
+    credit: img.credit,
+    licence: img.licence,
+    licenceUrl: img.licenceUrl || null,
+    sourceUrl: img.sourceUrl || null,
+    focus: { x: pct(img.focalX), y: pct(img.focalY) },
+  }
+}
+
+/** Load editorial photos by id in one query. */
+async function photosByIds(payload: Payload, ids: (string | null)[]): Promise<Map<string, Photo>> {
+  const wanted = [...new Set(ids.filter((id): id is string => Boolean(id)))]
+  if (!wanted.length) return new Map()
+  const found = await payload.find({ collection: 'images', where: { id: { in: wanted } }, limit: wanted.length, depth: 0, overrideAccess: false })
+  const out = new Map<string, Photo>()
+  for (const img of found.docs) {
+    const photo = toPhoto(img)
+    if (photo) out.set(img.id, photo)
+  }
+  return out
+}
+
+const clean = (v: string | null | undefined) => (v ?? '').trim() || null
+
+/** The planning parts of a destination, from its own fields. Facts without a value are left out. */
+async function planningFor(payload: Payload, doc: Destination): Promise<Planning> {
+  const [photos, author] = await Promise.all([
+    photosByIds(payload, [relId(doc.heroImage)]),
+    relId(doc.author)
+      ? payload.find({ collection: 'authors', where: { id: { equals: relId(doc.author) } }, limit: 1, depth: 0, select: { name: true, slug: true }, overrideAccess: false }).then((r) => r.docs[0] ?? null)
+      : Promise.resolve(null),
+  ])
+  const rated = (doc.bestMonths?.length ?? 0) + (doc.goodMonths?.length ?? 0) > 0
+  const facts: Fact[] = (doc.facts ?? [])
+    .map((f) => ({
+      kind: f.kind,
+      label: factLabel(f.kind, f.label),
+      value: (f.value ?? '').trim(),
+      source: f.sourceName && f.sourceUrl ? { name: f.sourceName.trim(), url: f.sourceUrl.trim() } : null,
+    }))
+    .filter((f) => f.label && f.value)
+  const hasLocation = typeof doc.latitude === 'number' && typeof doc.longitude === 'number' && !(doc.latitude === 0 && doc.longitude === 0)
+  const offset = doc.timeZone ? utcOffsetLabel(doc.timeZone) : ''
+  return {
+    photo: photos.get(relId(doc.heroImage) ?? '') ?? null,
+    goodFor: clean(doc.goodFor),
+    timeNeeded: clean(doc.timeNeeded),
+    months: rated ? monthRatings(doc.bestMonths, doc.goodMonths) : null,
+    bestRange: monthRanges(doc.bestMonths),
+    goodRange: monthRanges((doc.goodMonths ?? []).filter((m) => !(doc.bestMonths ?? []).includes(m))),
+    whenToGo: rated ? clean(doc.whenToGo) : null,
+    facts,
+    factsCheckedAt: facts.length && doc.factsCheckedAt ? doc.factsCheckedAt : null,
+    sources: (doc.sources ?? []).filter((s) => s.name && s.url).map((s) => ({ name: s.name.trim(), url: s.url.trim() })),
+    faqs: (doc.faqs ?? []).filter((q) => q.question?.trim() && q.answer?.trim()).map((q) => ({ question: q.question.trim(), answer: q.answer.trim() })),
+    author: author ? { name: author.name, slug: author.slug } : null,
+    location: hasLocation ? { latitude: doc.latitude as number, longitude: doc.longitude as number, source: doc.source?.name?.startsWith('GeoNames') ? 'GeoNames' : null } : null,
+    timeZone: doc.timeZone && offset ? { name: doc.timeZone, offset } : null,
+    // The importer's search title and description describe the community page, not this one, so they are not used.
+    seo: {
+      title: clean(doc.seo?.title) === `${doc.name} travel community` ? null : clean(doc.seo?.title),
+      description: editorSummary(doc.name, doc.seo?.description) || null,
+    },
+    updatedAt: doc.updatedAt ?? null,
+  }
+}
+
+/** True when a destination has something of its own to read: an introduction, facts, months or questions. */
+export const hasOwnContent = (page: Pick<DestinationPage, 'body' | 'planning'>): boolean =>
+  Boolean(page.body) || page.planning.facts.length > 0 || Boolean(page.planning.months) || page.planning.faqs.length > 0
 
 export type Resolution = { kind: 'found'; doc: Destination } | { kind: 'redirect'; path: string } | null
 
@@ -211,11 +351,12 @@ async function withBody(payload: Payload, ids?: string[]): Promise<PlaceDoc[]> {
 export async function loadDestinationPage(payload: Payload, doc: Destination, placesLimit: number | null = PLACES_SHOWN): Promise<DestinationPage> {
   const [ancestors, inside] = await Promise.all([ancestorsOf(payload, doc), placesInside(payload, doc.id)])
   const scope = [doc.id, ...inside.branchOf.keys()]
-  const [guides, counts, childrenWithBody, updates] = await Promise.all([
+  const [guides, counts, childrenWithBody, updates, planning] = await Promise.all([
     findStoriesForDestinations(payload, scope, GUIDES_SHOWN),
     guideCounts(payload, scope),
     inside.children.length ? withBody(payload, inside.children.map((c) => c.id)) : Promise.resolve([]),
     activeUpdatesFor(payload, [...ancestors.map((a) => a.id), ...scope]),
+    planningFor(payload, doc),
   ])
 
   // A guide counts once for the whole page, and once for each child place whose area it covers.
@@ -225,9 +366,10 @@ export async function loadDestinationPage(payload: Payload, doc: Destination, pl
     if (branch) perBranch.set(branch, (perBranch.get(branch) ?? 0) + n)
   }
   const hasBody = new Set(childrenWithBody.map((c) => c.id))
-  const places = inside.children
-    .filter((c) => (perBranch.get(c.id) ?? 0) > 0 || hasBody.has(c.id))
-    .map((c) => ({ ...toPlace(c), guides: perBranch.get(c.id) ?? 0 }))
+  const shown = inside.children.filter((c) => (perBranch.get(c.id) ?? 0) > 0 || hasBody.has(c.id))
+  const childPhotos = await photosByIds(payload, shown.map((c) => relId(c.heroImage)))
+  const places = shown
+    .map((c) => ({ ...toPlace(c), guides: perBranch.get(c.id) ?? 0, image: childPhotos.get(relId(c.heroImage) ?? '') ?? null }))
     .sort((a, b) => b.guides - a.guides || a.name.localeCompare(b.name))
 
   const guideTotal = await countGuides(payload, scope)
@@ -240,6 +382,7 @@ export async function loadDestinationPage(payload: Payload, doc: Destination, pl
     places: placesLimit === null ? places : places.slice(0, placesLimit),
     placeTotal: places.length,
     updates,
+    planning,
   }
 }
 
@@ -271,9 +414,10 @@ export async function listDestinationsWithContent(payload: Payload): Promise<Lis
     ? await payload.find({ collection: 'destinations', where: { id: { in: parentIds } }, limit: 0, pagination: false, depth: 0, select: { name: true }, ...visitor })
     : { docs: [] }
   const parentName = new Map(parents.docs.map((p) => [p.id, p.name]))
+  const photos = await photosByIds(payload, [...byId.values()].map((d) => relId(d.heroImage)))
   return [...byId.values()]
     .filter((d) => d.path)
-    .map((d) => ({ ...toPlace(d), guides: counts.get(d.id) ?? 0, parentName: parentName.get(relId(d.parent) ?? '') ?? null }))
+    .map((d) => ({ ...toPlace(d), guides: counts.get(d.id) ?? 0, parentName: parentName.get(relId(d.parent) ?? '') ?? null, image: photos.get(relId(d.heroImage) ?? '') ?? null }))
     .sort((a, b) => b.guides - a.guides || a.name.localeCompare(b.name))
 }
 
