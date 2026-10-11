@@ -35,6 +35,12 @@ export const Authors: CollectionConfig = {
     slugField('Used in the author page address: /authors/your-slug'),
     { name: 'biography', type: 'textarea', required: true, admin: { description: 'Short public biography.' } },
     {
+      name: 'photo',
+      type: 'upload',
+      relationTo: 'images',
+      admin: { description: 'Optional. A real photo of the author, shown beside their name. Upload it under Editorial photos first.' },
+    },
+    {
       name: 'relevantExperience',
       type: 'textarea',
       admin: { description: 'First-hand travel or subject experience that supports this author’s articles.' },

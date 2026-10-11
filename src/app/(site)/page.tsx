@@ -1,6 +1,7 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
 
+import { Photo } from "@/components/destination/Photo";
 import { Placeholder } from "@/components/Placeholder";
 import home from "@/content/data/home.json";
 import { TRAVEL_STYLES } from "@/lib/community/constants";
@@ -175,7 +176,11 @@ export default async function HomePage() {
             <SectionHead eyebrow={home.guides.eyebrow} title={home.guides.title} link={home.guides.link} />
             <div className={`grid gap-6 ${more.length ? "lg:grid-cols-[1.4fr_1fr]" : ""}`}>
               <Link href={`/stories/${flagship.slug}`} className="relative block rounded-2xl overflow-hidden min-h-95 lg:min-h-115 no-underline">
-                <Placeholder image={flagship.image} tone={flagship.heroTone} alt={flagship.heroAlt} className="absolute inset-0 w-full h-full" />
+                {flagship.photo ? (
+                  <Photo photo={{ ...flagship.photo, alt: "" }} sizes="(min-width: 1024px) 58vw, 100vw" className="absolute inset-0 w-full h-full" />
+                ) : (
+                  <Placeholder tone={flagship.heroTone} alt="" className="absolute inset-0 w-full h-full" />
+                )}
                 <span className="absolute inset-x-0 bottom-0 px-7 pb-6.5 pt-30 bg-[linear-gradient(180deg,rgba(11,60,93,0)_0%,rgba(11,60,93,.88)_60%)]">
                   <span className="block text-[11.5px] font-semibold tracking-[1.5px] uppercase text-brand-gold mb-2">{flagship.type}</span>
                   <span className="block font-display text-[26px] md:text-[32px] font-medium text-white leading-[1.15] mb-2.5 text-balance">{flagship.title}</span>
@@ -187,7 +192,11 @@ export default async function HomePage() {
                   {more.map((s) => (
                     <li key={s.slug}>
                       <Link href={`/stories/${s.slug}`} className="flex gap-4 border border-paper-200 rounded-xl p-3.5 no-underline text-inherit hover:border-marine-600">
-                        <Placeholder image={s.image} tone={s.heroTone} alt={s.heroAlt} className="w-27.5 sm:w-32.5 h-27.5 shrink-0 rounded-[10px]" />
+                        {s.photo ? (
+                          <Photo photo={{ ...s.photo, alt: "" }} sizes="130px" className="w-27.5 sm:w-32.5 h-27.5 shrink-0 rounded-[10px]" />
+                        ) : (
+                          <Placeholder tone={s.heroTone} alt="" className="w-27.5 sm:w-32.5 h-27.5 shrink-0 rounded-[10px]" />
+                        )}
                         <span className="flex flex-col gap-1.5 justify-center">
                           <span className="font-display text-[19px] font-medium text-navy-900 leading-tight">{s.title}</span>
                           <GuideMeta story={s} />

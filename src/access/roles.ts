@@ -35,6 +35,7 @@ export const isPublisher: Access = ({ req }) => hasRole(req, 'publisher')
 export const isAdministrator: Access = ({ req }) => hasRole(req, 'administrator')
 
 export const staffOnlyField: FieldAccess = ({ req }) => hasRole(req, 'contributor')
+export const publisherOnlyField: FieldAccess = ({ req }) => hasRole(req, 'publisher')
 export const administratorOnlyField: FieldAccess = ({ req }) => hasRole(req, 'administrator')
 export const nobodyField: FieldAccess = () => false
 

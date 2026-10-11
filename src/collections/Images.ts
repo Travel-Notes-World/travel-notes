@@ -2,6 +2,7 @@ import path from 'path'
 import type { CollectionConfig } from 'payload'
 
 import { isEditor, isPublisher } from '../access/roles'
+import { ARTICLES_TAG, AUTHORS_TAG, DESTINATIONS_TAG, expireTags } from '../lib/content/revalidate'
 
 /** Licences an editorial photo can be used under. Each one decides what the credit line says. */
 export const IMAGE_LICENCES = [
@@ -35,6 +36,11 @@ export const Images: CollectionConfig = {
     useAsTitle: 'alt',
     defaultColumns: ['filename', 'alt', 'credit', 'licence', 'createdAt'],
     description: 'Photos for destination pages and guides. Only upload a photo we have the right to use.',
+  },
+  hooks: {
+    // A changed credit, description or file shows on every page that uses the photo straight away.
+    afterChange: [async ({ doc }) => (await expireTags([ARTICLES_TAG, DESTINATIONS_TAG, AUTHORS_TAG]), doc)],
+    afterDelete: [async ({ doc }) => (await expireTags([ARTICLES_TAG, DESTINATIONS_TAG, AUTHORS_TAG]), doc)],
   },
   access: {
     read: () => true,

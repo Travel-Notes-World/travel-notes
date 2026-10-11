@@ -7,13 +7,15 @@ import { DisclosureBanner } from "@/components/DisclosureBanner";
 import { ItineraryDay } from "@/components/ItineraryDay";
 import { AdSlot } from "@/components/AdSlot";
 import { ArticleCard } from "@/components/ArticleCard";
-import { Placeholder, Credit } from "@/components/Placeholder";
+import { Photo, PhotoCredit } from "@/components/destination/Photo";
+import { AuthorAvatar, AuthorBox, SourcesAndCorrections } from "@/components/guide/GuideParts";
 import { RichBody } from "@/components/RichBody";
-import { getLatestStories, getStory } from "@/lib/content/stories";
+import { getRelatedStories, getStory } from "@/lib/content/stories";
 import { siteUrl } from "@/lib/site";
 
 const fmt = (iso: string) => new Date(iso).toLocaleDateString("en-AU", { day: "numeric", month: "long", year: "numeric", timeZone: "Australia/Sydney" });
 const sameDay = (a: string, b: string) => a.slice(0, 10) === b.slice(0, 10);
+const abs = (url: string) => (url.startsWith("http") ? url : `${siteUrl}${url}`);
 
 /** Fallback regeneration (implementation plan §3: articles 60 minutes). Publishing expires the cache straight away. */
 export const revalidate = 3600;
@@ -36,7 +38,15 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
     alternates: { canonical: `/stories/${a.slug}` },
     // The whole site stays noindex until launch (see layout). This adds a per-article opt-out on top.
     ...(a.seo?.noindex ? { robots: { index: false, follow: true } } : {}),
-    openGraph: { type: "article", title, description, url: `/stories/${a.slug}`, publishedTime: a.firstPublished, modifiedTime: a.updated },
+    openGraph: {
+      type: "article",
+      title,
+      description,
+      url: `/stories/${a.slug}`,
+      publishedTime: a.firstPublished,
+      modifiedTime: a.updated,
+      ...(a.photo ? { images: [{ url: abs(a.photo.src), alt: a.photo.alt }] } : {}),
+    },
   };
 }
 
@@ -46,7 +56,7 @@ export default async function StoryPage({ params }: { params: Promise<{ slug: st
   if (!a) notFound();
 
   const sections = a.body.headings;
-  const related = (await getLatestStories(4)).filter((x) => x.slug !== a.slug).slice(0, 3);
+  const related = await getRelatedStories(a, 3);
   const inlineAd = a.showAds ? <AdSlot placement="article-inline-1" /> : null;
 
   const jsonLd = {
@@ -57,8 +67,10 @@ export default async function StoryPage({ params }: { params: Promise<{ slug: st
     datePublished: a.firstPublished,
     dateModified: a.updated,
     author: { "@type": "Person", name: a.author.name, url: `${siteUrl}/authors/${a.author.slug}` },
-    publisher: { "@type": "Organization", name: "Travel Notes" },
+    publisher: { "@type": "Organization", name: "Travel Notes", url: siteUrl },
     mainEntityOfPage: `${siteUrl}/stories/${a.slug}`,
+    ...(a.photo ? { image: abs(a.photo.src) } : {}),
+    ...(a.sources.length ? { citation: a.sources.map((s) => s.url) } : {}),
   };
   // Breadcrumbs only include levels that exist. An article filed under a destination sits below it;
   // an article with no destination (practical advice, gear) sits directly below the homepage.
@@ -94,10 +106,14 @@ export default async function StoryPage({ params }: { params: Promise<{ slug: st
             <h1 className="t-heading-1 mt-2 mb-3">{a.title}</h1>
             <p className="t-deck m-0">{a.deck}</p>
             <div className="mt-5 flex items-center gap-3">
-              <div aria-hidden="true" className="w-10 h-10 rounded-full bg-paper-200" />
+              <AuthorAvatar author={a.author} />
               <p className="t-body-sm m-0">
-                <Link href={`/authors/${a.author.slug}`} className="text-ink-900 font-medium no-underline hover:underline">{a.author.name}</Link>
-                <span className="block text-ink-400">Published {fmt(a.firstPublished)}{!sameDay(a.updated, a.firstPublished) && `, updated ${fmt(a.updated)}`}</span>
+                <Link href={`/authors/${a.author.slug}`} className="text-ink-900 font-medium underline decoration-paper-200 underline-offset-4 hover:decoration-marine-600">{a.author.name}</Link>
+                <span className="block text-ink-600">
+                  Published {fmt(a.firstPublished)}
+                  {!sameDay(a.updated, a.firstPublished) && `, updated ${fmt(a.updated)}`}
+                  {a.reviewedAt && <>. Details checked {fmt(a.reviewedAt)}</>}
+                </span>
               </p>
             </div>
           </header>
@@ -105,11 +121,11 @@ export default async function StoryPage({ params }: { params: Promise<{ slug: st
           {a.disclosure === "sponsored" && a.sponsoredBy && <div className="mt-6"><DisclosureBanner sponsor={a.sponsoredBy} /></div>}
           {a.disclosure === "affiliate" && <div className="mt-6"><DisclosureBanner kind="affiliate" /></div>}
 
-          {/* CMS articles have no hero image until media uploads (Cloudflare R2) are set up, so no empty frame is shown. */}
-          {a.image && (
-            <figure className="mt-8 m-0 rounded-lg" style={{ boxShadow: `0 0 0 3px ${a.accent}` }}>
-              <Placeholder tone={a.heroTone} alt={a.heroAlt} image={a.image} priority className="aspect-[4/5] md:aspect-[3/2] w-full rounded-lg" />
-              <figcaption className="t-body-sm text-ink-600 mt-2"><Credit image={a.image} /></figcaption>
+          {/* No photo, no empty frame. */}
+          {a.photo && (
+            <figure className="mt-8 m-0">
+              <Photo photo={a.photo} priority sizes="(min-width: 1216px) 820px, (min-width: 1024px) 66vw, 100vw" className="block aspect-[4/3] md:aspect-[3/2] w-full rounded-lg" />
+              <figcaption className="mt-2"><PhotoCredit photo={a.photo} /></figcaption>
             </figure>
           )}
 
@@ -128,10 +144,8 @@ export default async function StoryPage({ params }: { params: Promise<{ slug: st
             </div>
           )}
 
-          <section className="mt-12 max-w-measure border-t border-paper-200 pt-6" aria-labelledby="corrections-heading">
-            <h2 id="corrections-heading" className="t-meta text-ink-400 m-0">Corrections and references</h2>
-            <p className="t-body-sm text-ink-600 mt-2 m-0">No corrections have been made to this article. <Link href="/corrections" className="text-marine-600 underline">How we handle corrections</Link></p>
-          </section>
+          <div className="mt-12 max-w-measure"><AuthorBox author={a.author} /></div>
+          <div className="mt-10"><SourcesAndCorrections story={a} /></div>
         </div>
 
         {a.showAds && (
@@ -143,7 +157,7 @@ export default async function StoryPage({ params }: { params: Promise<{ slug: st
 
       {related.length > 0 && (
         <section className="mt-16" aria-labelledby="related-heading">
-          <h2 id="related-heading" className="t-heading-2 m-0 mb-6">Related stories</h2>
+          <h2 id="related-heading" className="t-heading-2 m-0 mb-6">Related guides</h2>
           <div className="grid gap-6 md:gap-8 md:grid-cols-2 lg:grid-cols-3">
             {related.map((r) => <ArticleCard key={r.slug} article={r} />)}
           </div>

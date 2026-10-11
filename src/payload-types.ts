@@ -210,6 +210,10 @@ export interface Article {
    */
   excerpt: string;
   /**
+   * Optional. Shown at the top of the guide and on its card, with the credit. Upload it under Editorial photos first.
+   */
+  heroImage?: (string | null) | Image;
+  /**
    * Optional summary box at the top of the article.
    */
   takeaways?:
@@ -258,6 +262,30 @@ export interface Article {
     sponsorName?: string | null;
   };
   adPolicy: 'standard' | 'none';
+  sources?:
+    | {
+        /**
+         * For example "JR Pass official site".
+         */
+        name: string;
+        url: string;
+        /**
+         * Optional. What this source supports, for example "Ticket prices, checked 11 Oct 2026".
+         */
+        note?: string | null;
+        id?: string | null;
+      }[]
+    | null;
+  /**
+   * Add an entry whenever a published mistake is fixed. Say what was wrong and what it now says. Never delete entries.
+   */
+  corrections?:
+    | {
+        date: string;
+        text: string;
+        id?: string | null;
+      }[]
+    | null;
   seo: {
     /**
      * Title shown in search results. Aim for about 50 to 60 characters.
@@ -288,6 +316,10 @@ export interface Article {
    * Workflow stage. Approving needs an editor. Publishing needs a publisher and uses the Publish button.
    */
   editorialState: 'draft' | 'in-review' | 'approved' | 'archived';
+  /**
+   * The newest featured guide is shown large at the top of /guides.
+   */
+  featured?: boolean | null;
   primaryAuthor: string | Author;
   coauthors?: (string | Author)[] | null;
   /**
@@ -341,6 +373,75 @@ export interface Article {
   _status?: ('draft' | 'published') | null;
 }
 /**
+ * Photos for destination pages and guides. Only upload a photo we have the right to use.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "images".
+ */
+export interface Image {
+  id: string;
+  /**
+   * What the photo shows, for people who cannot see it. For example: "Boat shed on Dove Lake with Cradle Mountain behind".
+   */
+  alt: string;
+  /**
+   * Optional. Where and when it was taken, if that helps the reader. For example: "Cradle Mountain, Tasmania, May 2025".
+   */
+  caption?: string | null;
+  /**
+   * Who took the photo, exactly as the owner wants to be credited.
+   */
+  credit: string;
+  licence: 'own' | 'permission' | 'cc-by' | 'cc-by-sa' | 'cc0';
+  /**
+   * Required for Creative Commons photos.
+   */
+  licenceUrl?: string | null;
+  /**
+   * Optional. The page where the photo was found, for example its Wikimedia Commons page.
+   */
+  sourceUrl?: string | null;
+  rightsConfirmed: boolean;
+  _objectKey?: string | null;
+  updatedAt: string;
+  createdAt: string;
+  url?: string | null;
+  thumbnailURL?: string | null;
+  filename?: string | null;
+  mimeType?: string | null;
+  filesize?: number | null;
+  width?: number | null;
+  height?: number | null;
+  focalX?: number | null;
+  focalY?: number | null;
+  sizes?: {
+    thumb?: {
+      url?: string | null;
+      width?: number | null;
+      height?: number | null;
+      mimeType?: string | null;
+      filesize?: number | null;
+      filename?: string | null;
+    };
+    card?: {
+      url?: string | null;
+      width?: number | null;
+      height?: number | null;
+      mimeType?: string | null;
+      filesize?: number | null;
+      filename?: string | null;
+    };
+    large?: {
+      url?: string | null;
+      width?: number | null;
+      height?: number | null;
+      mimeType?: string | null;
+      filesize?: number | null;
+      filename?: string | null;
+    };
+  };
+}
+/**
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "authors".
  */
@@ -355,6 +456,10 @@ export interface Author {
    * Short public biography.
    */
   biography: string;
+  /**
+   * Optional. A real photo of the author, shown beside their name. Upload it under Editorial photos first.
+   */
+  photo?: (string | null) | Image;
   /**
    * First-hand travel or subject experience that supports this author’s articles.
    */
@@ -548,75 +653,6 @@ export interface Destination {
   _status?: ('draft' | 'published') | null;
 }
 /**
- * Photos for destination pages and guides. Only upload a photo we have the right to use.
- *
- * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "images".
- */
-export interface Image {
-  id: string;
-  /**
-   * What the photo shows, for people who cannot see it. For example: "Boat shed on Dove Lake with Cradle Mountain behind".
-   */
-  alt: string;
-  /**
-   * Optional. Where and when it was taken, if that helps the reader. For example: "Cradle Mountain, Tasmania, May 2025".
-   */
-  caption?: string | null;
-  /**
-   * Who took the photo, exactly as the owner wants to be credited.
-   */
-  credit: string;
-  licence: 'own' | 'permission' | 'cc-by' | 'cc-by-sa' | 'cc0';
-  /**
-   * Required for Creative Commons photos.
-   */
-  licenceUrl?: string | null;
-  /**
-   * Optional. The page where the photo was found, for example its Wikimedia Commons page.
-   */
-  sourceUrl?: string | null;
-  rightsConfirmed: boolean;
-  _objectKey?: string | null;
-  updatedAt: string;
-  createdAt: string;
-  url?: string | null;
-  thumbnailURL?: string | null;
-  filename?: string | null;
-  mimeType?: string | null;
-  filesize?: number | null;
-  width?: number | null;
-  height?: number | null;
-  focalX?: number | null;
-  focalY?: number | null;
-  sizes?: {
-    thumb?: {
-      url?: string | null;
-      width?: number | null;
-      height?: number | null;
-      mimeType?: string | null;
-      filesize?: number | null;
-      filename?: string | null;
-    };
-    card?: {
-      url?: string | null;
-      width?: number | null;
-      height?: number | null;
-      mimeType?: string | null;
-      filesize?: number | null;
-      filename?: string | null;
-    };
-    large?: {
-      url?: string | null;
-      width?: number | null;
-      height?: number | null;
-      mimeType?: string | null;
-      filesize?: number | null;
-      filename?: string | null;
-    };
-  };
-}
-/**
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "topics".
  */
@@ -673,6 +709,7 @@ export interface Staff {
    */
   communityModerator?: boolean | null;
   totpSecret?: string | null;
+  hasTotp?: boolean | null;
   updatedAt: string;
   createdAt: string;
   email: string;
@@ -1796,6 +1833,7 @@ export interface ArticlesSelect<T extends boolean = true> {
   title?: T;
   deck?: T;
   excerpt?: T;
+  heroImage?: T;
   takeaways?:
     | T
     | {
@@ -1824,6 +1862,21 @@ export interface ArticlesSelect<T extends boolean = true> {
         sponsorName?: T;
       };
   adPolicy?: T;
+  sources?:
+    | T
+    | {
+        name?: T;
+        url?: T;
+        note?: T;
+        id?: T;
+      };
+  corrections?:
+    | T
+    | {
+        date?: T;
+        text?: T;
+        id?: T;
+      };
   seo?:
     | T
     | {
@@ -1834,6 +1887,7 @@ export interface ArticlesSelect<T extends boolean = true> {
   slug?: T;
   type?: T;
   editorialState?: T;
+  featured?: T;
   primaryAuthor?: T;
   coauthors?: T;
   primaryDestination?: T;
@@ -2060,6 +2114,7 @@ export interface AuthorsSelect<T extends boolean = true> {
   name?: T;
   slug?: T;
   biography?: T;
+  photo?: T;
   relevantExperience?: T;
   links?:
     | T
@@ -2081,6 +2136,7 @@ export interface StaffSelect<T extends boolean = true> {
   active?: T;
   communityModerator?: T;
   totpSecret?: T;
+  hasTotp?: T;
   updatedAt?: T;
   createdAt?: T;
   email?: T;
