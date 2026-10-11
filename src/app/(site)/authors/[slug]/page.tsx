@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { ArticleCard } from "@/components/ArticleCard";
 import { Breadcrumbs } from "@/components/Breadcrumbs";
+import { Photo } from "@/components/destination/Photo";
 import { getAuthor } from "@/lib/content/authors";
 import { getStoriesByAuthor } from "@/lib/content/stories";
 import { siteUrl } from "@/lib/site";
@@ -65,6 +66,7 @@ export default async function AuthorPage({ params }: { params: Promise<{ slug: s
       description: author.biography,
       url,
       ...(links.length ? { sameAs: links.map((l) => l.url) } : {}),
+      ...(author.photo ? { image: author.photo.src.startsWith("http") ? author.photo.src : `${siteUrl}${author.photo.src}` } : {}),
       worksFor: { "@type": "Organization", name: "Travel Notes" },
     },
   };
@@ -87,8 +89,13 @@ export default async function AuthorPage({ params }: { params: Promise<{ slug: s
       <Breadcrumbs items={crumbs} />
 
       <header className="mt-6 max-w-measure">
-        <p className="t-meta text-ink-400 m-0">Author</p>
-        <h1 className="t-heading-1 mt-2 m-0">{author.name}</h1>
+        <div className="flex items-center gap-5">
+          {author.photo && <Photo photo={author.photo} priority sizes="96px" className="w-24 h-24 rounded-full shrink-0" />}
+          <div>
+            <p className="t-meta text-ink-400 m-0">Author</p>
+            <h1 className="t-heading-1 mt-2 m-0">{author.name}</h1>
+          </div>
+        </div>
         <div className="mt-4 flex flex-col gap-4">
           {paragraphs(author.biography).map((p, i) => <p key={i} className={`m-0 ${i === 0 ? "t-deck" : "t-body"}`}>{p}</p>)}
         </div>

@@ -1,11 +1,11 @@
-import type { Photo as PhotoData } from "@/lib/content/destinations";
+import type { Photo as PhotoData } from "@/lib/content/photos";
 
 /**
  * An editorial photo at the size the screen needs, picked by the browser from the sizes stored at
  * upload (480, 960, 1600 px and the original). A plain <img> on purpose: the files are already
  * resized and converted to WebP once, so they skip the image optimiser and its monthly quota.
  */
-export function Photo({ photo, sizes, priority = false, className = "" }: { photo: PhotoData; sizes: string; priority?: boolean; className?: string }) {
+export function Photo({ photo, sizes, priority = false, className = "", style }: { photo: PhotoData; sizes: string; priority?: boolean; className?: string; style?: React.CSSProperties }) {
   return (
     // eslint-disable-next-line @next/next/no-img-element -- pre-sized WebP files with srcset; see the comment above.
     <img
@@ -19,7 +19,7 @@ export function Photo({ photo, sizes, priority = false, className = "" }: { phot
       fetchPriority={priority ? "high" : "auto"}
       decoding="async"
       className={`object-cover bg-paper-200 ${className}`}
-      style={{ objectPosition: `${photo.focus.x}% ${photo.focus.y}%` }}
+      style={{ objectPosition: `${photo.focus.x}% ${photo.focus.y}%`, ...style }}
     />
   );
 }

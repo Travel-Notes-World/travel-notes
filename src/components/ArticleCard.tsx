@@ -1,5 +1,7 @@
 import Link from "next/link";
-import type { CommonsImage } from "@/lib/content/images";
+import type { Photo as PhotoData } from "@/lib/content/photos";
+
+import { Photo } from "./destination/Photo";
 import { Placeholder } from "./Placeholder";
 
 const fmt = (iso: string) => new Date(iso).toLocaleDateString("en-AU", { day: "numeric", month: "short", year: "numeric" });
@@ -7,7 +9,7 @@ const fmt = (iso: string) => new Date(iso).toLocaleDateString("en-AU", { day: "n
 /** The fields a card needs; a CMS story (src/lib/content/stories.ts) satisfies this shape. */
 export type CardArticle = {
   slug: string; type: string; title: string; excerpt: string; readMinutes: number; updated: string;
-  author: { name: string }; heroTone: string; accent: string; image?: CommonsImage;
+  author: { name: string }; heroTone: string; accent: string; photo?: PhotoData | null;
 };
 
 export function ArticleCard({ article, hero = false }: { article: CardArticle; hero?: boolean }) {
@@ -15,7 +17,12 @@ export function ArticleCard({ article, hero = false }: { article: CardArticle; h
   return (
     <article className={hero ? "grid gap-6 lg:grid-cols-[3fr_2fr] lg:items-end" : "flex flex-col gap-3"}>
       <Link href={href} aria-hidden="true" tabIndex={-1} className="block">
-        <Placeholder tone={article.heroTone} alt="" image={article.image} priority={hero} className={`aspect-[3/2] w-full ${hero ? "rounded-lg" : "rounded-md"}`} />
+        {article.photo ? (
+          // The link is hidden from screen readers (the title link follows), so the photo needs no description here.
+          <Photo photo={{ ...article.photo, alt: "" }} priority={hero} sizes={hero ? "(min-width: 1024px) 60vw, 100vw" : "(min-width: 1024px) 380px, (min-width: 768px) 50vw, 100vw"} className={`block aspect-[3/2] w-full ${hero ? "rounded-lg" : "rounded-md"}`} />
+        ) : (
+          <Placeholder tone={article.heroTone} alt="" priority={hero} className={`aspect-[3/2] w-full ${hero ? "rounded-lg" : "rounded-md"}`} />
+        )}
         <span aria-hidden="true" className="block h-1 rounded-full mt-2" style={{ background: article.accent, width: hero ? 96 : 56 }} />
       </Link>
       <div className="flex flex-col gap-3">

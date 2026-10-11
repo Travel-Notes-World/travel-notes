@@ -2,6 +2,9 @@ import config from '@payload-config'
 import { unstable_cache } from 'next/cache'
 import { getPayload } from 'payload'
 
+import type { Image } from '@/payload-types'
+
+import { type Photo, toPhoto } from './photos'
 import { AUTHORS_TAG, authorTag } from './revalidate'
 
 /** Fallback regeneration for author data (implementation plan §3: author pages 15 minutes). */
@@ -15,6 +18,7 @@ export type AuthorProfile = {
   biography: string
   relevantExperience?: string
   links: { label: string; url: string }[]
+  photo: Photo | null
 }
 
 const findAuthorBySlug = (slug: string) =>
@@ -25,7 +29,7 @@ const findAuthorBySlug = (slug: string) =>
         collection: 'authors',
         where: { slug: { equals: slug } },
         limit: 1,
-        depth: 0,
+        depth: 1,
         overrideAccess: false,
       })
       const doc = result.docs[0]
@@ -37,9 +41,10 @@ const findAuthorBySlug = (slug: string) =>
         biography: doc.biography,
         relevantExperience: doc.relevantExperience?.trim() || undefined,
         links: (doc.links ?? []).map((l) => ({ label: l.label, url: l.url })),
+        photo: toPhoto(doc.photo && typeof doc.photo === 'object' ? (doc.photo as Image) : null),
       }
     },
-    ['author-by-slug', slug],
+    ['author-by-slug-v2', slug],
     { tags: [authorTag(slug), AUTHORS_TAG], revalidate: AUTHOR_REVALIDATE_SECONDS },
   )()
 

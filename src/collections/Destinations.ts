@@ -5,11 +5,10 @@ import { blockPublishBelowPublisher, draftOnlyBelowPublisher } from '../access/p
 import { administratorOnlyField, isEditor, isPublisher, publishedOrStaff } from '../access/roles'
 import { FACT_KINDS, factNeedsSource, MONTH_NAMES, MONTHS } from '../lib/content/destinationFacts'
 import { DESTINATIONS_TAG, expireTags } from '../lib/content/revalidate'
-import { normaliseSlug, seoFields, validateSlug } from './fields'
+import { httpsLink, normaliseSlug, seoFields, validateSlug } from './fields'
 
 const MAX_DEPTH = 4
 
-const httpsLink = (value: string | null | undefined) => !value || /^https:\/\/[^\s]+$/.test(value) || 'Use a full web address that starts with https://.'
 
 /**
  * Country → region → city hierarchy (implementation plan §4 and §5).

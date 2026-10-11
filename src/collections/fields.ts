@@ -52,3 +52,7 @@ export const seoFields: Field = {
     },
   ],
 }
+
+/** An optional web address that must be a full https:// link. */
+export const httpsLink = (value: string | null | undefined): true | string =>
+  !value || /^https:\/\/[^\s]+$/.test(value) ? true : 'Use a full web address that starts with https://.'

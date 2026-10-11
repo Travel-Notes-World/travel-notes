@@ -12,6 +12,7 @@ import * as migration_20261009_163759_travel_updates from './20261009_163759_tra
 import * as migration_20261010_062047_scheduled_publishing from './20261010_062047_scheduled_publishing';
 import * as migration_20261010_083000_search_trigram from './20261010_083000_search_trigram';
 import * as migration_20261011_074339_destination_pages from './20261011_074339_destination_pages';
+import * as migration_20261011_083215_guide_photos_sources from './20261011_083215_guide_photos_sources';
 
 export const migrations = [
   {
@@ -82,6 +83,11 @@ export const migrations = [
   {
     up: migration_20261011_074339_destination_pages.up,
     down: migration_20261011_074339_destination_pages.down,
-    name: '20261011_074339_destination_pages'
+    name: '20261011_074339_destination_pages',
+  },
+  {
+    up: migration_20261011_083215_guide_photos_sources.up,
+    down: migration_20261011_083215_guide_photos_sources.down,
+    name: '20261011_083215_guide_photos_sources'
   },
 ];

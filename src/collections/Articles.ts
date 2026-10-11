@@ -2,13 +2,13 @@ import type { Access, CollectionConfig, Where } from 'payload'
 import { Forbidden } from 'payload'
 
 import { blockPublishBelowPublisher, draftOnlyBelowPublisher } from '../access/publishGuard'
-import { hasRole, isPublisher, isStaff, nobodyField, staffOnlyField } from '../access/roles'
+import { hasRole, isPublisher, isStaff, nobodyField, publisherOnlyField, staffOnlyField } from '../access/roles'
 import { TRAVEL_STYLES } from '../lib/community/constants'
 import { ARTICLES_TAG, articleTag, expireTags } from '../lib/content/revalidate'
 import { lexicalPlainText } from '../lib/content/plainText'
 import { scheduleFields, scheduleGuard } from '../lib/content/schedule'
 import { addressGone, published } from '../lib/redirects/automatic'
-import { seoFields, slugField } from './fields'
+import { httpsLink, seoFields, slugField } from './fields'
 
 export const ARTICLE_TYPES = [
   { label: 'Destination guide', value: 'destination-guide' },
@@ -125,6 +125,13 @@ export const Articles: CollectionConfig = {
             { name: 'deck', type: 'textarea', required: true, admin: { description: 'One or two sentences under the title.' } },
             { name: 'excerpt', type: 'textarea', required: true, admin: { description: 'Short summary used on article cards.' } },
             {
+              name: 'heroImage',
+              label: 'Main photo',
+              type: 'upload',
+              relationTo: 'images',
+              admin: { description: 'Optional. Shown at the top of the guide and on its card, with the credit. Upload it under Editorial photos first.' },
+            },
+            {
               name: 'takeaways',
               type: 'array',
               labels: { singular: 'Takeaway', plural: 'Key takeaways' },
@@ -204,6 +211,43 @@ export const Articles: CollectionConfig = {
             },
           ],
         },
+        {
+          label: 'Sources and corrections',
+          description: 'Readers see these at the end of the guide. List the official pages that support prices, rules, opening hours and transport details.',
+          fields: [
+            {
+              name: 'sources',
+              type: 'array',
+              maxRows: 30,
+              labels: { singular: 'Source', plural: 'Sources' },
+              fields: [
+                {
+                  type: 'row',
+                  fields: [
+                    { name: 'name', type: 'text', required: true, maxLength: 120, admin: { width: '40%', description: 'For example "JR Pass official site".' } },
+                    { name: 'url', type: 'text', required: true, validate: httpsLink, admin: { width: '60%' } },
+                  ],
+                },
+                { name: 'note', type: 'text', maxLength: 160, admin: { description: 'Optional. What this source supports, for example "Ticket prices, checked 11 Oct 2026".' } },
+              ],
+            },
+            {
+              name: 'corrections',
+              type: 'array',
+              labels: { singular: 'Correction', plural: 'Corrections' },
+              admin: { description: 'Add an entry whenever a published mistake is fixed. Say what was wrong and what it now says. Never delete entries.' },
+              fields: [
+                {
+                  type: 'row',
+                  fields: [
+                    { name: 'date', type: 'date', required: true, admin: { width: '30%', date: { pickerAppearance: 'dayOnly', displayFormat: 'd MMM yyyy' } } },
+                    { name: 'text', type: 'textarea', required: true, maxLength: 500, admin: { width: '70%' } },
+                  ],
+                },
+              ],
+            },
+          ],
+        },
         { label: 'Search', fields: [seoFields] },
       ],
     },
@@ -224,6 +268,15 @@ export const Articles: CollectionConfig = {
         position: 'sidebar',
         description: 'Workflow stage. Approving needs an editor. Publishing needs a publisher and uses the Publish button.',
       },
+    },
+    {
+      name: 'featured',
+      label: 'Feature on the guides page',
+      type: 'checkbox',
+      defaultValue: false,
+      // Choosing what leads the guides page is a publishing decision.
+      access: { create: publisherOnlyField, update: publisherOnlyField },
+      admin: { position: 'sidebar', description: 'The newest featured guide is shown large at the top of /guides.' },
     },
     { name: 'primaryAuthor', type: 'relationship', relationTo: 'authors', required: true, admin: { position: 'sidebar' } },
     { name: 'coauthors', type: 'relationship', relationTo: 'authors', hasMany: true, admin: { position: 'sidebar' } },
