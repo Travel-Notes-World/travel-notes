@@ -3,6 +3,7 @@ import Link from "next/link";
 import navigation from "@/content/data/navigation.json";
 
 import { HeaderAccount } from "./HeaderAccount";
+import { MenuDisclosure } from "./MenuDisclosure";
 
 /**
  * Main navigation, following the "Homepage 1a" design. Labels and links live in
@@ -15,6 +16,8 @@ export function Logo({ onDark = false, size = 26 }: { onDark?: boolean; size?: n
   return (
     <span className="inline-flex items-baseline gap-[2px] leading-none" style={{ fontSize: size }}>
       <span className={`font-display font-semibold tracking-[-0.5px] ${onDark ? "text-white" : "text-navy-900"}`}>Travel</span>
+      {/* A space for screen readers and copy-paste, so the name reads "Travel Notes". The visible gap comes from the layout. */}
+      <span className="sr-only"> </span>
       <span className={`font-display italic font-normal ${onDark ? "text-brand-mint" : "text-marine-600"}`}>Notes</span>
     </span>
   );
@@ -49,7 +52,8 @@ export function SiteHeader() {
   return (
     <header className="sticky top-0 z-20 bg-paper-000 border-b border-paper-200">
       <div className="mx-auto max-w-wide px-4 md:px-8 xl:px-14 h-[64px] xl:h-[76px] flex items-center gap-6 min-[1400px]:gap-9">
-        <Link href="/" className="no-underline" aria-label={header.homeLabel}><Logo /></Link>
+        {/* Named by its visible text plus a hidden "home", so speech users can say what they see. */}
+        <Link href="/" className="no-underline"><Logo /><span className="sr-only"> {header.homeSuffix}</span></Link>
         <nav aria-label="Primary" className="hidden min-[1400px]:block">
           <NavItems />
         </nav>
@@ -63,7 +67,7 @@ export function SiteHeader() {
           </Link>
           <Link href={header.subscribe.href} className={`hidden sm:inline-flex ${subscribeClass}`}>{header.subscribe.label}</Link>
           {/* Small screens: the menu opens in place and works without JavaScript. */}
-          <details className="min-[1400px]:hidden relative group">
+          <MenuDisclosure className="min-[1400px]:hidden relative group">
             <summary className="list-none [&::-webkit-details-marker]:hidden grid place-items-center w-10 h-10 rounded-md border border-paper-200 text-navy-900 cursor-pointer" aria-label={header.menuLabel}>
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" aria-hidden="true">
                 <path className="group-open:hidden" d="M4 7h16M4 12h16M4 17h16" /><path className="hidden group-open:block" d="M6 6l12 12M18 6 6 18" />
@@ -78,7 +82,7 @@ export function SiteHeader() {
                 <Link href={header.subscribe.href} className={`sm:hidden inline-flex justify-center ${subscribeClass}`}>{header.subscribe.label}</Link>
               </div>
             </div>
-          </details>
+          </MenuDisclosure>
         </div>
       </div>
     </header>

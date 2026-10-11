@@ -10,10 +10,11 @@ import { enqueueEmail } from './email/outbox'
 import { validUnsubscribeSignature } from './email/templates'
 import { emailMode } from './email/transport'
 import { CommunityError, fail, invalid, type FieldErrors } from './errors'
+import { newShortId } from './ids'
 import { track } from './metrics'
 import { hashSubject, limit } from './ratelimit'
 import { getSettings } from './settings'
-import { cleanLine, cleanText, HANDLE_PATTERN, newShortId } from './text'
+import { cleanLine, cleanText, HANDLE_PATTERN } from './text'
 import type { MemberActor, PublicAuthor } from './types'
 
 const EMAIL_PATTERN = /^[^\s@<>"']+@[^\s@<>"']+\.[^\s@<>"']{2,}$/

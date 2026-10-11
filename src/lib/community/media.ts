@@ -4,11 +4,12 @@ import { LIMITS } from './constants'
 import { cms, relId, run, sql } from './db'
 import { isUuid } from './destinations'
 import { fail, invalid } from './errors'
+import { newShortId } from './ids'
 import { requireActive } from './members'
 import { limit } from './ratelimit'
 import { assertSubmissionsOpen } from './settings'
 import { ensureLocalFolder, uploadsAvailable } from './storage'
-import { cleanLine, newShortId } from './text'
+import { cleanLine } from './text'
 import type { MemberActor } from './types'
 
 const ALLOWED = new Map([['jpeg', 'image/jpeg'], ['png', 'image/png'], ['webp', 'image/webp']])
