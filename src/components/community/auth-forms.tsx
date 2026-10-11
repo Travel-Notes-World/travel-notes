@@ -5,6 +5,7 @@ import { useActionState } from "react";
 
 import { forgotPasswordAction, resendVerificationAction, resetPasswordAction, signInAction, signUpAction } from "@/lib/community/actions/account";
 import { initialState } from "@/lib/community/next/state";
+import { siteUrl } from "@/lib/site";
 import { FormMessage, SubmitButton } from "./client";
 import { describedBy, Field, inputClass } from "./ui";
 
@@ -57,7 +58,7 @@ export function SignUpForm() {
       <Field id="displayName" label="Name to show on your posts" hint="Your own name or a nickname. You can change it later." error={f.displayName} required>
         <input {...describedBy("displayName", true, f.displayName)} name="displayName" autoComplete="nickname" maxLength={60} required defaultValue={v(state, "displayName")} className={inputClass} />
       </Field>
-      <Field id="handle" label="Profile address" hint="3 to 30 lowercase letters, numbers or hyphens. It appears in your profile address: travenotes.com/travellers/your-name. It cannot be changed later." error={f.handle} required>
+      <Field id="handle" label="Profile address" hint={`3 to 30 lowercase letters, numbers or hyphens. It appears in your profile address: ${new URL(siteUrl).host}/travellers/your-name. It cannot be changed later.`} error={f.handle} required>
         <input {...describedBy("handle", true, f.handle)} name="handle" autoComplete="username" maxLength={30} required pattern="[a-z0-9][a-z0-9-]{1,28}[a-z0-9]" defaultValue={v(state, "handle")} className={inputClass} />
       </Field>
       <Field id="email" label="Email address" hint="We send a link to confirm it. It is never shown to other members." error={f.email} required>
