@@ -10,16 +10,15 @@ import { formatDateTime, formatHours } from "./format";
 export const metadata: Metadata = { title: "Dashboard" };
 
 function Stat({ label, value, note, href }: { label: string; value: ReactNode; note?: ReactNode; href?: string }) {
-  const body = (
-    <>
-      <dt className="t-body-sm text-ink-600">{label}</dt>
-      <dd className="m-0 mt-1 t-heading-2">{value}</dd>
-      {note && <dd className="m-0 mt-1 t-body-sm text-ink-600">{note}</dd>}
-    </>
-  );
+  // The term and its values stay direct children of the list item (valid for screen readers); the
+  // link covers the whole card so it is still one large target.
   return (
-    <div className="border border-line-500 rounded-md p-4 bg-paper-000 min-w-0">
-      {href ? <Link href={href} className="no-underline text-ink-900 block">{body}</Link> : body}
+    <div className={`border border-line-500 rounded-md p-4 bg-paper-000 min-w-0 ${href ? "relative hover:border-marine-600 focus-within:outline-2 focus-within:outline-marine-600" : ""}`}>
+      <dt className="t-body-sm text-ink-600">
+        {href ? <Link href={href} className="no-underline text-ink-600 after:absolute after:inset-0 focus-visible:outline-none">{label}</Link> : label}
+      </dt>
+      <dd className="m-0 mt-1 t-heading-2 text-ink-900">{value}</dd>
+      {note && <dd className="m-0 mt-1 t-body-sm text-ink-600">{note}</dd>}
     </div>
   );
 }
@@ -56,7 +55,7 @@ export default async function ModerationDashboard() {
         {waiting === 0 ? (
           <EmptyState title="Nothing is waiting.">New submissions, edits, replies, reports and destination suggestions appear here.</EmptyState>
         ) : (
-          <dl className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 m-0">
+          <dl className="grid grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 m-0">
             <Stat label="New submissions" value={d.backlog.submissions} href="/moderation/queue?kind=new" />
             <Stat label="Edits to published posts" value={d.backlog.edits} href="/moderation/queue?kind=edit" />
             <Stat label="Replies" value={d.backlog.replies} href="/moderation/replies" />
@@ -71,7 +70,7 @@ export default async function ModerationDashboard() {
         {publishedTotal === 0 && d.content.members === 0 ? (
           <EmptyState title="No published content or verified members yet.">Counts appear here once the first posts are approved.</EmptyState>
         ) : (
-          <dl className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 m-0">
+          <dl className="grid grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 m-0">
             <Stat label="Questions" value={d.content.published.question} note={`${d.content.unansweredQuestions} without an approved answer`} />
             <Stat label="Trip reports" value={d.content.published.trip} />
             <Stat label="Activities" value={d.content.published.activity} />
@@ -102,7 +101,7 @@ export default async function ModerationDashboard() {
       </Section>
 
       <Section title="Email">
-        <dl className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 m-0">
+        <dl className="grid grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 m-0">
           <Stat label="Mode" value={<span className="t-ui">{EMAIL_MODE[d.email.mode] ?? d.email.mode}</span>} note={d.email.mode === "capture" ? <Link href="/moderation/inbox" className="text-marine-600 underline">Open the test inbox</Link> : undefined} />
           <Stat label="Waiting to send" value={d.email.pending} note={d.email.oldestPendingMinutes !== null ? `Oldest waiting ${formatHours(d.email.oldestPendingMinutes / 60)}` : undefined} />
           <Stat label="Failed after all retries" value={d.email.failed} note={d.email.failed ? "Check the email provider and the job log." : undefined} />

@@ -38,7 +38,7 @@ export default async function ActivityPage({ params, searchParams }: Props) {
         <p className="t-meta text-ink-400 m-0 flex flex-wrap items-center gap-x-3 gap-y-1">
           <span className="text-ochre-700">{activityCategoryLabel(a.category)}</span>
           <StatusBadge state={a.status} kind="event" />
-          {post.destinations.map((d) => <Link key={d.id} href={`/community/${d.path}`} className="text-ink-400 hover:text-marine-600">{d.label}</Link>)}
+          {post.destinations.map((d) => <Link key={d.id} href={`/community/${d.path}`} className="inline-flex items-center min-h-11 text-ink-600 underline decoration-line-400 underline-offset-4 hover:text-marine-600">{d.label}</Link>)}
         </p>
         <h1 className="t-heading-1 mt-2 mb-0">{post.title}</h1>
         <PostMeta page={page} />

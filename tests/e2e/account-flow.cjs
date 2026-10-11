@@ -4,6 +4,9 @@
 //   E2E_DATABASE_URL=postgresql://…/tn_dev node tests/e2e/account-flow.cjs
 const { chromium } = require(process.env.PLAYWRIGHT_PATH || 'playwright');
 const { execSync } = require('child_process');
+const path = require('path');
+const { staffSignIn } = require('./staff-login.cjs');
+const OUT = path.join(process.env.E2E_OUT || __dirname, 'shots');
 
 const BASE = process.env.E2E_BASE_URL || 'http://localhost:3100';
 const sql = (q) => execSync(`psql "${process.env.E2E_DATABASE_URL}" -tAc ${JSON.stringify(q)}`).toString().trim();
@@ -168,8 +171,8 @@ async function signUp(page, handle, email, password) {
 
   // 10. Moderator: find, review, suspend, lift
   const modCtx = await browser.newContext();
-  const login = await modCtx.request.post(`${BASE}/api/staff/login`, { data: { email: 'admin@example.test', password: 'demo-admin-password' } });
-  check('moderator signs in', login.ok(), `status=${login.status()}`);
+  const staffOk = await staffSignIn(modCtx, { base: BASE, email: 'admin@example.test', password: 'demo-admin-password', out: OUT }).then(() => true, (e) => (console.log(e.message), false));
+  check('moderator signs in', staffOk);
   const mod = await modCtx.newPage();
   watch(mod, 'moderator');
   await mod.goto(`${BASE}/moderation/members?q=${encodeURIComponent(email)}`);

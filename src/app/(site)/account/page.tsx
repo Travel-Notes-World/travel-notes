@@ -44,9 +44,9 @@ function PostRow({ item }: { item: OwnItem }) {
           <UserText text={item.note} className="t-body-sm" />
         </div>
       )}
-      <p className="t-body-sm m-0 mt-2 flex flex-wrap gap-x-4">
-        <Link href={`/account/posts/${item.id}`} className="text-marine-600 underline">{["draft", "changes_requested", "published"].includes(item.state) ? "Edit" : "View"}<span className="sr-only">: {item.title || "untitled draft"}</span></Link>
-        {item.path && <Link href={item.path} className="text-marine-600 underline">See the public page<span className="sr-only">: {item.title}</span></Link>}
+      <p className="t-body-sm m-0 mt-1 flex flex-wrap items-center gap-x-5">
+        <Link href={`/account/posts/${item.id}`} className="inline-flex items-center min-h-11 text-marine-600 underline">{["draft", "changes_requested", "published"].includes(item.state) ? "Edit" : "View"}<span className="sr-only">: {item.title || "untitled draft"}</span></Link>
+        {item.path && <Link href={item.path} className="inline-flex items-center min-h-11 text-marine-600 underline">See the public page<span className="sr-only">: {item.title}</span></Link>}
         {item.state === "published" && item.type === "question" && <span className="text-ink-600">{item.replyCount === 1 ? "1 answer" : `${item.replyCount} answers`}</span>}
       </p>
     </li>
