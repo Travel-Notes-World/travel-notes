@@ -10,11 +10,14 @@ import {
   decideReplyAction,
   decideSuggestionAction,
   markDuplicateAction,
+  markMemberVerifiedAction,
   moderateEventStatusAction,
   overrideAcceptedAnswerAction,
   recordFactCheckAction,
+  resendMemberVerificationAction,
   resolveReportAction,
   restrictAccountAction,
+  sendMemberPasswordResetAction,
   setIndexingAction,
   setTrustedAction,
   setVisibilityAction,
@@ -329,6 +332,45 @@ export function TrustedForm({ memberId, trusted }: { memberId: string; trusted: 
         </>
       )}
     </ActionForm>
+  );
+}
+
+/**
+ * Help a member who cannot get in. Moderators never see or choose a member's password: they can
+ * only send the member the same reset link the member could ask for themselves.
+ */
+export function MemberSignInHelp({ memberId, verified }: { memberId: string; verified: boolean }) {
+  return (
+    <div className="grid gap-6">
+      {!verified && (
+        <>
+          <ActionForm action={resendMemberVerificationAction} hidden={{ memberId }} successTitle="Sent">
+            {() => (
+              <>
+                <p className="t-body-sm m-0">This member has not confirmed their email address yet, so they cannot sign in.</p>
+                <div className="mt-3"><SubmitButton variant="secondary" pendingText="Sending…">Send the confirmation email again</SubmitButton></div>
+              </>
+            )}
+          </ActionForm>
+          <ActionForm action={markMemberVerifiedAction} hidden={{ memberId }} successTitle="Confirmed">
+            {(state, fid) => (
+              <>
+                <ReasonField id={`${fid}-reason`} state={state} rows={2} required label="How do you know the address is theirs?" hint="Only confirm by hand when the email cannot reach them, for example after they wrote to you from this address. Recorded in the audit log." />
+                <div className="mt-3"><SubmitButton variant="secondary" pendingText="Saving…">Mark email as confirmed</SubmitButton></div>
+              </>
+            )}
+          </ActionForm>
+        </>
+      )}
+      <ActionForm action={sendMemberPasswordResetAction} hidden={{ memberId }} successTitle="Sent">
+        {() => (
+          <>
+            <p className="t-body-sm m-0">Sends the member a link to choose a new password. It works for one hour. You never see the link or the password.</p>
+            <div className="mt-3"><SubmitButton variant="secondary" pendingText="Sending…">Send a password reset link</SubmitButton></div>
+          </>
+        )}
+      </ActionForm>
+    </div>
   );
 }
 

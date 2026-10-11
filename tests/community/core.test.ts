@@ -224,6 +224,39 @@ describe('2. unverified and suspended accounts cannot take part', () => {
     assert.equal((await postReply(bad, { contributionId: target.id, body: 'A reply after the suspension was lifted.' })).state, 'pending')
   })
 
+  it('moderators help members sign in without ever seeing a password or reset link', async () => {
+    const { sendMemberPasswordReset, resendMemberVerification, markMemberVerified } = await import('../../src/lib/community/moderation')
+    const { signUp, changePassword } = await import('../../src/lib/community/members')
+    const member = await newMember('Needs help')
+    await rejects(sendMemberPasswordReset(plainEditor(), member.id), 'forbidden')
+    await rejects(sendMemberPasswordReset(member as Any, member.id), 'forbidden')
+    const before = (await captured(member.id, 'password_reset')).length
+    await sendMemberPasswordReset(moderator(), member.id)
+    assert.equal((await captured(member.id, 'password_reset')).length, before + 1, 'the reset link goes to the member by email')
+    await rejects(resendMemberVerification(moderator(), member.id), 'conflict', 'already confirmed')
+
+    const handle = `unconfirmed${Date.now().toString(36)}`
+    await signUp({ email: `${handle}@example.test`, password: 'correct horse battery', handle, displayName: 'Unconfirmed', acceptTerms: true }, { ip: null })
+    const stuck = (await payload.find({ collection: 'members', where: { handle: { equals: handle } }, limit: 1, depth: 0 })).docs[0]
+    await resendMemberVerification(moderator(), stuck.id)
+    assert.equal((await captured(stuck.id, 'verify_email')).length, 2)
+    await rejects(markMemberVerified(moderator(), stuck.id, ''), 'validation', 'a reason is required')
+    await rejects(markMemberVerified(plainEditor(), stuck.id, 'Wrote to us from this address.'), 'forbidden')
+    await markMemberVerified(moderator(), stuck.id, 'Wrote to us from this address.')
+    assert.equal((await payload.findByID({ collection: 'members', id: stuck.id, depth: 0, showHiddenFields: true }) as Any)._verified, true)
+    assert.ok((await signIn({ email: `${handle}@example.test`, password: 'correct horse battery' }, { ip: null })).token)
+    const log = await payload.find({ collection: 'moderation-actions', where: { targetId: { in: [member.id, stuck.id] } }, depth: 0, limit: 10 })
+    assert.deepEqual(log.docs.map((d) => d.action).sort(), ['confirm_email', 'resend_verification', 'send_password_reset'])
+
+    // Changing the password keeps the session that made the change and ends every other one.
+    const first = await signIn({ email: member.email, password: member.password }, { ip: null })
+    await signIn({ email: member.email, password: member.password }, { ip: null })
+    const sid = JSON.parse(Buffer.from(first.token.split('.')[1], 'base64url').toString()).sid
+    await changePassword(member, { current: member.password, next: 'a brand new password' }, sid)
+    const sessions = ((await payload.db.findOne({ collection: 'members', where: { id: { equals: member.id } } })) as Any).sessions
+    assert.deepEqual(sessions.map((s: Any) => s.id), [sid])
+  })
+
   it('a crafted API request with a member session can change nothing', async () => {
     const mine = await published(asker, 'question', questionInput({ title: 'A question used to test crafted requests' }))
     const member = asUser(asker, 'members')

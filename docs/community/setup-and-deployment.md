@@ -44,8 +44,13 @@ disposable database.
 2. Run the migration against the target database from your computer:
    `DATABASE_URL=<target> npx payload migrate`
 3. Import destinations (idempotent; never overwrites existing records):
-   `DATABASE_URL=<target> npm run destinations:import` (all 252 countries and 4,519 cities) or
+   `DATABASE_URL=<target> npm run destinations:import` (all 252 countries and 5,485 cities) or
    `-- --min=1000000` for a smaller set first.
+   Records are created one at a time, so time depends on the distance to the database: from outside
+   Australia expect about 15 minutes for the smaller set and 45–60 minutes for everything. If it stops
+   with `ETIMEDOUT` or another connection error, run the same command again: it skips what is
+   already there and carries on. The script reads `.env` / `.env.local`; a `DATABASE_URL=` given on
+   the command line takes priority.
 4. Never run `npm run community:demo-seed` against production. It refuses anything except a
    database on localhost and needs `ALLOW_DEMO_SEED=yes`.
 

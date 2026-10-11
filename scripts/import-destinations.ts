@@ -2,7 +2,7 @@
  * Import the worldwide destination list into the CMS.
  *
  *   npm run destinations:import                 # countries + every place in the data file
- *   npm run destinations:import -- --min=300000 # only places with at least 300,000 people (plus capitals)
+ *   npm run destinations:import -- --min=300000 # only places with at least 300,000 people (all countries are always imported; smaller capitals are not)
  *
  * Source: data/destinations/geonames-100k.json (GeoNames, CC BY 4.0; ISO 3166 countries). See the
  * "source" block in that file and docs/community/data-model.md for the attribution the licence needs.

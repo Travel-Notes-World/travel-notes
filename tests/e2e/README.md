@@ -9,9 +9,13 @@ ALLOW_DEMO_SEED=yes npm run community:demo-seed
 EMAIL_TRANSPORT=capture ALLOW_EMAIL_CAPTURE=yes npm run build && npx next start -p 3100
 E2E_DATABASE_URL=postgresql://…/tn_dev node tests/e2e/community-flow.cjs
 E2E_DATABASE_URL=postgresql://…/tn_dev node tests/e2e/photo-upload.cjs
+E2E_DATABASE_URL=postgresql://…/tn_dev node tests/e2e/account-flow.cjs
 node tests/e2e/admin-panel.cjs
 ```
 
 The community needs to be open (Community settings: public access and sign-ups ticked; the demo
 seed does this). `PLAYWRIGHT_PATH` can point at a global Playwright install. Screenshots go to
 `$E2E_OUT/shots` (default: this folder; git-ignored).
+
+Sign-up is limited to 6 per hour from one address, and the limit cannot be loosened in a production
+build. Between repeated local runs, clear it: `psql "$E2E_DATABASE_URL" -c 'delete from rate_limits'`.

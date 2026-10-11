@@ -63,6 +63,18 @@ On `/moderation/members/<id>`:
 - Repeated spam: reject the posts, then suspend for a long period. There is no permanent ban
   button. Use a long end date and record the reason.
 
+### Sign-in help
+
+Also on `/moderation/members/<id>`, under *Sign-in help*:
+- **Send a password reset link** emails the member the same one-hour link as *Forgot your
+  password?*. Moderators never see or choose a member's password, so use this when someone writes
+  in saying they cannot sign in.
+- **Send the confirmation email again** (unconfirmed accounts only) when the first email was lost.
+- **Mark email as confirmed** (unconfirmed accounts only) when the email cannot reach them, for
+  example after they wrote to you from that address. Write how you know; it goes in the audit log.
+
+All three are recorded in the audit log.
+
 ## Indexing (administrators)
 
 - Questions become indexable automatically once they have the set number of approved answers

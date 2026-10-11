@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
-import { Panel, RestrictForm, TrustedForm } from "@/components/community/moderation-ui";
+import { MemberSignInHelp, Panel, RestrictForm, TrustedForm } from "@/components/community/moderation-ui";
 import { Notice, PageHeader, StatusBadge } from "@/components/community/ui";
 import { getMemberOverview, type MemberOverview } from "@/lib/community/moderation";
 import { requireModeratorPage } from "@/lib/community/next/session";
@@ -42,6 +42,11 @@ export default async function MemberPage({ params }: { params: Promise<{ id: str
         </dl>
         {m.status !== "deleted" && m.counts.published > 0 && <p className="t-body-sm mt-3 mb-0"><Link href={`/travellers/${m.handle}`} className="text-marine-600">Public profile</Link></p>}
       </Panel>
+      {m.status !== "deleted" && (
+        <Panel title="Sign-in help">
+          <MemberSignInHelp memberId={m.id} verified={m.verified} />
+        </Panel>
+      )}
       <Panel title={m.status === "suspended" ? "Lift the suspension" : "Suspend this account"}>
         <RestrictForm memberId={m.id} status={m.status} />
       </Panel>
