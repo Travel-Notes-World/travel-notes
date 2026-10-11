@@ -3,10 +3,13 @@ import { ValidationError } from 'payload'
 
 import { blockPublishBelowPublisher, draftOnlyBelowPublisher } from '../access/publishGuard'
 import { administratorOnlyField, isEditor, isPublisher, publishedOrStaff } from '../access/roles'
+import { FACT_KINDS, factNeedsSource, MONTH_NAMES, MONTHS } from '../lib/content/destinationFacts'
 import { DESTINATIONS_TAG, expireTags } from '../lib/content/revalidate'
 import { normaliseSlug, seoFields, validateSlug } from './fields'
 
 const MAX_DEPTH = 4
+
+const httpsLink = (value: string | null | undefined) => !value || /^https:\/\/[^\s]+$/.test(value) || 'Use a full web address that starts with https://.'
 
 /**
  * Country → region → city hierarchy (implementation plan §4 and §5).
@@ -69,6 +72,199 @@ export const Destinations: CollectionConfig = {
   fields: [
     { name: 'name', type: 'text', required: true },
     {
+      type: 'tabs',
+      tabs: [
+        {
+          label: 'Introduction',
+          description: 'What readers see first. A destination appears in the Destinations list once it has an introduction or a published guide.',
+          fields: [
+            { name: 'summary', type: 'textarea', required: true, maxLength: 300, admin: { description: 'One or two sentences: what this place is and who it suits. Used at the top of the page, on cards and in search results.' } },
+            {
+              name: 'heroImage',
+              label: 'Main photo',
+              type: 'upload',
+              relationTo: 'images',
+              admin: { description: 'Optional. Shown at the top of the page with its credit. Upload it under Editorial photos first.' },
+            },
+            { name: 'body', label: 'Introduction', type: 'richText', admin: { description: 'Original writing: what the place is like, main experiences and trade-offs, getting there and around, where to stay. Use headings (H2) for each part.' } },
+            {
+              name: 'goodFor',
+              label: 'Good for',
+              type: 'text',
+              maxLength: 160,
+              admin: { description: 'Optional. Short and specific, for example "First trips to Asia, food lovers, rail travel".' },
+            },
+            {
+              name: 'timeNeeded',
+              label: 'Time to allow',
+              type: 'text',
+              maxLength: 120,
+              admin: { description: 'Optional. For example "10 to 14 days for a first trip". Explain the reasoning in the introduction.' },
+            },
+            {
+              name: 'author',
+              type: 'relationship',
+              relationTo: 'authors',
+              admin: { description: 'Optional. Who wrote this page. Shown with a link to their author page.' },
+            },
+          ],
+        },
+        {
+          label: 'When to go',
+          fields: [
+            {
+              name: 'bestMonths',
+              label: 'Best months',
+              type: 'select',
+              hasMany: true,
+              options: MONTHS.map((m) => ({ label: MONTH_NAMES[m], value: m })),
+              admin: { description: 'The months most travellers will enjoy most. Explain why below.' },
+            },
+            {
+              name: 'goodMonths',
+              label: 'Good months',
+              type: 'select',
+              hasMany: true,
+              options: MONTHS.map((m) => ({ label: MONTH_NAMES[m], value: m })),
+              admin: { description: 'Also worth it, with trade-offs (heat, rain, crowds, prices). Months in neither list show as "check conditions".' },
+            },
+            {
+              name: 'whenToGo',
+              label: 'When to go: explanation',
+              type: 'textarea',
+              maxLength: 900,
+              validate: (value: string | null | undefined, { siblingData }: { siblingData: Record<string, unknown> }) => {
+                const rated = (Array.isArray(siblingData?.bestMonths) && siblingData.bestMonths.length > 0) || (Array.isArray(siblingData?.goodMonths) && siblingData.goodMonths.length > 0)
+                return !rated || (value && value.trim().length >= 40) ? true : 'Explain the months you chose in a sentence or two: weather, crowds, prices, events.'
+              },
+              admin: { description: 'Required when months are chosen. Say why: weather, crowds, prices, school holidays in Australia, festivals.' },
+            },
+          ],
+        },
+        {
+          label: 'Key facts and sources',
+          description: 'Facts readers may act on. Entry rules, government advice, health and emergency numbers need an official source.',
+          fields: [
+            {
+              name: 'facts',
+              label: 'Key facts',
+              type: 'array',
+              maxRows: 12,
+              labels: { singular: 'Fact', plural: 'Facts' },
+              admin: { initCollapsed: false },
+              fields: [
+                {
+                  type: 'row',
+                  fields: [
+                    { name: 'kind', type: 'select', required: true, options: FACT_KINDS.map((k) => ({ label: k.label, value: k.value })), admin: { width: '40%' } },
+                    {
+                      name: 'label',
+                      type: 'text',
+                      maxLength: 40,
+                      validate: (value: string | null | undefined, { siblingData }: { siblingData: Record<string, unknown> }) =>
+                        siblingData?.kind !== 'other' || (value && value.trim()) ? true : 'Write a label for this fact.',
+                      admin: { width: '60%', condition: (_, sibling) => sibling?.kind === 'other', description: 'For example "Local SIM cards".' },
+                    },
+                  ],
+                },
+                { name: 'value', type: 'textarea', required: true, maxLength: 300, admin: { description: 'Short and exact. For example "Japanese yen (JPY). Cards are widely accepted in cities; carry cash for rural areas."' } },
+                {
+                  type: 'row',
+                  fields: [
+                    {
+                      name: 'sourceName',
+                      label: 'Source',
+                      type: 'text',
+                      maxLength: 120,
+                      validate: (value: string | null | undefined, { siblingData }: { siblingData: Record<string, unknown> }) =>
+                        !factNeedsSource(siblingData?.kind) || (value && value.trim()) ? true : 'This fact needs an official source, for example "Smartraveller" or "Embassy of Japan in Australia".',
+                      admin: { width: '40%' },
+                    },
+                    {
+                      name: 'sourceUrl',
+                      label: 'Source link',
+                      type: 'text',
+                      validate: (value: string | null | undefined, { siblingData }: { siblingData: Record<string, unknown> }) => {
+                        if (factNeedsSource(siblingData?.kind) && !value) return 'Add the link to the official page.'
+                        if (siblingData?.sourceName && !value) return 'Add the link for this source.'
+                        return httpsLink(value)
+                      },
+                      admin: { width: '60%' },
+                    },
+                  ],
+                },
+              ],
+            },
+            {
+              name: 'factsCheckedAt',
+              label: 'Facts checked on',
+              type: 'date',
+              validate: (value: unknown, { siblingData }: { siblingData: Record<string, unknown> }) =>
+                !Array.isArray(siblingData?.facts) || siblingData.facts.length === 0 || value ? true : 'Enter the date you checked these facts against their sources.',
+              admin: { date: { pickerAppearance: 'dayOnly', displayFormat: 'd MMM yyyy' }, description: 'The day you last checked every fact against its source. Shown on the page. Change it only after a real check.' },
+            },
+            {
+              name: 'sources',
+              label: 'Other sources used on this page',
+              type: 'array',
+              maxRows: 20,
+              labels: { singular: 'Source', plural: 'Sources' },
+              admin: { description: 'Official or reliable pages that support the introduction and "When to go". Shown at the bottom of the page.' },
+              fields: [
+                {
+                  type: 'row',
+                  fields: [
+                    { name: 'name', type: 'text', required: true, maxLength: 120, admin: { width: '40%' } },
+                    { name: 'url', type: 'text', required: true, validate: httpsLink, admin: { width: '60%' } },
+                  ],
+                },
+              ],
+            },
+          ],
+        },
+        {
+          label: 'Questions',
+          fields: [
+            {
+              name: 'faqs',
+              label: 'Common questions',
+              type: 'array',
+              maxRows: 8,
+              labels: { singular: 'Question', plural: 'Questions' },
+              admin: { description: 'Optional. Real questions travellers ask, answered directly in two to four sentences. Do not repeat what the page already says.' },
+              fields: [
+                { name: 'question', type: 'text', required: true, maxLength: 160 },
+                { name: 'answer', type: 'textarea', required: true, maxLength: 800 },
+              ],
+            },
+          ],
+        },
+        { label: 'Search appearance', fields: [seoFields] },
+        {
+          label: 'Names and import record',
+          fields: [
+          {
+            name: 'aliases',
+            type: 'text',
+            hasMany: true,
+            admin: { description: 'Other names people search for, for example "Saigon" for Ho Chi Minh City.' },
+          },
+          {
+            name: 'source',
+            type: 'group',
+            admin: { description: 'Where this record came from. Imported records keep their licence and source id.' },
+            fields: [
+              { name: 'name', type: 'text', admin: { readOnly: true } },
+              { name: 'externalId', type: 'text', index: true, admin: { readOnly: true } },
+              { name: 'licence', type: 'text', admin: { readOnly: true } },
+              { name: 'importedAt', type: 'date', admin: { readOnly: true } },
+            ],
+          },
+          ],
+        },
+      ],
+    },
+    {
       name: 'slug',
       type: 'text',
       required: true,
@@ -118,12 +314,6 @@ export const Destinations: CollectionConfig = {
         !value || /^#[0-9a-fA-F]{6}$/.test(value) ? true : 'Use a six-digit hex colour, for example #2e4a50.',
       admin: { position: 'sidebar', description: 'Optional. Destination signature colour. It must be dark enough for light text.' },
     },
-    {
-      name: 'aliases',
-      type: 'text',
-      hasMany: true,
-      admin: { description: 'Other names people search for, for example "Saigon" for Ho Chi Minh City.' },
-    },
     { name: 'latitude', type: 'number', min: -90, max: 90, admin: { position: 'sidebar' } },
     { name: 'longitude', type: 'number', min: -180, max: 180, admin: { position: 'sidebar' } },
     {
@@ -150,19 +340,5 @@ export const Destinations: CollectionConfig = {
       access: { create: administratorOnlyField, update: administratorOnlyField },
       admin: { position: 'sidebar', description: 'Tick only after checking that this destination’s community page has useful content. Until then the page stays out of search engines and the sitemap.' },
     },
-    {
-      name: 'source',
-      type: 'group',
-      admin: { description: 'Where this record came from. Imported records keep their licence and source id.' },
-      fields: [
-        { name: 'name', type: 'text', admin: { readOnly: true } },
-        { name: 'externalId', type: 'text', index: true, admin: { readOnly: true } },
-        { name: 'licence', type: 'text', admin: { readOnly: true } },
-        { name: 'importedAt', type: 'date', admin: { readOnly: true } },
-      ],
-    },
-    { name: 'summary', type: 'textarea', required: true, admin: { description: 'One or two sentences used on cards and at the top of the hub.' } },
-    { name: 'body', type: 'richText', admin: { description: 'Original introduction, best-time guidance and practical notes.' } },
-    seoFields,
   ],
 }

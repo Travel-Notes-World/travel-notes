@@ -19,7 +19,7 @@
   --on-marine: #ffffff;
   --ochre-500: #d4a017;   /* gold: main call to action (navy text on gold) */
   --ochre-600: #c2920f;
-  --ochre-700: #8a6d1a;   /* gold as text on light backgrounds */
+  --ochre-700: #7d6217;   /* gold as text on light backgrounds (4.9:1 on ochre-100, 5.8:1 on white) */
   --ochre-100: #f7edd0;
   --signal-error: #a6261f;
   --signal-success: #2d6a3a;

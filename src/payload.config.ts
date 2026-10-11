@@ -13,6 +13,7 @@ import { ContactMessages } from './collections/ContactMessages'
 import { NewsletterSubscribers } from './collections/NewsletterSubscribers'
 import { communityCollections } from './collections/community'
 import { Destinations } from './collections/Destinations'
+import { Images } from './collections/Images'
 import { Staff } from './collections/Staff'
 import { staffTwoFactorDisabled } from './access/twoFactor'
 import { Topics } from './collections/Topics'
@@ -39,16 +40,16 @@ export default buildConfig({
     importMap: { baseDir: path.resolve(dirname) },
     components: { beforeDashboard: ['/components/admin/CommunityModerationLink'] },
   },
-  collections: [Articles, TravelUpdates, Destinations, Topics, Redirects, Authors, Staff, ContactMessages, NewsletterSubscribers, ...communityCollections],
+  collections: [Articles, TravelUpdates, Destinations, Images, Topics, Redirects, Authors, Staff, ContactMessages, NewsletterSubscribers, ...communityCollections],
   globals: [CommunitySettings],
   // Uploads over the limit are refused, not silently cut short.
   upload: { limits: { fileSize: LIMITS.uploadMaxBytes }, abortOnLimit: true },
   plugins: [
-    // Member photos go to S3-compatible storage (Cloudflare R2) when it is configured. Files are still
+    // Member photos and editorial photos go to S3-compatible storage (Cloudflare R2) when it is configured. Files are still
     // served through the CMS, so the "approved photos only" rule guards every file address.
     s3Storage({
       enabled: Boolean(s3),
-      collections: { media: true },
+      collections: { media: true, images: true },
       bucket: s3?.bucket ?? 'not-configured',
       config: s3 ? { endpoint: s3.endpoint, region: s3.region, credentials: s3.credentials, forcePathStyle: true } : {},
     }),

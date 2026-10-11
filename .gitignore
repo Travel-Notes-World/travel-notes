@@ -41,4 +41,5 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 /media
+/media-editorial
 /tests/e2e/shots

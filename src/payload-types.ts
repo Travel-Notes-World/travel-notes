@@ -71,6 +71,7 @@ export interface Config {
     articles: Article;
     'travel-updates': TravelUpdate;
     destinations: Destination;
+    images: Image;
     topics: Topic;
     redirects: Redirect;
     authors: Author;
@@ -106,6 +107,7 @@ export interface Config {
     articles: ArticlesSelect<false> | ArticlesSelect<true>;
     'travel-updates': TravelUpdatesSelect<false> | TravelUpdatesSelect<true>;
     destinations: DestinationsSelect<false> | DestinationsSelect<true>;
+    images: ImagesSelect<false> | ImagesSelect<true>;
     topics: TopicsSelect<false> | TopicsSelect<true>;
     redirects: RedirectsSelect<false> | RedirectsSelect<true>;
     authors: AuthorsSelect<false> | AuthorsSelect<true>;
@@ -378,6 +380,135 @@ export interface Destination {
   id: string;
   name: string;
   /**
+   * One or two sentences: what this place is and who it suits. Used at the top of the page, on cards and in search results.
+   */
+  summary: string;
+  /**
+   * Optional. Shown at the top of the page with its credit. Upload it under Editorial photos first.
+   */
+  heroImage?: (string | null) | Image;
+  /**
+   * Original writing: what the place is like, main experiences and trade-offs, getting there and around, where to stay. Use headings (H2) for each part.
+   */
+  body?: {
+    root: {
+      type: string;
+      children: {
+        type: any;
+        version: number;
+        [k: string]: unknown;
+      }[];
+      direction: ('ltr' | 'rtl') | null;
+      format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | '';
+      indent: number;
+      version: number;
+    };
+    [k: string]: unknown;
+  } | null;
+  /**
+   * Optional. Short and specific, for example "First trips to Asia, food lovers, rail travel".
+   */
+  goodFor?: string | null;
+  /**
+   * Optional. For example "10 to 14 days for a first trip". Explain the reasoning in the introduction.
+   */
+  timeNeeded?: string | null;
+  /**
+   * Optional. Who wrote this page. Shown with a link to their author page.
+   */
+  author?: (string | null) | Author;
+  /**
+   * The months most travellers will enjoy most. Explain why below.
+   */
+  bestMonths?: ('jan' | 'feb' | 'mar' | 'apr' | 'may' | 'jun' | 'jul' | 'aug' | 'sep' | 'oct' | 'nov' | 'dec')[] | null;
+  /**
+   * Also worth it, with trade-offs (heat, rain, crowds, prices). Months in neither list show as "check conditions".
+   */
+  goodMonths?: ('jan' | 'feb' | 'mar' | 'apr' | 'may' | 'jun' | 'jul' | 'aug' | 'sep' | 'oct' | 'nov' | 'dec')[] | null;
+  /**
+   * Required when months are chosen. Say why: weather, crowds, prices, school holidays in Australia, festivals.
+   */
+  whenToGo?: string | null;
+  facts?:
+    | {
+        kind:
+          | 'visa'
+          | 'advice'
+          | 'health'
+          | 'emergency'
+          | 'currency'
+          | 'language'
+          | 'plugs'
+          | 'driving'
+          | 'tipping'
+          | 'water'
+          | 'flights'
+          | 'other';
+        /**
+         * For example "Local SIM cards".
+         */
+        label?: string | null;
+        /**
+         * Short and exact. For example "Japanese yen (JPY). Cards are widely accepted in cities; carry cash for rural areas."
+         */
+        value: string;
+        sourceName?: string | null;
+        sourceUrl?: string | null;
+        id?: string | null;
+      }[]
+    | null;
+  /**
+   * The day you last checked every fact against its source. Shown on the page. Change it only after a real check.
+   */
+  factsCheckedAt?: string | null;
+  /**
+   * Official or reliable pages that support the introduction and "When to go". Shown at the bottom of the page.
+   */
+  sources?:
+    | {
+        name: string;
+        url: string;
+        id?: string | null;
+      }[]
+    | null;
+  /**
+   * Optional. Real questions travellers ask, answered directly in two to four sentences. Do not repeat what the page already says.
+   */
+  faqs?:
+    | {
+        question: string;
+        answer: string;
+        id?: string | null;
+      }[]
+    | null;
+  seo: {
+    /**
+     * Title shown in search results. Aim for about 50 to 60 characters.
+     */
+    title: string;
+    /**
+     * Summary shown in search results. Aim for about 140 to 160 characters.
+     */
+    description: string;
+    /**
+     * Tick to ask search engines not to index this page.
+     */
+    noindex?: boolean | null;
+  };
+  /**
+   * Other names people search for, for example "Saigon" for Ho Chi Minh City.
+   */
+  aliases?: string[] | null;
+  /**
+   * Where this record came from. Imported records keep their licence and source id.
+   */
+  source?: {
+    name?: string | null;
+    externalId?: string | null;
+    licence?: string | null;
+    importedAt?: string | null;
+  };
+  /**
    * One URL segment only, for example "kyoto". The full path is built from the parent.
    */
   slug: string;
@@ -398,10 +529,6 @@ export interface Destination {
    * Optional. Destination signature colour. It must be dark enough for light text.
    */
   accentColour?: string | null;
-  /**
-   * Other names people search for, for example "Saigon" for Ho Chi Minh City.
-   */
-  aliases?: string[] | null;
   latitude?: number | null;
   longitude?: number | null;
   /**
@@ -416,54 +543,78 @@ export interface Destination {
    * Tick only after checking that this destination’s community page has useful content. Until then the page stays out of search engines and the sitemap.
    */
   hubIndexable?: boolean | null;
-  /**
-   * Where this record came from. Imported records keep their licence and source id.
-   */
-  source?: {
-    name?: string | null;
-    externalId?: string | null;
-    licence?: string | null;
-    importedAt?: string | null;
-  };
-  /**
-   * One or two sentences used on cards and at the top of the hub.
-   */
-  summary: string;
-  /**
-   * Original introduction, best-time guidance and practical notes.
-   */
-  body?: {
-    root: {
-      type: string;
-      children: {
-        type: any;
-        version: number;
-        [k: string]: unknown;
-      }[];
-      direction: ('ltr' | 'rtl') | null;
-      format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | '';
-      indent: number;
-      version: number;
-    };
-    [k: string]: unknown;
-  } | null;
-  seo: {
-    /**
-     * Title shown in search results. Aim for about 50 to 60 characters.
-     */
-    title: string;
-    /**
-     * Summary shown in search results. Aim for about 140 to 160 characters.
-     */
-    description: string;
-    /**
-     * Tick to ask search engines not to index this page.
-     */
-    noindex?: boolean | null;
-  };
   updatedAt: string;
   createdAt: string;
   _status?: ('draft' | 'published') | null;
+}
+/**
+ * Photos for destination pages and guides. Only upload a photo we have the right to use.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "images".
+ */
+export interface Image {
+  id: string;
+  /**
+   * What the photo shows, for people who cannot see it. For example: "Boat shed on Dove Lake with Cradle Mountain behind".
+   */
+  alt: string;
+  /**
+   * Optional. Where and when it was taken, if that helps the reader. For example: "Cradle Mountain, Tasmania, May 2025".
+   */
+  caption?: string | null;
+  /**
+   * Who took the photo, exactly as the owner wants to be credited.
+   */
+  credit: string;
+  licence: 'own' | 'permission' | 'cc-by' | 'cc-by-sa' | 'cc0';
+  /**
+   * Required for Creative Commons photos.
+   */
+  licenceUrl?: string | null;
+  /**
+   * Optional. The page where the photo was found, for example its Wikimedia Commons page.
+   */
+  sourceUrl?: string | null;
+  rightsConfirmed: boolean;
+  _objectKey?: string | null;
+  updatedAt: string;
+  createdAt: string;
+  url?: string | null;
+  thumbnailURL?: string | null;
+  filename?: string | null;
+  mimeType?: string | null;
+  filesize?: number | null;
+  width?: number | null;
+  height?: number | null;
+  focalX?: number | null;
+  focalY?: number | null;
+  sizes?: {
+    thumb?: {
+      url?: string | null;
+      width?: number | null;
+      height?: number | null;
+      mimeType?: string | null;
+      filesize?: number | null;
+      filename?: string | null;
+    };
+    card?: {
+      url?: string | null;
+      width?: number | null;
+      height?: number | null;
+      mimeType?: string | null;
+      filesize?: number | null;
+      filename?: string | null;
+    };
+    large?: {
+      url?: string | null;
+      width?: number | null;
+      height?: number | null;
+      mimeType?: string | null;
+      filesize?: number | null;
+      filename?: string | null;
+    };
+  };
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
@@ -522,7 +673,6 @@ export interface Staff {
    */
   communityModerator?: boolean | null;
   totpSecret?: string | null;
-  hasTotp?: boolean | null;
   updatedAt: string;
   createdAt: string;
   email: string;
@@ -1487,6 +1637,10 @@ export interface PayloadLockedDocument {
         value: string | Destination;
       } | null)
     | ({
+        relationTo: 'images';
+        value: string | Image;
+      } | null)
+    | ({
         relationTo: 'topics';
         value: string | Topic;
       } | null)
@@ -1741,18 +1895,48 @@ export interface TravelUpdatesSelect<T extends boolean = true> {
  */
 export interface DestinationsSelect<T extends boolean = true> {
   name?: T;
-  slug?: T;
-  kind?: T;
-  parent?: T;
-  path?: T;
-  isoCountryCode?: T;
-  accentColour?: T;
+  summary?: T;
+  heroImage?: T;
+  body?: T;
+  goodFor?: T;
+  timeNeeded?: T;
+  author?: T;
+  bestMonths?: T;
+  goodMonths?: T;
+  whenToGo?: T;
+  facts?:
+    | T
+    | {
+        kind?: T;
+        label?: T;
+        value?: T;
+        sourceName?: T;
+        sourceUrl?: T;
+        id?: T;
+      };
+  factsCheckedAt?: T;
+  sources?:
+    | T
+    | {
+        name?: T;
+        url?: T;
+        id?: T;
+      };
+  faqs?:
+    | T
+    | {
+        question?: T;
+        answer?: T;
+        id?: T;
+      };
+  seo?:
+    | T
+    | {
+        title?: T;
+        description?: T;
+        noindex?: T;
+      };
   aliases?: T;
-  latitude?: T;
-  longitude?: T;
-  timeZone?: T;
-  population?: T;
-  hubIndexable?: T;
   source?:
     | T
     | {
@@ -1761,18 +1945,79 @@ export interface DestinationsSelect<T extends boolean = true> {
         licence?: T;
         importedAt?: T;
       };
-  summary?: T;
-  body?: T;
-  seo?:
-    | T
-    | {
-        title?: T;
-        description?: T;
-        noindex?: T;
-      };
+  slug?: T;
+  kind?: T;
+  parent?: T;
+  path?: T;
+  isoCountryCode?: T;
+  accentColour?: T;
+  latitude?: T;
+  longitude?: T;
+  timeZone?: T;
+  population?: T;
+  hubIndexable?: T;
   updatedAt?: T;
   createdAt?: T;
   _status?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "images_select".
+ */
+export interface ImagesSelect<T extends boolean = true> {
+  alt?: T;
+  caption?: T;
+  credit?: T;
+  licence?: T;
+  licenceUrl?: T;
+  sourceUrl?: T;
+  rightsConfirmed?: T;
+  _objectKey?: T;
+  updatedAt?: T;
+  createdAt?: T;
+  url?: T;
+  thumbnailURL?: T;
+  filename?: T;
+  mimeType?: T;
+  filesize?: T;
+  width?: T;
+  height?: T;
+  focalX?: T;
+  focalY?: T;
+  sizes?:
+    | T
+    | {
+        thumb?:
+          | T
+          | {
+              url?: T;
+              width?: T;
+              height?: T;
+              mimeType?: T;
+              filesize?: T;
+              filename?: T;
+            };
+        card?:
+          | T
+          | {
+              url?: T;
+              width?: T;
+              height?: T;
+              mimeType?: T;
+              filesize?: T;
+              filename?: T;
+            };
+        large?:
+          | T
+          | {
+              url?: T;
+              width?: T;
+              height?: T;
+              mimeType?: T;
+              filesize?: T;
+              filename?: T;
+            };
+      };
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
@@ -1836,7 +2081,6 @@ export interface StaffSelect<T extends boolean = true> {
   active?: T;
   communityModerator?: T;
   totpSecret?: T;
-  hasTotp?: T;
   updatedAt?: T;
   createdAt?: T;
   email?: T;
