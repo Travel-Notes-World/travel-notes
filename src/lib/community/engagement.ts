@@ -18,33 +18,51 @@ import type { MemberActor } from './types'
  * recounted from the real rows rather than added to.
  */
 
-/** Mark an approved answer or post as helpful, or take the mark back. One vote per member; not on your own content. */
-export async function setVote(actor: MemberActor, input: { targetType: unknown; targetId: unknown; on: boolean }): Promise<{ on: boolean; count: number }> {
+export type VoteValue = 1 | -1 | 0
+
+/** Recount a target's likes (and, for replies, dislikes and score) from the real vote rows. */
+export async function recountVotes(payload: Parameters<typeof run>[0], targetType: 'reply' | 'contribution', targetId: string, req?: Parameters<typeof run>[2]): Promise<{ likes: number; dislikes: number }> {
+  const likes = sql`(SELECT COUNT(*) FROM "votes" WHERE "target_type" = ${targetType}::"enum_votes_target_type" AND "target_id" = ${targetId} AND "value" > 0)`
+  const dislikes = sql`(SELECT COUNT(*) FROM "votes" WHERE "target_type" = ${targetType}::"enum_votes_target_type" AND "target_id" = ${targetId} AND "value" < 0)`
+  const result = targetType === 'reply'
+    ? await run(payload, sql`UPDATE "replies" SET "helpful_count" = ${likes}, "dislike_count" = ${dislikes}, "score" = ${likes} - ${dislikes} WHERE "id" = ${targetId}::uuid RETURNING "helpful_count", "dislike_count"`, req)
+    : await run(payload, sql`UPDATE "contributions" SET "helpful_count" = ${likes} WHERE "id" = ${targetId}::uuid RETURNING "helpful_count"`, req)
+  return { likes: Number(result.rows[0]?.helpful_count ?? 0), dislikes: Number(result.rows[0]?.dislike_count ?? 0) }
+}
+
+/**
+ * Like or dislike an approved reply, or mark a post as helpful; or take the vote back.
+ * One vote per member per item, never on your own content. Posts only take likes: a dislike
+ * button on someone's question would only discourage people from asking.
+ *
+ * `value`: 1 like, -1 dislike, 0 remove. The older `on` flag still works and means like / remove.
+ */
+export async function setVote(actor: MemberActor, input: { targetType: unknown; targetId: unknown; on?: boolean; value?: unknown }): Promise<{ on: boolean; value: VoteValue; count: number; likes: number; dislikes: number }> {
   const member = await requireActive(actor)
   await limit('vote', member.id)
   const targetType = input.targetType === 'reply' || input.targetType === 'contribution' ? input.targetType : fail('validation', 'Unknown item.')
   if (!isUuid(input.targetId)) fail('not_found', 'That item could not be found.')
   const targetId = input.targetId as string
+  const raw = input.value === undefined ? (input.on ? 1 : 0) : Number(input.value)
+  const value: VoteValue = raw === 1 ? 1 : raw === -1 ? -1 : 0
+  if (value === -1 && targetType !== 'reply') fail('validation', 'Only replies and answers can be disliked.')
   const payload = await cms()
   const target = targetType === 'reply'
     ? await payload.findByID({ collection: 'replies', id: targetId, depth: 0, disableErrors: true })
     : await payload.findByID({ collection: 'contributions', id: targetId, depth: 0, disableErrors: true })
   if (!target || target.state !== 'published') return fail('not_found', 'That item could not be found.')
-  if (relId(target.author) === member.id) fail('forbidden', 'You cannot mark your own post as helpful.')
+  if (relId(target.author) === member.id) fail('forbidden', 'You cannot vote on your own post.')
   const key = `${member.id}:${targetType}:${targetId}`
-  const table = targetType === 'reply' ? sql`"replies"` : sql`"contributions"`
   return inTransaction(async (tx) => {
-    if (input.on) {
-      await run(tx.payload, sql`INSERT INTO "votes" ("key", "member_id", "target_type", "target_id") VALUES (${key}, ${member.id}::uuid, ${targetType}::"enum_votes_target_type", ${targetId}) ON CONFLICT ("key") DO NOTHING`, tx.req)
-    } else {
+    if (value === 0) {
       await run(tx.payload, sql`DELETE FROM "votes" WHERE "key" = ${key}`, tx.req)
+    } else {
+      // A second click, a retry or a change of mind updates the one row; it never adds a second vote.
+      await run(tx.payload, sql`INSERT INTO "votes" ("key", "member_id", "target_type", "target_id", "value") VALUES (${key}, ${member.id}::uuid, ${targetType}::"enum_votes_target_type", ${targetId}, ${value})
+        ON CONFLICT ("key") DO UPDATE SET "value" = EXCLUDED."value", "updated_at" = now()`, tx.req)
     }
-    const counted = await run(
-      tx.payload,
-      sql`UPDATE ${table} SET "helpful_count" = (SELECT COUNT(*) FROM "votes" WHERE "target_type" = ${targetType}::"enum_votes_target_type" AND "target_id" = ${targetId}) WHERE "id" = ${targetId}::uuid RETURNING "helpful_count"`,
-      tx.req,
-    )
-    return { on: input.on, count: Number(counted.rows[0]?.helpful_count ?? 0) }
+    const counts = await recountVotes(tx.payload, targetType, targetId, tx.req)
+    return { on: value === 1, value, count: counts.likes, likes: counts.likes, dislikes: counts.dislikes }
   })
 }
 
@@ -163,7 +181,7 @@ export async function publicAttendees(activityId: string): Promise<{ handle: str
   return result.rows.map((r) => ({ handle: String(r.handle), displayName: String(r.display_name), status: String(r.status) }))
 }
 
-export type MemberState = { bookmarked: boolean; voted: boolean; votedReplies: string[]; rsvp: { status: string; showPublicly: boolean } | null; isAuthor: boolean }
+export type MemberState = { bookmarked: boolean; voted: boolean; votedReplies: string[]; dislikedReplies: string[]; rsvp: { status: string; showPublicly: boolean } | null; isAuthor: boolean }
 
 /** What the signed-in member has done on one post, for showing the right buttons. Their own data only. */
 export async function memberStateFor(actor: MemberActor, post: { id: string; authorId: string | null }, replyIds: string[]): Promise<MemberState> {
@@ -176,7 +194,8 @@ export async function memberStateFor(actor: MemberActor, post: { id: string; aut
   return {
     bookmarked: bookmark.totalDocs > 0,
     voted: votes.docs.some((v) => v.targetType === 'contribution' && v.targetId === post.id),
-    votedReplies: votes.docs.filter((v) => v.targetType === 'reply').map((v) => v.targetId),
+    votedReplies: votes.docs.filter((v) => v.targetType === 'reply' && (v.value ?? 1) > 0).map((v) => v.targetId),
+    dislikedReplies: votes.docs.filter((v) => v.targetType === 'reply' && (v.value ?? 1) < 0).map((v) => v.targetId),
     rsvp: rsvp.docs[0] ? { status: rsvp.docs[0].status, showPublicly: Boolean(rsvp.docs[0].showPublicly) } : null,
     isAuthor: post.authorId === actor.id,
   }
