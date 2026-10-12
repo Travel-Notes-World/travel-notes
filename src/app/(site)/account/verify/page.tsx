@@ -3,7 +3,8 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 
 import { ResendVerificationForm } from "@/components/community/auth-forms";
-import { Notice, PageHeader, PageShell, buttonClass } from "@/components/community/ui";
+import { SubmitButton } from "@/components/community/client";
+import { Notice, PageHeader, PageShell } from "@/components/community/ui";
 import { isCommunityError } from "@/lib/community/errors";
 import { verifyEmail } from "@/lib/community/members";
 
@@ -14,7 +15,7 @@ export const metadata: Metadata = { title: "Confirm your email", robots: { index
  * open every link can therefore not confirm an account on someone's behalf.
  */
 export default async function VerifyPage({ searchParams }: { searchParams: Promise<Record<string, string | undefined>> }) {
-  const { token = "" } = await searchParams;
+  const { token = "", failed: pressed } = await searchParams;
   async function confirm(form: FormData) {
     "use server";
     const value = String(form.get("token") ?? "");
@@ -32,14 +33,21 @@ export default async function VerifyPage({ searchParams }: { searchParams: Promi
       <PageHeader eyebrow="Community account" title="Confirm your email address" />
       {failed ? (
         <>
-          <Notice tone="error" title="This link did not work">It may have been used already or copied incompletely. If you already confirmed, you can <Link href="/account/sign-in" className="text-marine-600 underline">sign in</Link>.</Notice>
+          {pressed ? (
+            <Notice tone="error" title="We could not confirm with this link">
+              If you pressed the button more than once, your email is probably already confirmed. Please try to{" "}
+              <Link href="/account/sign-in" className="text-marine-600 underline">sign in</Link> first. If sign-in asks you to confirm your email, send a new link below.
+            </Notice>
+          ) : (
+            <Notice tone="error" title="This link did not work">It may have been used already or copied incompletely. If you already confirmed, you can <Link href="/account/sign-in" className="text-marine-600 underline">sign in</Link>.</Notice>
+          )}
           <ResendVerificationForm />
         </>
       ) : (
         <form action={confirm}>
           <input type="hidden" name="token" value={token} />
           <p className="t-body max-w-measure">Press the button to confirm this email address and finish creating your account.</p>
-          <button type="submit" className={buttonClass}>Confirm my email address</button>
+          <SubmitButton pendingText="Confirming, please wait…">Confirm my email address</SubmitButton>
         </form>
       )}
     </PageShell>
