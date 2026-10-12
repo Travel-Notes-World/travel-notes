@@ -22,7 +22,8 @@ const sections: PolicySection[] = [
     body: (
       <>
         <p>
-          Travel Notes (travelnotesworld.com) is run by Jeeva Palasundram, an individual based in Australia. In this policy
+          Travel Notes (travelnotesworld.com) is run by Jeevarasa (Jeeva) Palasundram as trustee for The Palasundram Family
+          Trust, ABN 99 253 199 401, based in the Australian Capital Territory. In this policy
           &ldquo;we&rdquo; and &ldquo;us&rdquo; mean Travel Notes.
         </p>
         <p>
