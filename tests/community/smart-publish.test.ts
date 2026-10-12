@@ -20,8 +20,8 @@ before(async () => {
   await openCommunity({ review: { smartPublish: true, smartPublishMinApproved: 1, autoHideReports: 3 } })
 })
 
-const load = (id: string) => payload.findByID({ collection: 'contributions', id, depth: 0 })
-const lastAudit = async (contribution: string) => (await payload.find({ collection: 'moderation-actions', where: { contribution: { equals: contribution } }, sort: '-createdAt', limit: 5, depth: 0 })).docs
+const load = (id: string): Promise<Any> => payload.findByID({ collection: 'contributions', id, depth: 0 })
+const lastAudit = async (contribution: string): Promise<Any[]> => (await payload.find({ collection: 'moderation-actions', where: { contribution: { equals: contribution } }, sort: '-createdAt', limit: 5, depth: 0 })).docs
 
 describe('spam checks', () => {
   it('flag links, contact details, spam words, shouting and repeated characters', () => {
@@ -146,5 +146,28 @@ describe('reports', () => {
     // A moderator can bring it back.
     await M.setVisibility(moderator(), doc.id, { action: 'unhide' })
     assert.equal((await load(doc.id)).state, 'published')
+  })
+})
+
+describe('sexual content and photos', () => {
+  it('sexual or adult-services words are held, without catching ordinary words', () => {
+    assert.ok(reviewReasons({ body: 'Looking for escorts near the hotel tonight.' }).includes('sexual_content'))
+    assert.ok(reviewReasons({ title: 'Is the nude beach family friendly?', body: 'We want to avoid it with the kids, which part of the coast is it on?' }).includes('sexual_content'))
+    assert.deepEqual(reviewReasons({ title: 'Day trips from London to Sussex and Essex', body: 'Which towns are worth a full day by train in the summer holidays?' }), [])
+  })
+
+  it('an established member’s post with a new photo waits; one that only keeps approved photos does not', async () => {
+    const { decidePublishing } = await import('../../src/lib/community/spam')
+    const base = { enabled: true, minApproved: 1, text: { title: 'Kyoto in spring', body: 'Five slow days, here is what it cost.' } }
+    assert.deepEqual(decidePublishing({ ...base, member: { trusted: false, approvedCount: 3 }, newPhotos: 1 }), { publish: false, reasons: ['has new photos'] })
+    assert.deepEqual(decidePublishing({ ...base, member: { trusted: false, approvedCount: 3 }, newPhotos: 0 }), { publish: true })
+    assert.deepEqual(decidePublishing({ ...base, member: { trusted: true, approvedCount: 0 }, newPhotos: 2 }), { publish: true })
+  })
+
+  it('members can report sexual or adult content', async () => {
+    const author = await newMember('Poster')
+    const doc = await published(author, 'question', questionInput({ title: 'Which beach is quietest in the early morning?' }))
+    const result = await REP.createReport(await newMember('Reporter S'), { targetType: 'contribution', targetId: doc.id, category: 'sexual_content' })
+    assert.equal(result.alreadyReported, false)
   })
 })

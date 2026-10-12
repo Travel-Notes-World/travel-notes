@@ -709,7 +709,6 @@ export interface Staff {
    */
   communityModerator?: boolean | null;
   totpSecret?: string | null;
-  hasTotp?: boolean | null;
   updatedAt: string;
   createdAt: string;
   email: string;
@@ -1441,7 +1440,15 @@ export interface Report {
    */
   contribution?: (string | null) | Contribution;
   category:
-    'spam' | 'misleading_promotion' | 'harassment' | 'privacy' | 'copyright' | 'incorrect' | 'event_problem' | 'other';
+    | 'spam'
+    | 'misleading_promotion'
+    | 'harassment'
+    | 'sexual_content'
+    | 'privacy'
+    | 'copyright'
+    | 'incorrect'
+    | 'event_problem'
+    | 'other';
   details?: string | null;
   status: 'open' | 'resolved' | 'dismissed';
   resolution?: string | null;
@@ -2136,7 +2143,6 @@ export interface StaffSelect<T extends boolean = true> {
   active?: T;
   communityModerator?: T;
   totpSecret?: T;
-  hasTotp?: T;
   updatedAt?: T;
   createdAt?: T;
   email?: T;

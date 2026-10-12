@@ -137,7 +137,11 @@ export const AUTO_PUBLISH_REASON = 'Published automatically: the member has appr
 async function publishingFor(tx: Tx, settings: Settings, member: MemberActor, type: ContributionType, content: Content): Promise<PublishDecision> {
   if (type === 'activity') return { publish: false, reasons: ['activities are always reviewed'] }
   const doc = await tx.payload.findByID({ collection: 'members', id: member.id, depth: 0, req: tx.req, select: { trusted: true, publishedCount: true, answerCount: true } })
+  const newPhotos = content.photos.length
+    ? (await tx.payload.count({ collection: 'media', where: { and: [{ id: { in: content.photos } }, { state: { not_equals: 'approved' } }] }, req: tx.req })).totalDocs
+    : 0
   return decidePublishing({
+    newPhotos,
     enabled: settings.smartPublish,
     minApproved: settings.smartPublishMinApproved,
     member: { trusted: Boolean(doc.trusted), approvedCount: (doc.publishedCount ?? 0) + (doc.answerCount ?? 0) },

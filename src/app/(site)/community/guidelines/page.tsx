@@ -72,6 +72,7 @@ export default function GuidelinesPage() {
           <li>Spam, repeated posts, or links that have nothing to do with the discussion.</li>
           <li>Hidden advertising, fake reviews, or posts written to sell something without saying so.</li>
           <li>Harassment, threats, hate, or personal attacks. Disagree with the idea, not the person.</li>
+          <li>Sexual or sexually suggestive text or photos, nudity, or offers of adult services. Anything that sexualises a child is removed straight away and may be reported to the police or the eSafety Commissioner.</li>
           <li>Other people’s private information (see below).</li>
           <li>Text or photos copied from somewhere else without permission.</li>
           <li>Anything illegal, or advice that would put people in danger.</li>
@@ -105,7 +106,7 @@ export default function GuidelinesPage() {
       </Section>
 
       <Section id="moderation">
-        <p>A moderator checks a new member&apos;s first question, trip report or answer before it is shown to the public. After that, your posts and answers go live straight away, unless our automatic checks find something that often means spam (such as links, phone numbers or email addresses), in which case a moderator checks them first. Activities are always checked by a moderator. While something waits, you can see its status in your account.</p>
+        <p>A moderator checks a new member&apos;s first question, trip report or answer before it is shown to the public. After that, your posts and answers go live straight away, unless our automatic checks find something a person should look at first (such as links, phone numbers, email addresses, adult words or new photos). Activities are always checked by a moderator. While something waits, you can see its status in your account.</p>
         <p>If several members report a post or answer, it is hidden automatically until a moderator looks at it.</p>
         <p>A moderator can:</p>
         <ul>

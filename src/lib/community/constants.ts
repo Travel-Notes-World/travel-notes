@@ -134,6 +134,7 @@ export const REPORT_CATEGORIES = [
   { value: 'spam', label: 'Spam' },
   { value: 'misleading_promotion', label: 'Misleading commercial promotion' },
   { value: 'harassment', label: 'Harassment or abuse' },
+  { value: 'sexual_content', label: 'Sexual or adult content' },
   { value: 'privacy', label: 'Shares private information' },
   { value: 'copyright', label: 'Copyright or copied content' },
   { value: 'incorrect', label: 'Incorrect or out-of-date facts' },

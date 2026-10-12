@@ -14,6 +14,7 @@ import * as migration_20261010_083000_search_trigram from './20261010_083000_sea
 import * as migration_20261011_074339_destination_pages from './20261011_074339_destination_pages';
 import * as migration_20261011_083215_guide_photos_sources from './20261011_083215_guide_photos_sources';
 import * as migration_20261012_044025_smart_publish from './20261012_044025_smart_publish';
+import * as migration_20261012_045421_report_sexual_content from './20261012_045421_report_sexual_content';
 
 export const migrations = [
   {
@@ -94,6 +95,11 @@ export const migrations = [
   {
     up: migration_20261012_044025_smart_publish.up,
     down: migration_20261012_044025_smart_publish.down,
-    name: '20261012_044025_smart_publish'
+    name: '20261012_044025_smart_publish',
+  },
+  {
+    up: migration_20261012_045421_report_sexual_content.up,
+    down: migration_20261012_045421_report_sexual_content.down,
+    name: '20261012_045421_report_sexual_content'
   },
 ];
