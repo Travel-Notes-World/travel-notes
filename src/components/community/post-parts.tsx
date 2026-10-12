@@ -42,8 +42,8 @@ export function RepliesSection({ page, answersPage, kind }: { page: PostPage; an
             <p className="t-meta text-ink-400 mt-2 mb-0 normal-case tracking-normal">By <AuthorName author={r.author} /> · {formatDay(r.publishedAt)}</p>
             <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-2">
               {viewer.member && state
-                ? <ReplyVotes replyId={r.id} likes={r.helpfulCount} dislikes={r.dislikeCount} mine={state.votedReplies.includes(r.id) ? 1 : state.dislikedReplies.includes(r.id) ? -1 : 0} returnTo={returnTo} own={r.authorId === viewer.member.id} />
-                : <VoteCounts likes={r.helpfulCount} dislikes={r.dislikeCount} signInHref={viewer.staff ? undefined : `/account/sign-in?next=${encodeURIComponent(`${returnTo}#reply-${r.id}`)}`} />}
+                ? <ReplyVotes replyId={r.id} likes={r.helpfulCount} loves={r.loveCount} dislikes={r.dislikeCount} mine={state.votedReplies.includes(r.id) ? 1 : state.lovedReplies.includes(r.id) ? 2 : state.dislikedReplies.includes(r.id) ? -1 : 0} returnTo={returnTo} own={r.authorId === viewer.member.id} />
+                : <VoteCounts likes={r.helpfulCount} loves={r.loveCount} dislikes={r.dislikeCount} signInHref={viewer.staff ? undefined : `/account/sign-in?next=${encodeURIComponent(`${returnTo}#reply-${r.id}`)}`} />}
               {isAsker && <AcceptButton contributionId={post.id} replyId={r.id} accepted={r.accepted} returnTo={returnTo} />}
               {viewer.member && r.authorId === viewer.member.id && <RemoveReplyButton replyId={r.id} returnTo={returnTo} />}
               {viewer.member && r.authorId !== viewer.member.id && <ReportButton targetType="reply" targetId={r.id} />}
@@ -56,8 +56,8 @@ export function RepliesSection({ page, answersPage, kind }: { page: PostPage; an
                     <p className="t-meta text-ink-400 mt-1 mb-0 normal-case tracking-normal">By <AuthorName author={c.author} /> · {formatDay(c.publishedAt)}</p>
                     <div className="mt-1 flex flex-wrap items-center gap-x-4 gap-y-2">
                       {viewer.member && state
-                        ? <ReplyVotes replyId={c.id} likes={c.helpfulCount} dislikes={c.dislikeCount} mine={state.votedReplies.includes(c.id) ? 1 : state.dislikedReplies.includes(c.id) ? -1 : 0} returnTo={returnTo} own={c.authorId === viewer.member.id} />
-                        : <VoteCounts likes={c.helpfulCount} dislikes={c.dislikeCount} />}
+                        ? <ReplyVotes replyId={c.id} likes={c.helpfulCount} loves={c.loveCount} dislikes={c.dislikeCount} mine={state.votedReplies.includes(c.id) ? 1 : state.lovedReplies.includes(c.id) ? 2 : state.dislikedReplies.includes(c.id) ? -1 : 0} returnTo={returnTo} own={c.authorId === viewer.member.id} />
+                        : <VoteCounts likes={c.helpfulCount} loves={c.loveCount} dislikes={c.dislikeCount} />}
                       {viewer.member && c.authorId === viewer.member.id ? <RemoveReplyButton replyId={c.id} returnTo={returnTo} /> : viewer.member ? <ReportButton targetType="reply" targetId={c.id} /> : null}
                     </div>
                   </li>

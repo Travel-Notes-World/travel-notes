@@ -68,7 +68,7 @@ export function questionJsonLd(post: Detail, answers: ReplyView[]): Record<strin
   // QAPage needs at least one answer. Without one the page carries no question markup at all.
   if (!answers.length) return null
   const answer = (a: ReplyView) => ({
-    '@type': 'Answer', text: a.body, url: abs(`${post.path}#reply-${a.id}`), datePublished: a.publishedAt, upvoteCount: a.helpfulCount, downvoteCount: a.dislikeCount, author: person(a.author),
+    '@type': 'Answer', text: a.body, url: abs(`${post.path}#reply-${a.id}`), datePublished: a.publishedAt, upvoteCount: a.helpfulCount + a.loveCount, downvoteCount: a.dislikeCount, author: person(a.author),
   })
   const accepted = answers.find((a) => a.accepted)
   const others = answers.filter((a) => !a.accepted)

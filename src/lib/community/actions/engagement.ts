@@ -23,7 +23,7 @@ export async function voteAction(_: ActionState, form: FormData): Promise<Action
     const result = await setVote(member!, { targetType: str(form, 'targetType'), targetId: str(form, 'targetId'), ...(value ? { value: Number(value) } : { on: bool(form, 'on') }) })
     refresh(form)
     const message = str(form, 'targetType') === 'reply'
-      ? result.value === 1 ? 'You liked this.' : result.value === -1 ? 'You disliked this.' : 'Your vote is removed.'
+      ? result.value === 1 ? 'You liked this.' : result.value === 2 ? 'You loved this.' : result.value === -1 ? 'You disliked this.' : 'Your vote is removed.'
       : result.on ? 'Marked as helpful.' : 'Helpful mark removed.'
     return { ok: true, message, data: result }
   } catch (error) {

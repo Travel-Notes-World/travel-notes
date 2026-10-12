@@ -186,7 +186,7 @@ export async function setResolved(actor: MemberActor, input: { contributionId: u
   return { ok: true }
 }
 
-export type ReplyView = { id: string; body: string; author: PublicAuthor; authorId: string | null; publishedAt: string | null; helpfulCount: number; dislikeCount: number; accepted: boolean; children: ReplyView[] }
+export type ReplyView = { id: string; body: string; author: PublicAuthor; authorId: string | null; publishedAt: string | null; helpfulCount: number; loveCount: number; dislikeCount: number; accepted: boolean; children: ReplyView[] }
 
 /** Approved answers for a post, a page at a time, each with its approved replies. The accepted answer comes first, then the most liked. */
 export async function listReplies(contributionId: string, options: { page?: number; acceptedId?: string | null } = {}): Promise<Page<ReplyView>> {
@@ -195,7 +195,7 @@ export async function listReplies(contributionId: string, options: { page?: numb
   const top = await payload.find({
     collection: 'replies',
     where: { and: [{ contribution: { equals: contributionId } }, { state: { equals: 'published' } }, { parent: { exists: false } }] },
-    // The most liked answers first (likes minus dislikes), then the oldest. Replies to an answer stay in time order.
+    // The most liked answers first (likes and hearts minus dislikes), then the oldest. Replies to an answer stay in time order.
     sort: ['-score', 'publishedAt', 'id'], limit: LIMITS.replyPageSize, page, depth: 0, overrideAccess: false,
   })
   const ids = top.docs.map((r) => r.id)
@@ -206,7 +206,7 @@ export async function listReplies(contributionId: string, options: { page?: numb
   const view = (r: Reply): ReplyView => {
     const authorId = relId(r.author)
     const author = (authorId && authors.get(authorId)) || { handle: null, displayName: 'Deleted member', hasProfile: false }
-    return { id: r.id, body: r.body, author, authorId: author.hasProfile ? authorId : null, publishedAt: r.publishedAt ?? null, helpfulCount: r.helpfulCount ?? 0, dislikeCount: r.dislikeCount ?? 0, accepted: r.id === options.acceptedId, children: [] }
+    return { id: r.id, body: r.body, author, authorId: author.hasProfile ? authorId : null, publishedAt: r.publishedAt ?? null, helpfulCount: r.helpfulCount ?? 0, loveCount: r.loveCount ?? 0, dislikeCount: r.dislikeCount ?? 0, accepted: r.id === options.acceptedId, children: [] }
   }
   const items = top.docs.map(view)
   const byId = new Map(items.map((i) => [i.id, i]))

@@ -9265,6 +9265,13 @@
           "notNull": false,
           "default": 0
         },
+        "love_count": {
+          "name": "love_count",
+          "type": "numeric",
+          "primaryKey": false,
+          "notNull": false,
+          "default": 0
+        },
         "dislike_count": {
           "name": "dislike_count",
           "type": "numeric",
@@ -15628,6 +15635,6 @@
     "tables": {},
     "columns": {}
   },
-  "id": "8ee0424f-b4f8-4ffc-9b99-44ef0be4e9cb",
+  "id": "ced71bd1-322b-42c8-89c7-b430be3558d7",
   "prevId": "00000000-0000-0000-0000-000000000000"
 }

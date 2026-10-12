@@ -37,6 +37,20 @@ describe('likes and dislikes', () => {
     assert.equal(rows.totalDocs, 0)
   })
 
+  it('a red heart is one more choice: it counts towards the score, switches with like and dislike', async () => {
+    const author = await newMember('Loved')
+    const fan = await newMember('Fan')
+    const a = await approvedReply(author, question.id, 'Book the ferry with the upper deck, the view of the bay is lovely.')
+    let r = await E.setVote(fan, { targetType: 'reply', targetId: a.id, value: 2 })
+    assert.deepEqual([r.value, r.likes, r.loves, r.dislikes], [2, 0, 1, 0])
+    assert.equal((await reply(a.id)).score, 1)
+    r = await E.setVote(fan, { targetType: 'reply', targetId: a.id, value: 1 })
+    assert.deepEqual([r.likes, r.loves], [1, 0], 'switching from heart to like moves the one vote')
+    const state = await E.memberStateFor(fan, { id: question.id, authorId: asker.id }, [a.id])
+    assert.deepEqual([state.votedReplies, state.lovedReplies], [[a.id], []])
+    await rejects(E.setVote(fan, { targetType: 'contribution', targetId: question.id, value: 2 }), 'validation')
+  })
+
   it('you cannot vote on your own reply, and posts take likes only', async () => {
     const author = await newMember('Self voter')
     const a = await approvedReply(author, question.id, 'Take the slow ferry if you want the view, it is cheaper too.')

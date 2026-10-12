@@ -1334,9 +1334,13 @@ export interface Reply {
    * Likes.
    */
   helpfulCount?: number | null;
+  /**
+   * Red hearts.
+   */
+  loveCount?: number | null;
   dislikeCount?: number | null;
   /**
-   * Likes minus dislikes. Answers are listed by this, after the accepted one.
+   * Likes plus hearts minus dislikes. Answers are listed by this, after the accepted one.
    */
   score?: number | null;
   updatedAt: string;
@@ -1353,7 +1357,7 @@ export interface Vote {
   targetType: 'contribution' | 'reply';
   targetId: string;
   /**
-   * 1 = like (helpful), -1 = dislike. Posts only take likes.
+   * 1 = like (helpful), 2 = love (red heart), -1 = dislike. Posts only take likes.
    */
   value: number;
   updatedAt: string;
@@ -2443,6 +2447,7 @@ export interface RepliesSelect<T extends boolean = true> {
   moderationNote?: T;
   reviewedBy?: T;
   helpfulCount?: T;
+  loveCount?: T;
   dislikeCount?: T;
   score?: T;
   updatedAt?: T;
