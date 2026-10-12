@@ -9,7 +9,7 @@ export const metadata: Metadata = {
   alternates: { canonical: "/privacy" },
 };
 
-const UPDATED = "2026-10-11";
+const UPDATED = "2026-10-12";
 
 /*
  * Every statement here describes what the site actually does in its code and set-up as of the date
@@ -58,7 +58,7 @@ const sections: PolicySection[] = [
           </li>
           <li>
             <strong>What you post:</strong> questions, answers, replies, trip reports, activities, photos, votes, bookmarks, follows,
-            replies to activities and private trip plans. Posts are public once a moderator approves them; trip plans are private.
+            replies to activities and private trip plans. Posts are public once they are published (a new member&apos;s first posts, activities and posts flagged by our spam checks are checked by a moderator first); trip plans are private.
           </li>
           <li>
             <strong>Activity organiser contact:</strong> if you submit an activity, the contact details you give for the organiser

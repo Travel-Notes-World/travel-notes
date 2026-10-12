@@ -11,6 +11,9 @@ export type Settings = {
   questionMinAnswers: number
   profileMinPublished: number
   autoApproveTrustedReplies: boolean
+  smartPublish: boolean
+  smartPublishMinApproved: number
+  autoHideReports: number
 }
 
 /** Current community switches. Read fresh on every call: a switch must take effect straight away. */
@@ -26,6 +29,9 @@ export async function getSettings(): Promise<Settings> {
     questionMinAnswers: s.indexing?.questionMinAnswers ?? 1,
     profileMinPublished: s.indexing?.profileMinPublished ?? 2,
     autoApproveTrustedReplies: Boolean(s.review?.autoApproveTrustedReplies),
+    smartPublish: s.review?.smartPublish !== false,
+    smartPublishMinApproved: Math.max(1, s.review?.smartPublishMinApproved ?? 1),
+    autoHideReports: Math.max(2, s.review?.autoHideReports ?? 3),
   }
 }
 

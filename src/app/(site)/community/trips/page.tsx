@@ -46,7 +46,7 @@ export default async function TripsPage({ searchParams }: Props) {
       <PageHeader
         eyebrow="Community"
         title="Trip reports"
-        intro="First-hand accounts from members: where they went, day by day, and what it cost. Every report is checked by a moderator before it appears."
+        intro="First-hand accounts from members: where they went, day by day, and what it cost. Moderators check new members’ first posts and anything our spam checks flag."
         actions={<Link href="/community/trips/new" className={buttonClass}>Share a trip</Link>}
       />
       <form method="get" action="/community/trips" className="mb-8 flex flex-wrap items-end gap-4" aria-label="Filter trip reports">

@@ -109,7 +109,7 @@ export default async function HubPage({ params }: Props) {
       {total === 0 && (
         <div className="mb-10">
           <EmptyState title={`No approved posts about ${hub.name} yet.`} action={<Link href={`/community/questions/new${dest}`} className={buttonClass}>Ask the first question</Link>}>
-            Been there? A question, a short trip report or a local event helps the next traveller. Every post is checked by a moderator before it appears.
+            Been there? A question, a short trip report or a local event helps the next traveller. A new member’s first post is checked by a moderator; after that, posts go live straight away unless our spam checks flag them.
           </EmptyState>
         </div>
       )}

@@ -43,7 +43,7 @@ export default function GuidelinesPage() {
     <PageShell narrow>
       <PageHeader eyebrow="Community" title="Community guidelines" intro={<p className="m-0">Simple rules so that the community stays useful, honest and kind.</p>} />
 
-      <p className="t-meta text-ink-600 mt-4 mb-0">Last updated <time dateTime="2026-10-11">11 October 2026</time>. These guidelines sit alongside our <Link href="/terms" className="text-marine-600 underline">terms of use</Link> and <Link href="/privacy" className="text-marine-600 underline">privacy policy</Link>.</p>
+      <p className="t-meta text-ink-600 mt-4 mb-0">Last updated <time dateTime="2026-10-12">12 October 2026</time>. These guidelines sit alongside our <Link href="/terms" className="text-marine-600 underline">terms of use</Link> and <Link href="/privacy" className="text-marine-600 underline">privacy policy</Link>.</p>
 
       <nav aria-labelledby="contents-heading" className="mt-8">
         <h2 id="contents-heading" className="t-ui m-0">On this page</h2>
@@ -105,7 +105,8 @@ export default function GuidelinesPage() {
       </Section>
 
       <Section id="moderation">
-        <p>A moderator checks every new question, trip report, activity, answer and photo before it is shown to the public. While it waits, you can see its status in your account.</p>
+        <p>A moderator checks a new member&apos;s first question, trip report or answer before it is shown to the public. After that, your posts and answers go live straight away, unless our automatic checks find something that often means spam (such as links, phone numbers or email addresses), in which case a moderator checks them first. Activities are always checked by a moderator. While something waits, you can see its status in your account.</p>
+        <p>If several members report a post or answer, it is hidden automatically until a moderator looks at it.</p>
         <p>A moderator can:</p>
         <ul>
           <li><strong>approve</strong> a post, so it becomes public;</li>

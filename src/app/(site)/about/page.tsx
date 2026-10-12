@@ -20,7 +20,7 @@ const sections: PolicySection[] = [
           <li><Link href="/destinations">Destination pages</Link> with when to go and key facts checked against official sources.</li>
           <li><Link href="/guides">Travel guides</Link>: itineraries and practical advice, each showing when it was last checked and its sources.</li>
           <li><Link href="/updates">Travel updates</Link>: short, dated reports of changes to entry rules, fees, closures and routes, each linked to its official source.</li>
-          <li>The <Link href="/community">traveller community</Link>, where members ask questions and share trip reports and activities. A moderator checks every post before it appears.</li>
+          <li>The <Link href="/community">traveller community</Link>, where members ask questions and share trip reports and activities. Moderators check new members’ first posts, every activity and anything our spam checks flag.</li>
         </ul>
       </>
     ),

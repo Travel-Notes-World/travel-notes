@@ -12,6 +12,7 @@ import { track } from './metrics'
 import { notify } from './notify'
 import { limit } from './ratelimit'
 import { assertSubmissionsOpen } from './settings'
+import { decidePublishing } from './spam'
 import { bodyTooManyLinks, cleanText } from './text'
 import type { Actor, MemberActor, Page, PublicAuthor } from './types'
 
@@ -48,7 +49,8 @@ export async function publishReply(tx: Tx, reply: Reply, contribution: Contribut
   }
   if (authorId) {
     recipients.delete(authorId)
-    await notify(tx, { recipient: authorId, type: 'moderation_decision', message: `Your reply on “${contribution.title}” is now published.`, path, dedupeKey: `reply-approved:${reply.id}` })
+    // Published automatically: the author saw it go live, so there is nothing to tell them.
+    if (by.kind !== 'system') await notify(tx, { recipient: authorId, type: 'moderation_decision', message: `Your reply on “${contribution.title}” is now published.`, path, dedupeKey: `reply-approved:${reply.id}` })
   }
   for (const recipient of recipients) {
     await notify(tx, {
@@ -63,7 +65,10 @@ export async function publishReply(tx: Tx, reply: Reply, contribution: Contribut
   tx.afterCommit(() => track('answer_published', contribution.type))
 }
 
-/** Post an answer or a reply. It waits for review unless lighter review is switched on for trusted members. */
+/**
+ * Post an answer or a reply. It goes live straight away under smart publishing (an established
+ * member and clean text), or for trusted members when that switch is on. Otherwise it waits for review.
+ */
 export async function postReply(actor: MemberActor, input: { contributionId: unknown; parentId?: unknown; body: unknown }): Promise<{ id: string; state: string }> {
   const member = await requireActive(actor)
   const settings = await assertSubmissionsOpen()
@@ -87,7 +92,14 @@ export async function postReply(actor: MemberActor, input: { contributionId: unk
   const duplicate = await payload.find({ collection: 'replies', where: { and: [{ author: { equals: member.id } }, { contribution: { equals: contribution.id } }, { state: { in: ['pending', 'published'] } }, { body: { equals: body } }] }, limit: 1, depth: 0 })
   if (duplicate.docs[0]) return { id: duplicate.docs[0].id, state: duplicate.docs[0].state }
 
-  const auto = settings.autoApproveTrustedReplies && member.trusted
+  const counts = await payload.findByID({ collection: 'members', id: member.id, depth: 0, select: { trusted: true, publishedCount: true, answerCount: true } })
+  const smart = decidePublishing({
+    enabled: settings.smartPublish,
+    minApproved: settings.smartPublishMinApproved,
+    member: { trusted: Boolean(counts.trusted), approvedCount: (counts.publishedCount ?? 0) + (counts.answerCount ?? 0) },
+    text: { body },
+  })
+  const auto = (settings.autoApproveTrustedReplies && member.trusted) || smart.publish
   return inTransaction(async (tx) => {
     const reply = await tx.payload.create({ collection: 'replies', req: tx.req, data: { contribution: contribution.id, parent: parent?.id, author: member.id, body, state: 'pending' } })
     if (auto) {

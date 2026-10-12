@@ -21,7 +21,7 @@ export default async function NewTripPage({ searchParams }: { searchParams: Prom
   if (destination) initial.destinations = (await destinationsByIds([destination])).map((d) => ({ id: d.id, label: d.label }));
   return (
     <PageShell narrow>
-      <PageHeader eyebrow="Community" title="Share a trip" intro="Tell other travellers how your trip really went: where you went, what it cost and what you would do differently. A moderator checks every report before it appears." />
+      <PageHeader eyebrow="Community" title="Share a trip" intro="Tell other travellers how your trip really went: where you went, what it cost and what you would do differently. Your first post is checked by a moderator; after that, reports go live straight away unless our spam checks flag them." />
       {!settings.submissionsOpen ? (
         <Notice tone="warning" title="Posting is paused">Please try again later.</Notice>
       ) : (

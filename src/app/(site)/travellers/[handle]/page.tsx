@@ -87,7 +87,7 @@ export default async function TravellerPage({ params, searchParams }: Props) {
         {posts.items.length ? (
           <CardList cards={posts.items} label={`Posts by ${profile.displayName}`} />
         ) : (
-          <EmptyState title="No published posts yet.">{isSelf ? "Your questions, trip reports and activities appear here after a moderator approves them." : "Questions, trip reports and activities appear here after a moderator approves them."}</EmptyState>
+          <EmptyState title="No published posts yet.">{isSelf ? "Your questions, trip reports and activities appear here once they are published." : "Questions, trip reports and activities appear here once they are published."}</EmptyState>
         )}
         <Pagination page={posts.page} totalPages={posts.totalPages} href={(p) => (p > 1 ? `${base}?page=${p}` : base)} />
       </section>

@@ -38,7 +38,7 @@ export async function generateMetadata({ searchParams }: Props): Promise<Metadat
   const latest = await listPublished({ pageSize: 1 });
   return {
     title: "Traveller community",
-    description: "Questions, trip reports and activities from travellers around the world, checked by moderators before they appear.",
+    description: "Questions, trip reports and activities from travellers around the world, with new members’ first posts checked by moderators.",
     alternates: { canonical: "/community" },
     // A place search is for people, not search engines. An empty community is not worth indexing yet.
     robots: place || latest.total === 0 ? { index: false, follow: true } : undefined,
@@ -62,7 +62,7 @@ export default async function CommunityPage({ searchParams }: Props) {
       <PageHeader
         eyebrow="Community"
         title="Traveller community"
-        intro={<p className="m-0">Questions, trip reports and activities from travellers around the world. Posts are written by members, not by the Travel Notes editorial team, and a moderator checks each one before it appears.</p>}
+        intro={<p className="m-0">Questions, trip reports and activities from travellers around the world. Posts are written by members, not by the Travel Notes editorial team, and moderators check new members’ first posts and anything our spam checks flag.</p>}
         actions={
           <>
             <Link href="/community/questions/new" className={buttonClass}>Ask a question</Link>
@@ -154,7 +154,7 @@ export default async function CommunityPage({ searchParams }: Props) {
         {latest.items.length ? (
           <CardList cards={latest.items} label="Latest community posts" />
         ) : (
-          <EmptyState title="Nothing has been published yet.">Posts appear here after a moderator approves them.</EmptyState>
+          <EmptyState title="Nothing has been published yet.">Questions and trip reports from members appear here once they are published.</EmptyState>
         )}
       </section>
 

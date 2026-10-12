@@ -65,8 +65,9 @@ export async function setup(): Promise<void> {
   await openCommunity()
 }
 
+/** Open the community. Smart publishing is off unless a test turns it on, so the review flow is tested as it is. */
 export async function openCommunity(overrides: Any = {}): Promise<void> {
-  await payload.updateGlobal({ slug: 'community-settings', data: { publicAccess: true, signupsOpen: true, submissionsOpen: true, maxPendingPerMember: 50, ...overrides } })
+  await payload.updateGlobal({ slug: 'community-settings', data: { publicAccess: true, signupsOpen: true, submissionsOpen: true, maxPendingPerMember: 50, ...overrides, review: { smartPublish: false, ...(overrides.review ?? {}) } } })
 }
 
 export const moderator = () => ({ kind: 'staff' as const, id: staff.moderator.id as string, name: 'Moderator', canModerate: true, isAdministrator: false })
