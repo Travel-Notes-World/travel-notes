@@ -13,6 +13,7 @@ import { Notice, PageHeader, PageShell, secondaryButtonClass, StatusBadge, UserT
 import { deleteDraftAction, withdrawAction } from "@/lib/community/actions/contributions";
 import { getOwn, type OwnEditable } from "@/lib/community/contributions";
 import { isCommunityError } from "@/lib/community/errors";
+import { currentListingFee, feeInfoFor, formatAud, listingPaymentsFor, needsListingFee } from "@/lib/community/listings";
 import { formInitial, topicOptions } from "@/lib/community/next/form-initial";
 import { requireMemberPage } from "@/lib/community/next/session";
 import { unreadCount } from "@/lib/community/notifications";
@@ -37,7 +38,13 @@ export default async function OwnPostPage({ params, searchParams }: { params: Pr
     if (isCommunityError(error) && error.code === "not_found") notFound();
     throw error;
   }
-  const [initial, topics, unread] = await Promise.all([formInitial(post.content), topicOptions(), unreadCount(member.id)]);
+  const [initial, topics, unread, fee, payments] = await Promise.all([
+    formInitial(post.content), topicOptions(), unreadCount(member.id), currentListingFee(),
+    post.type === "activity" ? listingPaymentsFor(post.id) : Promise.resolve([]),
+  ]);
+  const paidPayment = payments.find((p) => p.status === "paid");
+  const isBusinessListing = needsListingFee(post.type, post.content);
+  const awaitingPayment = isBusinessListing && fee.charge && !paidPayment && ["draft", "changes_requested"].includes(post.state);
   const published = post.state === "published";
   const formProps = { id: post.id, initial, published, topics };
   const title = post.content.title || "Untitled draft";
@@ -62,6 +69,20 @@ export default async function OwnPostPage({ params, searchParams }: { params: Pr
         {query.sent === "edit" && <Notice tone="success" title="Changes sent for review">The public version stays as it is until a moderator approves your changes.</Notice>}
         {query.saved && <Notice tone="success" title="Draft saved">Only you can see it. Come back to it any time from your account.</Notice>}
 
+        {awaitingPayment && (
+          <Notice tone="warning" title="Not sent yet: listing fee to pay">
+            Business listings are sent for review once the listing fee ({formatAud(fee.amountMinor)}) is paid. <Link href={`/account/posts/${post.id}/pay`} className="text-marine-600 underline">Pay and send for review</Link>.
+          </Notice>
+        )}
+        {payments.length > 0 && (
+          <p className="t-body-sm m-0">
+            {payments.map((p) => (
+              <span key={p.id} className="mr-4">
+                Listing fee {formatAud(p.amountMinor)} {p.status === "refunded" ? "refunded" : "paid"} · <Link href={`/account/invoices/${p.id}`} className="text-marine-600 underline">{p.status === "refunded" ? "Receipt" : "Invoice"} {p.invoiceNumber}</Link>
+              </span>
+            ))}
+          </p>
+        )}
         <p className="t-body-sm m-0 flex flex-wrap items-center gap-3">
           <span>Status:</span> <StatusBadge state={post.state} />
           {post.publicPath && <Link href={post.publicPath} className="text-marine-600 underline">See the public page</Link>}
@@ -74,13 +95,13 @@ export default async function OwnPostPage({ params, searchParams }: { params: Pr
         )}
         {post.state === "pending" && <Notice tone="info" title="Waiting for review">A moderator will check it soon. To change something first, withdraw it: it goes back to your drafts.</Notice>}
         {published && post.editPending && <Notice tone="info" title="Your edit is waiting for review">The form below shows your edited version. The public page still shows the approved version until a moderator approves the edit.</Notice>}
-        {post.state === "rejected" && <Notice tone="info" title="Not accepted">This post was not published. You can delete it, or write a new post that follows the <Link href="/community/guidelines" className="text-marine-600 underline">community rules</Link>.</Notice>}
+        {post.state === "rejected" && <Notice tone="info" title="Not accepted">This post was not published.{payments.some((p) => p.status === "refunded") ? " Your listing fee was refunded in full." : ""} You can delete it, or write a new post that follows the <Link href="/community/guidelines" className="text-marine-600 underline">community rules</Link>.</Notice>}
         {post.state === "hidden" && <Notice tone="warning" title="Hidden by a moderator">This post is not public at the moment. Contact us through the <Link href="/contact" className="text-marine-600 underline">contact page</Link> if you think this is a mistake.</Notice>}
         {post.state === "removed" && <Notice tone="info" title="Removed">This post is no longer public.</Notice>}
       </div>
 
       {post.canEdit ? (
-        post.type === "question" ? <QuestionForm {...formProps} /> : post.type === "trip" ? <TripForm {...formProps} /> : <ActivityForm {...formProps} />
+        post.type === "question" ? <QuestionForm {...formProps} /> : post.type === "trip" ? <TripForm {...formProps} /> : <ActivityForm {...formProps} fee={feeInfoFor(fee)} />
       ) : (
         <section aria-labelledby="content-heading" className="max-w-measure">
           <h2 id="content-heading" className="t-heading-3 m-0">What you sent</h2>
@@ -112,7 +133,7 @@ export default async function OwnPostPage({ params, searchParams }: { params: Pr
               <summary className={dangerSummary}>Delete this {post.state === "rejected" ? "post" : "draft"}</summary>
               <form action={deleteDraftAction} className="mt-3">
                 <input type="hidden" name="id" value={post.id} />
-                <p className="t-body-sm mt-0">This deletes it and any photos you added to it. It cannot be undone.</p>
+                <p className="t-body-sm mt-0">This deletes it and any photos you added to it. It cannot be undone.{paidPayment ? " Your listing fee is refunded in full to your card." : ""}</p>
                 <button type="submit" className="inline-flex items-center justify-center min-h-11 px-5 rounded-md border-2 border-signal-error bg-paper-000 text-signal-error t-ui hover:bg-paper-100">Yes, delete it</button>
               </form>
             </details>

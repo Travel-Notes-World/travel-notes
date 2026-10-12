@@ -8,12 +8,14 @@ export type Settings = {
   submissionsOpen: boolean
   maxPendingPerMember: number
   questionsAuto: boolean
+  activitiesAuto: boolean
   questionMinAnswers: number
   profileMinPublished: number
   autoApproveTrustedReplies: boolean
   smartPublish: boolean
   smartPublishMinApproved: number
   autoHideReports: number
+  listings: { enabled: boolean; feeMinor: number; priceLabel: string; gstRegistered: boolean; sellerName: string; sellerAbn: string }
 }
 
 /** Current community switches. Read fresh on every call: a switch must take effect straight away. */
@@ -26,12 +28,21 @@ export async function getSettings(): Promise<Settings> {
     submissionsOpen: s.submissionsOpen !== false,
     maxPendingPerMember: s.maxPendingPerMember ?? 5,
     questionsAuto: s.indexing?.questionsAuto !== false,
+    activitiesAuto: s.indexing?.activitiesAuto !== false,
     questionMinAnswers: s.indexing?.questionMinAnswers ?? 1,
     profileMinPublished: s.indexing?.profileMinPublished ?? 2,
     autoApproveTrustedReplies: Boolean(s.review?.autoApproveTrustedReplies),
     smartPublish: s.review?.smartPublish !== false,
     smartPublishMinApproved: Math.max(1, s.review?.smartPublishMinApproved ?? 1),
     autoHideReports: Math.max(2, s.review?.autoHideReports ?? 3),
+    listings: {
+      enabled: Boolean(s.listings?.enabled),
+      feeMinor: Math.max(0, Math.round((s.listings?.feeAud ?? 5) * 100)),
+      priceLabel: (s.listings?.priceLabel ?? 'Launch price').trim(),
+      gstRegistered: s.listings?.gstRegistered !== false,
+      sellerName: (s.listings?.sellerName ?? '').trim(),
+      sellerAbn: (s.listings?.sellerAbn ?? '').replace(/\s/g, ''),
+    },
   }
 }
 

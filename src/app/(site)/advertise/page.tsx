@@ -16,6 +16,8 @@ export default function AdvertisePage() {
         <p>Paid features are labelled &ldquo;Sponsored&rdquo; from the first screen, reviewed by our editors before publication, and never influence the rest of our coverage. See the <Link href="/editorial-policy">editorial policy</Link>.</p>
         <h2 id="newsletter">Newsletter placements</h2>
         <p>Clearly labelled sponsor messages in our reader newsletter.</p>
+        <h2 id="activities">List a tour, class or activity</h2>
+        <p>Tour operators, guides and local businesses can list a dated activity themselves. Every listing is checked by a person before it appears. <Link href="/activities/list-your-activity">See how business listings work and what they cost</Link>.</p>
         <h2 id="contact">Get in touch</h2>
         <p>Audience figures and rates are shared on request. <Link href="/contact">Contact us</Link> with the audience you want to reach and we will reply with options.</p>
       </div>

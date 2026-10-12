@@ -395,6 +395,14 @@ export async function deleteAccount(actor: MemberActor, input: { password: unkno
   }
   const id = actor.id
   const affectedActivities = new Set<string>()
+  // Business listings that were paid for but never published get their fee back.
+  {
+    const p = await cms()
+    const unpublishedPaid = await run(p, sql`SELECT DISTINCT lp."contribution_id" AS id FROM "listing_payments" lp JOIN "contributions" c ON c."id" = lp."contribution_id"
+      WHERE lp."member_id" = ${id}::uuid AND lp."status" = 'paid' AND c."state" IN ('draft', 'pending', 'changes_requested', 'rejected')`)
+    const { refundListingIfPaid } = await import('./listings')
+    for (const row of unpublishedPaid.rows) await refundListingIfPaid(String(row.id), 'The member deleted their account before the listing was published.')
+  }
   await inTransaction(async (tx) => {
     const { payload: p, req } = tx
     const rsvps = await p.find({ collection: 'rsvps', where: { member: { equals: id } }, limit: 2000, pagination: false, depth: 0, req })
@@ -403,6 +411,8 @@ export async function deleteAccount(actor: MemberActor, input: { password: unkno
       const field = collection === 'plans' ? 'owner' : collection === 'notifications' ? 'recipient' : 'member'
       await p.delete({ collection, where: { [field]: { equals: id } }, req })
     }
+    // Payment records are kept for tax purposes, without the email address.
+    await run(p, sql`UPDATE "listing_payments" SET "buyer_email" = NULL WHERE "member_id" = ${id}::uuid`, req)
     await run(p, sql`UPDATE "email_outbox" SET "status" = 'suppressed', "last_error" = 'account deleted', "data" = NULL WHERE "recipient_id" = ${id}::uuid`, req)
     // Never-published work is simply deleted. Published work is kept or removed, as the member chose.
     const unpublished = await p.find({ collection: 'contributions', where: { and: [{ author: { equals: id } }, { state: { in: ['draft', 'pending', 'changes_requested', 'rejected'] } }] }, limit: 2000, pagination: false, depth: 0, select: {}, req })

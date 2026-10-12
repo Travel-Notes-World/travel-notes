@@ -96,6 +96,7 @@ export interface Config {
     'rate-limits': RateLimit;
     'metric-counters': MetricCounter;
     'job-runs': JobRun;
+    'listing-payments': ListingPayment;
     'totp-attempts': TotpAttempt;
     'payload-kv': PayloadKv;
     'payload-locked-documents': PayloadLockedDocument;
@@ -132,6 +133,7 @@ export interface Config {
     'rate-limits': RateLimitsSelect<false> | RateLimitsSelect<true>;
     'metric-counters': MetricCountersSelect<false> | MetricCountersSelect<true>;
     'job-runs': JobRunsSelect<false> | JobRunsSelect<true>;
+    'listing-payments': ListingPaymentsSelect<false> | ListingPaymentsSelect<true>;
     'totp-attempts': TotpAttemptsSelect<false> | TotpAttemptsSelect<true>;
     'payload-kv': PayloadKvSelect<false> | PayloadKvSelect<true>;
     'payload-locked-documents': PayloadLockedDocumentsSelect<false> | PayloadLockedDocumentsSelect<true>;
@@ -709,6 +711,7 @@ export interface Staff {
    */
   communityModerator?: boolean | null;
   totpSecret?: string | null;
+  hasTotp?: boolean | null;
   updatedAt: string;
   createdAt: string;
   email: string;
@@ -1502,7 +1505,9 @@ export interface ModerationAction {
     | 'resend_verification'
     | 'confirm_email'
     | 'accept_suggestion'
-    | 'reject_suggestion';
+    | 'reject_suggestion'
+    | 'listing_paid'
+    | 'refund_listing';
   actorType: 'staff' | 'member' | 'system';
   staff?: (string | null) | Staff;
   member?: (string | null) | Member;
@@ -1632,6 +1637,37 @@ export interface JobRun {
   ok: boolean;
   summary?: string | null;
   durationMs?: number | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "listing-payments".
+ */
+export interface ListingPayment {
+  id: string;
+  invoiceNumber: string;
+  contribution?: (string | null) | Contribution;
+  member?: (string | null) | Member;
+  status: 'created' | 'paid' | 'refunded' | 'expired';
+  description: string;
+  /**
+   * Total charged, in cents, including any GST.
+   */
+  amountMinor: number;
+  currency: string;
+  /**
+   * GST included in the total, in cents. 0 when the seller was not registered for GST.
+   */
+  gstMinor: number;
+  sellerName: string;
+  sellerAbn: string;
+  buyerEmail?: string | null;
+  stripeSessionId?: string | null;
+  stripePaymentIntentId?: string | null;
+  paidAt?: string | null;
+  refundedAt?: string | null;
+  refundReason?: string | null;
   updatedAt: string;
   createdAt: string;
 }
@@ -1779,6 +1815,10 @@ export interface PayloadLockedDocument {
     | ({
         relationTo: 'job-runs';
         value: string | JobRun;
+      } | null)
+    | ({
+        relationTo: 'listing-payments';
+        value: string | ListingPayment;
       } | null);
   globalSlug?: string | null;
   user:
@@ -2143,6 +2183,7 @@ export interface StaffSelect<T extends boolean = true> {
   active?: T;
   communityModerator?: T;
   totpSecret?: T;
+  hasTotp?: T;
   updatedAt?: T;
   createdAt?: T;
   email?: T;
@@ -2661,6 +2702,30 @@ export interface JobRunsSelect<T extends boolean = true> {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "listing-payments_select".
+ */
+export interface ListingPaymentsSelect<T extends boolean = true> {
+  invoiceNumber?: T;
+  contribution?: T;
+  member?: T;
+  status?: T;
+  description?: T;
+  amountMinor?: T;
+  currency?: T;
+  gstMinor?: T;
+  sellerName?: T;
+  sellerAbn?: T;
+  buyerEmail?: T;
+  stripeSessionId?: T;
+  stripePaymentIntentId?: T;
+  paidAt?: T;
+  refundedAt?: T;
+  refundReason?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "totp-attempts_select".
  */
 export interface TotpAttemptsSelect<T extends boolean = true> {
@@ -2739,6 +2804,10 @@ export interface CommunitySetting {
      */
     questionsAuto?: boolean | null;
     /**
+     * ON: a published activity (always checked by a moderator) is indexable until 30 days after it ends. OFF: every activity needs an administrator decision.
+     */
+    activitiesAuto?: boolean | null;
+    /**
      * Approved answers needed before a question is indexable.
      */
     questionMinAnswers?: number | null;
@@ -2746,6 +2815,26 @@ export interface CommunitySetting {
      * Approved contributions or answers a member needs before their public profile is indexable.
      */
     profileMinPublished?: number | null;
+  };
+  /**
+   * A fee for commercial activities (tours, classes, paid experiences run by a business). Member meet-ups and public events stay free. Payments are taken by Stripe and only work once the STRIPE_SECRET_KEY and STRIPE_WEBHOOK_SECRET settings are added in Vercel and the seller details below are filled in. Until then, business listings are free.
+   */
+  listings?: {
+    enabled?: boolean | null;
+    feeAud?: number | null;
+    /**
+     * Shown next to the price, for example “Launch price”. Never show an earlier price that was not really charged.
+     */
+    priceLabel?: string | null;
+    /**
+     * ON: invoices are “Tax invoice” and show the GST included (1/11 of the price). OFF: a receipt with no GST.
+     */
+    gstRegistered?: boolean | null;
+    /**
+     * The person or entity that receives the money and is named on invoices. Check with your accountant.
+     */
+    sellerName?: string | null;
+    sellerAbn?: string | null;
   };
   review?: {
     /**
@@ -2781,8 +2870,19 @@ export interface CommunitySettingsSelect<T extends boolean = true> {
     | T
     | {
         questionsAuto?: T;
+        activitiesAuto?: T;
         questionMinAnswers?: T;
         profileMinPublished?: T;
+      };
+  listings?:
+    | T
+    | {
+        enabled?: T;
+        feeAud?: T;
+        priceLabel?: T;
+        gstRegistered?: T;
+        sellerName?: T;
+        sellerAbn?: T;
       };
   review?:
     | T

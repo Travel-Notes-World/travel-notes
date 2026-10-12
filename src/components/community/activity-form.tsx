@@ -6,11 +6,14 @@ import { ACTIVITY_CATEGORIES, ACTIVITY_FORMATS, COMMERCIAL_DISCLOSURES, PRICE_ST
 import { ContributionForm, CurrencyInput, type FieldsProps, type FormInitial } from "./contribution-form";
 import { describedBy, Field, inputClass } from "./ui";
 
-type Props = { id: string | null; initial: FormInitial; published?: boolean; topics?: { id: string; name: string }[]; intro?: ReactNode };
+/** The business-listing fee, when one is charged. Shown when "Commercial activity" is chosen. */
+export type FeeInfo = { amount: string; label: string; gstNote: string } | null;
+
+type Props = { id: string | null; initial: FormInitial; published?: boolean; topics?: { id: string; name: string }[]; intro?: ReactNode; fee?: FeeInfo };
 
 /** Submit or edit an activity. Dates and times are always entered in the event's own local time. */
-export function ActivityForm(props: Props) {
-  return <ContributionForm type="activity" {...props} submitLabel="Submit activity for review">{(p) => <ActivityFields {...p} />}</ContributionForm>;
+export function ActivityForm({ fee = null, ...props }: Props) {
+  return <ContributionForm type="activity" {...props} submitLabel="Post activity">{(p) => <ActivityFields {...p} fee={props.published ? null : fee} />}</ContributionForm>;
 }
 
 /** Every IANA zone this browser knows. Filled in after the page loads, so the server and browser render the same HTML. */
@@ -37,7 +40,7 @@ const legendClass = "t-ui px-1";
  * fields or the date-and-time fields depending on the "all day" box, and ignores the price when
  * the activity is not paid. With JavaScript, fields that do not apply are hidden to keep it short.
  */
-export function ActivityFields({ value, checked, errors, destinationZone }: FieldsProps) {
+export function ActivityFields({ value, checked, errors, destinationZone, fee = null }: FieldsProps & { fee?: FeeInfo }) {
   const [enhanced, setEnhanced] = useState(false);
   const [format, setFormat] = useState(value("format") || "in_person");
   const [allDay, setAllDay] = useState(checked("allDay"));
@@ -74,7 +77,16 @@ export function ActivityFields({ value, checked, errors, destinationZone }: Fiel
           ))}
         </div>
         {errors.category && <p id="category-error" className="t-body-sm text-signal-error mt-1 mb-0 font-medium"><span aria-hidden="true">⚠ </span>{errors.category}</p>}
-        {category === "commercial_activity" && <p className="t-body-sm text-ink-600 mt-2 mb-0" role="note">Commercial listings are always shown with a disclosure that a business is involved.</p>}
+        {category === "commercial_activity" && (
+          <div className="t-body-sm mt-3 mb-0 rounded-md bg-paper-100 p-3" role="note">
+            {fee ? (
+              <p className="m-0">
+                <strong>Business listing: {fee.label ? `${fee.label} ` : ""}{fee.amount}</strong> {fee.gstNote}. After you press “Post activity”, you pay on Stripe’s secure page, then a moderator checks your listing. If it is not approved, the fee is refunded in full.
+              </p>
+            ) : null}
+            <p className={fee ? "m-0 mt-2" : "m-0"}>Commercial listings are always shown with a note that a business is involved.</p>
+          </div>
+        )}
       </fieldset>
 
       <fieldset className={fieldsetClass}>

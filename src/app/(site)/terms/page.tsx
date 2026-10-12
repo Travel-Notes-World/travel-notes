@@ -123,6 +123,32 @@ const sections: PolicySection[] = [
     ),
   },
   {
+    id: "paid-listings",
+    title: "Paid business listings",
+    body: (
+      <>
+        <p>
+          A commercial activity (a tour, class or paid experience run by a business) may have a listing fee. Member meet-ups and
+          public events are free to list. The price is shown before you pay and includes GST where GST applies.
+        </p>
+        <ul>
+          <li>You pay by card on Stripe&apos;s secure checkout page. We do not see or store your card number.</li>
+          <li>One fee covers one listing: our review of it and, if approved, its publication until the activity ends.</li>
+          <li>If we do not approve your listing, or you delete it before it is published, we refund the fee in full to the same card.</li>
+          <li>If we ask you to change a listing, you can edit it and send it again without paying again.</li>
+          <li>
+            Once a listing is published, the fee is not refunded if you remove it yourself or we remove it because it breaks these
+            terms or the <Link href="/community/guidelines">community guidelines</Link>, except where the Australian Consumer Law
+            gives you a right to a refund.
+          </li>
+          <li>We do not promise any number of views, bookings or a position in search engines.</li>
+          <li>A change of price never affects a listing you have already paid for.</li>
+          <li>A tax invoice or receipt is available in your account straight after you pay.</li>
+        </ul>
+      </>
+    ),
+  },
+  {
     id: "links",
     title: "Links and other businesses",
     body: (
