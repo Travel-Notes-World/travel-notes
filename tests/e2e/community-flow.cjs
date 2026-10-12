@@ -62,7 +62,7 @@ async function pick(page, place) {
   await page.fill('#title', qTitle);
   await pick(page, 'Bangkok');
   await page.fill('#body', 'We have one free day between flights. Is it realistic to see the old city and a temple without rushing? We like walking.');
-  await page.getByRole('button', { name: /Submit question for review/ }).click();
+  await page.getByRole('button', { name: /Post question/ }).click();
   await page.waitForURL(/\/account\/posts\//, { timeout: 15000 }).catch(() => {});
   const qState = sql(`select state from contributions where title='${qTitle.replace(/'/g, "''")}'`);
   check('question submitted for review', qState === 'pending', `state=${qState}`);

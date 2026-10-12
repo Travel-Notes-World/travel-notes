@@ -21,7 +21,7 @@ export async function uploadPhotoAction(_: ActionState, form: FormData): Promise
     if (blob.size > LIMITS.uploadMaxBytes) invalid({ file: `The photo is too large. The limit is ${Math.round(LIMITS.uploadMaxBytes / 1024 / 1024)} MB.` })
     const data = Buffer.from(await blob.arrayBuffer())
     const photo = await uploadPhoto(member!, { data, alt: str(form, 'alt'), rightsConfirmed: str(form, 'rights') })
-    return { ok: true, message: 'Photo added. It appears publicly only after a moderator approves your post.', data: { photo } }
+    return { ok: true, message: 'Photo added. It appears publicly when your post is published.', data: { photo } }
   } catch (error) {
     return toState(error)
   }

@@ -21,7 +21,7 @@ export default async function NewQuestionPage({ searchParams }: { searchParams: 
   if (destination) initial.destinations = (await destinationsByIds([destination])).map((d) => ({ id: d.id, label: d.label }));
   return (
     <PageShell narrow>
-      <PageHeader eyebrow="Community" title="Ask a question" intro="Travellers who have been there answer. Questions and answers are checked by a moderator before they appear." />
+      <PageHeader eyebrow="Community" title="Ask a question" intro="Travellers who have been there answer. Your first post is checked by a moderator. After that, questions go live straight away unless our spam checks flag them." />
       {!settings.submissionsOpen ? (
         <Notice tone="warning" title="Posting is paused">Please try again later.</Notice>
       ) : (

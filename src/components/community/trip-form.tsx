@@ -15,7 +15,7 @@ type WrapperProps = { id: string | null; initial: FormInitial; published?: boole
 /** The form for writing or editing a trip report. */
 export function TripForm(props: WrapperProps) {
   return (
-    <ContributionForm type="trip" {...props} submitLabel="Submit trip report for review">
+    <ContributionForm type="trip" {...props} submitLabel="Post trip report">
       {(p) => <TripFields {...p} contributionId={props.id} published={Boolean(props.published)} />}
     </ContributionForm>
   );

@@ -93,7 +93,7 @@ export default async function AccountPage({ searchParams }: { searchParams: Prom
           {posts.length === 0 ? (
             <div className="mt-4">
               <EmptyState title="You have not posted yet">
-                Ask something you want to know before a trip, or share what you learned on one. A moderator checks every post before it appears.
+                Ask something you want to know before a trip, or share what you learned on one. Your first post is checked by a moderator; after that, posts go live straight away unless our spam checks flag them.
               </EmptyState>
             </div>
           ) : (

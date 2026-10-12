@@ -9,7 +9,7 @@ export const metadata: Metadata = {
   alternates: { canonical: "/terms" },
 };
 
-const UPDATED = "2026-10-11";
+const UPDATED = "2026-10-12";
 
 const sections: PolicySection[] = [
   {
@@ -86,7 +86,7 @@ const sections: PolicySection[] = [
     body: (
       <>
         <p>
-          A moderator checks every post before it appears. We may approve, ask for changes to, decline, hide or remove posts, decide whether
+          A moderator checks a new member&apos;s first posts, every activity, and any post our automatic spam checks flag, before it appears. Other posts are published straight away. A post reported by several members is hidden automatically until a moderator checks it. We may approve, ask for changes to, decline, hide or remove posts, decide whether
           search engines can index a page, and limit or close accounts that break these terms or the community guidelines.
         </p>
         <p>
@@ -105,6 +105,7 @@ const sections: PolicySection[] = [
         <li>Break the law, or help anyone else to.</li>
         <li>Post spam, advertising without disclosure, fake reviews or misleading information.</li>
         <li>Harass, threaten or share private information about anyone.</li>
+        <li>Post sexual or sexually suggestive content, nudity, or offers of adult services.</li>
         <li>Upload anything that infringes someone else&apos;s copyright or other rights.</li>
         <li>Try to get around moderation, rate limits or security, or use automated tools to collect content or create accounts.</li>
       </ul>

@@ -37,7 +37,7 @@ export default async function QuestionsPage({ searchParams }: Props) {
   const href = (p: number) => `/community/questions?${new URLSearchParams({ ...(show ? { show } : {}), ...(p > 1 ? { page: String(p) } : {}) })}`.replace(/\?$/, "");
   return (
     <PageShell>
-      <PageHeader eyebrow="Community" title="Traveller questions" intro="Ask about anywhere in the world. Answers come from members; every question and answer is checked by a moderator first." actions={<Link href="/community/questions/new" className={buttonClass}>Ask a question</Link>} />
+      <PageHeader eyebrow="Community" title="Traveller questions" intro="Ask about anywhere in the world. Answers come from members; moderators check new members’ first posts and anything our spam checks flag." actions={<Link href="/community/questions/new" className={buttonClass}>Ask a question</Link>} />
       <nav aria-label="Filter questions" className="mb-8">
         <ul className="flex flex-wrap gap-2 list-none m-0 p-0">
           {FILTERS.map((f) => {
@@ -50,7 +50,7 @@ export default async function QuestionsPage({ searchParams }: Props) {
         <CardList cards={result.items} label="Questions" />
       ) : (
         <EmptyState title={show === "unanswered" ? "Every question has an answer at the moment." : "No questions here yet."} action={<Link href="/community/questions/new" className={buttonClass}>Ask the first question</Link>}>
-          Questions appear here after a moderator approves them.
+          Questions appear here once they are published.
         </EmptyState>
       )}
       <Pagination page={result.page} totalPages={result.totalPages} href={href} />

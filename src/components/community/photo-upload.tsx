@@ -126,7 +126,7 @@ export function PhotoUpload({ contributionId, initialJson, error, published = fa
         setFile(null);
         if (fileRef.current) fileRef.current.value = "";
         setFields({});
-        setStatus({ ok: true, text: published ? "Photo added. Send your changes for review to include it." : "Photo added. It is saved with your draft and appears publicly only after a moderator approves your post." });
+        setStatus({ ok: true, text: published ? "Photo added. Send your changes for review to include it." : "Photo added. It is saved with your draft and appears publicly when your post is published." });
       } else {
         setFields(result.fields ?? {});
         setStatus({ ok: false, text: result.message ?? "The photo could not be uploaded." });
@@ -172,7 +172,7 @@ export function PhotoUpload({ contributionId, initialJson, error, published = fa
   return (
     <fieldset ref={rootRef} className="mt-6 border border-paper-200 rounded-md p-4 min-w-0">
       <legend className="t-ui px-1">Photos <span className="text-ink-600 font-normal">(optional, up to {LIMITS.maxPhotos})</span></legend>
-      <p className="t-body-sm text-ink-600 mt-0">Only add photos you took yourself or have permission to share. Location and camera details are removed from every photo. The first photo is used as the cover. Photos are private until a moderator approves your post.</p>
+      <p className="t-body-sm text-ink-600 mt-0">Only add photos you took yourself or have permission to share. Location and camera details are removed from every photo. The first photo is used as the cover. Photos stay private until your post is published.</p>
       {photos.map((p) => <input key={p.id} type="hidden" name="photos" value={p.id} />)}
       <FieldError id={`${id}-photos-error`} message={error} />
 

@@ -60,7 +60,7 @@ export default async function CommunityTopicPage({ params, searchParams }: Props
         <CardList cards={result.items} label={`Community posts about ${topic.name}`} />
       ) : (
         <EmptyState title="No community posts on this topic yet." action={<Link href="/community/questions/new" className={buttonClass}>Ask the first question</Link>}>
-          Posts appear here after a moderator approves them.
+          Posts appear here once they are published.
         </EmptyState>
       )}
       <Pagination page={result.page} totalPages={result.totalPages} href={(p) => (p > 1 ? `${base}?page=${p}` : base)} />

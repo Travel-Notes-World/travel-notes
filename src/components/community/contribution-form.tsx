@@ -33,14 +33,14 @@ export type FieldsProps = {
 /**
  * The shared form for questions, trip reports and activities.
  *
- * - "Save draft" keeps it private; "Submit for review" sends it to the moderators.
+ * - "Save draft" keeps it private; "Post" publishes it, or sends it to the moderators when smart publishing holds it for review.
  * - An existing draft is saved automatically every few seconds while being written.
  * - A copy is also kept in this browser, so text survives an expired session.
  * - Editing something already published sends the change for review; the public version stays
  *   as it is until a moderator approves.
  */
 export function ContributionForm({
-  type, id, initial, published = false, topics = [], intro, children, submitLabel = "Submit for review",
+  type, id, initial, published = false, topics = [], intro, children, submitLabel = "Post",
 }: {
   type: ContributionType; id: string | null; initial: FormInitial; published?: boolean; topics?: { id: string; name: string }[]
   intro?: ReactNode; children?: (props: FieldsProps) => ReactNode; submitLabel?: string
@@ -143,12 +143,12 @@ export function ContributionForm({
 
       <div className="mt-8 border-t border-paper-200 pt-6">
         {published ? (
-          <p className="t-body-sm text-ink-600 max-w-measure">Your changes go to a moderator first. The published version stays as it is until they are approved.</p>
+          <p className="t-body-sm text-ink-600 max-w-measure">Your changes go live straight away, unless they need a moderator’s check (for example, if they add a link). Then the published version stays as it is until they are approved.</p>
         ) : (
-          <p className="t-body-sm text-ink-600 max-w-measure">A moderator reviews every new post before it appears. You can save a draft and come back to it from <Link href="/account" className="text-marine-600 underline">your account</Link>.</p>
+          <p className="t-body-sm text-ink-600 max-w-measure">A new member’s first post, every activity and anything our spam checks flag are reviewed by a moderator before they appear. Other posts go live straight away. You can save a draft and come back to it from <Link href="/account" className="text-marine-600 underline">your account</Link>.</p>
         )}
         <div className="mt-4 flex flex-wrap gap-3">
-          <SubmitButton name="intent" value="submit" pendingText="Sending…">{published ? "Send changes for review" : submitLabel}</SubmitButton>
+          <SubmitButton name="intent" value="submit" pendingText="Sending…">{published ? "Save changes" : submitLabel}</SubmitButton>
           {!published && <SubmitButton name="intent" value="save" variant="secondary" pendingText="Saving…">Save draft</SubmitButton>}
         </div>
         <p role="status" aria-live="polite" className="t-body-sm text-ink-600 mt-3 mb-0">{autosave}</p>
@@ -237,5 +237,5 @@ export function QuestionFields({ value, errors }: FieldsProps) {
 type WrapperProps = { id: string | null; initial: FormInitial; published?: boolean; topics?: { id: string; name: string }[]; intro?: ReactNode };
 
 export function QuestionForm(props: WrapperProps) {
-  return <ContributionForm type="question" {...props} submitLabel="Submit question for review">{(p) => <QuestionFields {...p} />}</ContributionForm>;
+  return <ContributionForm type="question" {...props} submitLabel="Post question">{(p) => <QuestionFields {...p} />}</ContributionForm>;
 }

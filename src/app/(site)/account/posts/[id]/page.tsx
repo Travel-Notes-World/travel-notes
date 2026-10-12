@@ -53,7 +53,12 @@ export default async function OwnPostPage({ params, searchParams }: { params: Pr
 
       <div className="grid gap-4 mb-8 max-w-measure">
         {(query.sent || query.saved) && <ForgetDraftBackups keys={[`tn-draft:${post.type}:new`, ...(query.sent ? [`tn-draft:${post.type}:${post.id}`] : [])]} />}
-        {query.sent === "new" && <Notice tone="success" title="Sent for review">Thank you. A moderator will check your post. You will get a notification when they decide.</Notice>}
+        {query.sent === "published" && post.state === "published" && (
+          <Notice tone="success" title="Published">
+            Thank you. Your post is live now.{post.publicPath && <> <Link href={post.publicPath} className="text-marine-600 underline">See it on the site</Link>.</>}
+          </Notice>
+        )}
+        {query.sent === "new" && <Notice tone="success" title="Sent for review">Thank you. A moderator checks a new member’s first posts, and any post our automatic checks want a person to see, before it appears. You will get a notification when they decide.</Notice>}
         {query.sent === "edit" && <Notice tone="success" title="Changes sent for review">The public version stays as it is until a moderator approves your changes.</Notice>}
         {query.saved && <Notice tone="success" title="Draft saved">Only you can see it. Come back to it any time from your account.</Notice>}
 

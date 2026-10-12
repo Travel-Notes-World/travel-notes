@@ -709,7 +709,6 @@ export interface Staff {
    */
   communityModerator?: boolean | null;
   totpSecret?: string | null;
-  hasTotp?: boolean | null;
   updatedAt: string;
   createdAt: string;
   email: string;
@@ -1441,7 +1440,15 @@ export interface Report {
    */
   contribution?: (string | null) | Contribution;
   category:
-    'spam' | 'misleading_promotion' | 'harassment' | 'privacy' | 'copyright' | 'incorrect' | 'event_problem' | 'other';
+    | 'spam'
+    | 'misleading_promotion'
+    | 'harassment'
+    | 'sexual_content'
+    | 'privacy'
+    | 'copyright'
+    | 'incorrect'
+    | 'event_problem'
+    | 'other';
   details?: string | null;
   status: 'open' | 'resolved' | 'dismissed';
   resolution?: string | null;
@@ -2136,7 +2143,6 @@ export interface StaffSelect<T extends boolean = true> {
   active?: T;
   communityModerator?: T;
   totpSecret?: T;
-  hasTotp?: T;
   updatedAt?: T;
   createdAt?: T;
   email?: T;
@@ -2743,6 +2749,18 @@ export interface CommunitySetting {
   };
   review?: {
     /**
+     * ON (recommended): questions, trip reports, answers and replies go live straight away when the member already has approved contributions and the automatic spam checks pass (no links, phone numbers, email addresses, spam words or shouting). Everything else waits in the review queue. Activities are always reviewed. Turn OFF during a spam attack to review everything.
+     */
+    smartPublish?: boolean | null;
+    /**
+     * How many of a member’s posts or answers a moderator must approve before their next ones can go live straight away.
+     */
+    smartPublishMinApproved?: number | null;
+    /**
+     * A published post or reply reported by this many different members is hidden until a moderator checks it.
+     */
+    autoHideReports?: number | null;
+    /**
      * OFF (recommended at launch): every reply is reviewed. ON: replies from members a moderator marked as trusted are published straight away and logged. Members are never marked trusted automatically.
      */
     autoApproveTrustedReplies?: boolean | null;
@@ -2769,6 +2787,9 @@ export interface CommunitySettingsSelect<T extends boolean = true> {
   review?:
     | T
     | {
+        smartPublish?: T;
+        smartPublishMinApproved?: T;
+        autoHideReports?: T;
         autoApproveTrustedReplies?: T;
       };
   updatedAt?: T;

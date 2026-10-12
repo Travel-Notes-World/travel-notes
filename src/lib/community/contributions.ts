@@ -9,7 +9,8 @@ import { newShortId } from './ids'
 import { recountMember, requireActive } from './members'
 import { track } from './metrics'
 import { limit } from './ratelimit'
-import { assertSubmissionsOpen } from './settings'
+import { assertSubmissionsOpen, type Settings } from './settings'
+import { decidePublishing, type PublishDecision } from './spam'
 import { cleanLine, slugify } from './text'
 import type { MemberActor } from './types'
 
@@ -126,7 +127,50 @@ async function pendingCount(tx: Tx, memberId: string): Promise<number> {
   return Number(result.rows[0]?.n ?? 0)
 }
 
-export type SaveResult = { id: string; shortId: string; state: ContributionState; /** True when an edit to a published post is now waiting for review. */ editPending: boolean }
+/** Shown in the moderation history when smart publishing put something live without a person. */
+export const AUTO_PUBLISH_REASON = 'Published automatically: the member has approved contributions and the spam checks passed.'
+
+/**
+ * Smart publishing for a member's post. Activities carry dates, prices and organiser details that
+ * people act on, so they are always checked by a person.
+ */
+async function publishingFor(tx: Tx, settings: Settings, member: MemberActor, type: ContributionType, content: Content): Promise<PublishDecision> {
+  if (type === 'activity') return { publish: false, reasons: ['activities are always reviewed'] }
+  const doc = await tx.payload.findByID({ collection: 'members', id: member.id, depth: 0, req: tx.req, select: { trusted: true, publishedCount: true, answerCount: true } })
+  const newPhotos = content.photos.length
+    ? (await tx.payload.count({ collection: 'media', where: { and: [{ id: { in: content.photos } }, { state: { not_equals: 'approved' } }] }, req: tx.req })).totalDocs
+    : 0
+  return decidePublishing({
+    newPhotos,
+    enabled: settings.smartPublish,
+    minApproved: settings.smartPublishMinApproved,
+    member: { trusted: Boolean(doc.trusted), approvedCount: (doc.publishedCount ?? 0) + (doc.answerCount ?? 0) },
+    text: { title: content.title, body: [content.body, ...(content.itineraryDays ?? []).flatMap((d) => [d.title, ...d.stops.flatMap((st) => [st.title, st.place, st.description])])].join('\n') },
+  })
+}
+
+/** Make a pending submission or edit public with no moderator, exactly as an approval would. */
+async function autoApprove(tx: Tx, doc: Contribution, revisionId: string, content: Content, isEdit: boolean): Promise<Contribution> {
+  const now = new Date().toISOString()
+  const updated = await applyApprovedContent(tx, doc, content, {
+    state: 'published',
+    publishedAt: doc.publishedAt ?? now,
+    contentUpdatedAt: now,
+    publishedRevision: revisionId,
+    pendingRevision: null,
+    submittedAt: now,
+    moderation: { ...(doc.moderation ?? {}), note: '' },
+  })
+  await tx.payload.update({ collection: 'revisions', id: revisionId, data: { reviewState: 'approved', reviewedAt: now, reason: AUTO_PUBLISH_REASON }, req: tx.req })
+  await audit(tx, { action: isEdit ? 'approve_revision' : 'approve', actor: { kind: 'system' }, targetType: isEdit ? 'revision' : 'contribution', targetId: isEdit ? revisionId : doc.id, contribution: doc.id, reason: AUTO_PUBLISH_REASON })
+  const author = relId(doc.author)
+  if (author) await recountMember(tx.payload, author, tx.req)
+  return updated
+}
+
+const heldReason = (decision: PublishDecision): string | undefined => (decision.publish ? undefined : `Waiting for review: ${decision.reasons.join('; ')}.`)
+
+export type SaveResult = { id: string; shortId: string; state: ContributionState; /** True when an edit to a published post is now waiting for review. */ editPending: boolean; /** True when smart publishing put it live straight away. */ autoPublished?: boolean; path?: string }
 
 /**
  * Save a draft, submit for review, or propose an edit to something already published.
@@ -178,8 +222,13 @@ export async function saveContribution(
         req: tx.req,
         data: { contribution: existing.id, number: await nextRevisionNumber(tx, existing.id), kind: 'edit', editor: member.id, snapshot: content, reviewState: 'pending' },
       })
-      await tx.payload.update({ collection: 'contributions', id: existing.id, data: { pendingRevision: revision.id, submittedAt: new Date().toISOString() }, req: tx.req })
-      await audit(tx, { action: 'propose_revision', actor: member, targetType: 'revision', targetId: revision.id, contribution: existing.id })
+      const withPending = await tx.payload.update({ collection: 'contributions', id: existing.id, data: { pendingRevision: revision.id, submittedAt: new Date().toISOString() }, req: tx.req })
+      const decision = await publishingFor(tx, settings, member, type, content)
+      await audit(tx, { action: 'propose_revision', actor: member, targetType: 'revision', targetId: revision.id, contribution: existing.id, reason: heldReason(decision) })
+      if (decision.publish) {
+        const updated = await autoApprove(tx, withPending, revision.id, content, true)
+        return { id: existing.id, shortId: existing.shortId, state: 'published' as ContributionState, editPending: false, autoPublished: true, path: contributionPath(updated) }
+      }
       return { id: existing.id, shortId: existing.shortId, state: 'published' as ContributionState, editPending: true }
     }
 
@@ -197,16 +246,25 @@ export async function saveContribution(
       req: tx.req,
       data: { contribution: doc.id, number: await nextRevisionNumber(tx, doc.id), kind: 'submission', editor: member.id, snapshot: content, reviewState: 'pending' },
     })
-    await tx.payload.update({
+    const submitted = await tx.payload.update({
       collection: 'contributions',
       id: doc.id,
       req: tx.req,
       data: { state: 'pending', submittedAt: new Date().toISOString(), pendingRevision: revision.id, moderation: { ...(doc.moderation ?? {}), note: '' } },
     })
-    await audit(tx, { action: 'submit', actor: member, targetType: 'contribution', targetId: doc.id, contribution: doc.id, details: { revision: revision.id } })
+    const decision = await publishingFor(tx, settings, member, type, content)
+    await audit(tx, { action: 'submit', actor: member, targetType: 'contribution', targetId: doc.id, contribution: doc.id, details: { revision: revision.id }, reason: heldReason(decision) })
+    if (decision.publish) {
+      const updated = await autoApprove(tx, submitted, revision.id, content, false)
+      return { id: doc.id, shortId: doc.shortId, state: 'published' as ContributionState, editPending: false, autoPublished: true, path: contributionPath(updated) }
+    }
     return { id: doc.id, shortId: doc.shortId, state: 'pending' as ContributionState, editPending: false }
   })
   if (submit && type === 'question' && !editingPublished) await track('question_submitted')
+  if (result.autoPublished && !editingPublished) {
+    await track('contribution_approved', type)
+    if (type === 'trip') await track('trip_report_published')
+  }
   return result
 }
 

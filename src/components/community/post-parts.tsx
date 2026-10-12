@@ -82,11 +82,11 @@ export function RepliesSection({ page, answersPage, kind }: { page: PostPage; an
       <div className="mt-10 border-t border-paper-200 pt-6">
         <h2 className="t-heading-3 m-0">{kind === "answer" ? "Your answer" : "Add a reply"}</h2>
         {viewer.member ? (
-          <ReplyForm contributionId={post.id} returnTo={returnTo} label={kind === "answer" ? "Your answer" : "Your reply"} buttonText={kind === "answer" ? "Send answer for review" : "Send reply for review"} />
+          <ReplyForm contributionId={post.id} returnTo={returnTo} label={kind === "answer" ? "Your answer" : "Your reply"} buttonText={kind === "answer" ? "Post answer" : "Post reply"} />
         ) : (
           <div className="mt-3"><SignInTo action={kind === "answer" ? "answer" : "reply"} returnTo={returnTo} /></div>
         )}
-        <p className="t-body-sm text-ink-600 mt-3">New {noun === "reply" ? "replies" : `${noun}s`} are checked by a moderator before they appear. Please follow the <Link href="/community/guidelines" className="text-marine-600 underline">community rules</Link>.</p>
+        <p className="t-body-sm text-ink-600 mt-3">A new member’s first {noun}, and any {noun} our spam checks flag, is checked by a moderator before it appears. Please follow the <Link href="/community/guidelines" className="text-marine-600 underline">community rules</Link>.</p>
       </div>
     </section>
   );
