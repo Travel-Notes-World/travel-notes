@@ -219,7 +219,7 @@ export default async function ReviewPostPage({ params }: { params: Promise<{ id:
         intro={
           <span className="flex flex-wrap items-center gap-3 t-body-sm">
             <StatusBadge state={doc.state} />
-            {doc.submittedAt && <span>Sent {formatDateTime(doc.submittedAt)} (waiting {formatAge(doc.submittedAt)})</span>}
+            {doc.submittedAt && <span>Sent {formatDateTime(doc.submittedAt)}{view.proposed ? ` (waiting ${formatAge(doc.submittedAt)})` : ""}</span>}
             {view.path && <Link href={view.path} className="text-marine-600 underline">Open the public page</Link>}
           </span>
         }
