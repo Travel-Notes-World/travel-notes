@@ -6,10 +6,11 @@ import { cms, inTransaction, relId, relIds, run, sql, type Tx } from './db'
 import { destinationsByIds, isUuid, withAncestors } from './destinations'
 import { fail, invalid } from './errors'
 import { newShortId } from './ids'
-import { recountMember, requireActive } from './members'
+import { hasPaidListing, listingFee, needsListingFee, refundListingIfPaid } from './listings'
+import { recountMember, requireActive, toActor } from './members'
 import { track } from './metrics'
 import { limit } from './ratelimit'
-import { assertSubmissionsOpen, type Settings } from './settings'
+import { assertSubmissionsOpen, getSettings, type Settings } from './settings'
 import { decidePublishing, type PublishDecision } from './spam'
 import { cleanLine, slugify } from './text'
 import type { MemberActor } from './types'
@@ -170,7 +171,49 @@ async function autoApprove(tx: Tx, doc: Contribution, revisionId: string, conten
 
 const heldReason = (decision: PublishDecision): string | undefined => (decision.publish ? undefined : `Waiting for review: ${decision.reasons.join('; ')}.`)
 
-export type SaveResult = { id: string; shortId: string; state: ContributionState; /** True when an edit to a published post is now waiting for review. */ editPending: boolean; /** True when smart publishing put it live straight away. */ autoPublished?: boolean; path?: string }
+/** Send a saved draft for review, or publish it straight away under smart publishing. */
+async function submitInTx(tx: Tx, settings: Settings, member: MemberActor, doc: Contribution, type: ContributionType, content: Content, note?: string): Promise<SaveResult> {
+  const revision = await tx.payload.create({
+    collection: 'revisions',
+    req: tx.req,
+    data: { contribution: doc.id, number: await nextRevisionNumber(tx, doc.id), kind: 'submission', editor: member.id, snapshot: content, reviewState: 'pending' },
+  })
+  const submitted = await tx.payload.update({
+    collection: 'contributions',
+    id: doc.id,
+    req: tx.req,
+    data: { state: 'pending', submittedAt: new Date().toISOString(), pendingRevision: revision.id, moderation: { ...(doc.moderation ?? {}), note: '' } },
+  })
+  const decision = await publishingFor(tx, settings, member, type, content)
+  const reason = [heldReason(decision), note].filter(Boolean).join(' ') || undefined
+  await audit(tx, { action: 'submit', actor: member, targetType: 'contribution', targetId: doc.id, contribution: doc.id, details: { revision: revision.id }, reason })
+  if (decision.publish) {
+    const updated = await autoApprove(tx, submitted, revision.id, content, false)
+    return { id: doc.id, shortId: doc.shortId, state: 'published' as ContributionState, editPending: false, autoPublished: true, path: contributionPath(updated) }
+  }
+  return { id: doc.id, shortId: doc.shortId, state: 'pending' as ContributionState, editPending: false }
+}
+
+/**
+ * Submit a member's saved draft for review once its listing fee is paid. Called from the payment
+ * confirmation, which can arrive twice (the browser and Stripe's webhook): the second call finds the
+ * post already submitted and does nothing.
+ */
+export async function submitPaidDraft(memberId: string, contributionId: string): Promise<{ submitted: boolean }> {
+  const payload = await cms()
+  const memberDoc = await payload.findByID({ collection: 'members', id: memberId, depth: 0, disableErrors: true })
+  if (!memberDoc || memberDoc.status === 'deleted') return { submitted: false }
+  const member = toActor(memberDoc)
+  const settings = await getSettings()
+  return inTransaction(async (tx) => {
+    const doc = await tx.payload.findByID({ collection: 'contributions', id: contributionId, depth: 0, disableErrors: true, req: tx.req })
+    if (!doc || relId(doc.author) !== memberId || !['draft', 'changes_requested'].includes(doc.state)) return { submitted: false }
+    await submitInTx(tx, settings, member, doc, doc.type as ContributionType, docToContent(doc), 'Listing fee paid.')
+    return { submitted: true }
+  })
+}
+
+export type SaveResult = { id: string; shortId: string; state: ContributionState; /** True when an edit to a published post is now waiting for review. */ editPending: boolean; /** True when smart publishing put it live straight away. */ autoPublished?: boolean; path?: string; /** A business listing saved as a draft that must be paid for before it is submitted. */ needsPayment?: boolean }
 
 /**
  * Save a draft, submit for review, or propose an edit to something already published.
@@ -240,25 +283,11 @@ export async function saveContribution(
     await releasePhotos(tx, doc.id, content.photos)
 
     if (!submit) return { id: doc.id, shortId: doc.shortId, state: doc.state as ContributionState, editPending: false }
-
-    const revision = await tx.payload.create({
-      collection: 'revisions',
-      req: tx.req,
-      data: { contribution: doc.id, number: await nextRevisionNumber(tx, doc.id), kind: 'submission', editor: member.id, snapshot: content, reviewState: 'pending' },
-    })
-    const submitted = await tx.payload.update({
-      collection: 'contributions',
-      id: doc.id,
-      req: tx.req,
-      data: { state: 'pending', submittedAt: new Date().toISOString(), pendingRevision: revision.id, moderation: { ...(doc.moderation ?? {}), note: '' } },
-    })
-    const decision = await publishingFor(tx, settings, member, type, content)
-    await audit(tx, { action: 'submit', actor: member, targetType: 'contribution', targetId: doc.id, contribution: doc.id, details: { revision: revision.id }, reason: heldReason(decision) })
-    if (decision.publish) {
-      const updated = await autoApprove(tx, submitted, revision.id, content, false)
-      return { id: doc.id, shortId: doc.shortId, state: 'published' as ContributionState, editPending: false, autoPublished: true, path: contributionPath(updated) }
+    // A business listing is submitted only once its fee is paid (see listings.ts).
+    if (needsListingFee(type, content) && listingFee(settings).charge && !(await hasPaidListing(tx, doc.id))) {
+      return { id: doc.id, shortId: doc.shortId, state: doc.state as ContributionState, editPending: false, needsPayment: true }
     }
-    return { id: doc.id, shortId: doc.shortId, state: 'pending' as ContributionState, editPending: false }
+    return submitInTx(tx, settings, member, doc, type, content)
   })
   if (submit && type === 'question' && !editingPublished) await track('question_submitted')
   if (result.autoPublished && !editingPublished) {
@@ -296,6 +325,8 @@ export async function deleteDraft(actor: MemberActor, id: string): Promise<{ ok:
   if (!actor || actor.kind !== 'member') fail('auth', 'Please sign in to continue.')
   const doc = await ownContribution(actor, id)
   if (!['draft', 'changes_requested', 'rejected'].includes(doc.state)) fail('conflict', 'Only drafts and items that were not accepted can be deleted. Withdraw it first if it is waiting for review.')
+  // A paid business listing deleted before it was published gets its fee back.
+  await refundListingIfPaid(doc.id, 'Deleted by the member before it was published.')
   await inTransaction(async (tx) => {
     await run(tx.payload, sql`UPDATE "media" SET "state" = 'removed', "contribution_id" = NULL WHERE "contribution_id" = ${doc.id}::uuid`, tx.req)
     await tx.payload.delete({ collection: 'revisions', where: { contribution: { equals: doc.id } }, req: tx.req })

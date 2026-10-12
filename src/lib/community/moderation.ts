@@ -9,6 +9,7 @@ import { enqueueEmail } from './email/outbox'
 import { emailMode } from './email/transport'
 import { fail, invalid } from './errors'
 import { changeEventStatus, notifyEventChange } from './events'
+import { refundListingIfPaid } from './listings'
 import { recountMember } from './members'
 import { track } from './metrics'
 import { notify } from './notify'
@@ -122,6 +123,9 @@ export async function decideContribution(staffIn: StaffActor, id: unknown, input
       await tellAuthor(tx, doc, `${input.decision}:${revision!.id}`, rejected ? `“${doc.title}” was not accepted.` : `A moderator asked for changes to “${doc.title}”.`, reason, `/account/posts/${doc.id}`)
     }
   })
+  // A declined business listing gets its fee back. Sending it back for changes does not: the
+  // member fixes it and sends it again without paying twice.
+  if (input.decision === 'reject' && !isEdit) await refundListingIfPaid(doc.id, `Declined by a moderator: ${reason}`)
   return { ok: true }
 }
 

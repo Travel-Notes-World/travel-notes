@@ -54,13 +54,15 @@ export async function saveContributionAction(_: ActionState, form: FormData): Pr
   const type = (['question', 'trip', 'activity'].includes(typeValue) ? typeValue : 'question') as ContributionType
   const intent = str(form, 'intent') === 'submit' ? 'submit' : 'save'
   const id = str(form, 'id') || null
-  let saved: { id: string; editPending: boolean; state: string; autoPublished?: boolean }
+  let saved: { id: string; editPending: boolean; state: string; autoPublished?: boolean; needsPayment?: boolean }
   try {
     const { member } = await getViewer()
     saved = await saveContribution(member!, { id, type, input: readContributionForm(type, form), intent })
   } catch (error) {
     return toState(error, formValues(form))
   }
+  // A business listing is saved and the member goes on to pay; it is submitted once paid.
+  if (intent === 'submit' && saved.needsPayment) redirect(`/account/posts/${saved.id}/pay`)
   if (intent === 'submit') redirect(`/account/posts/${saved.id}?sent=${saved.autoPublished ? 'published' : saved.editPending ? 'edit' : 'new'}`)
   // A brand-new draft moves to its own address, so pressing Save again updates it instead of making a copy.
   if (!id) redirect(`/account/posts/${saved.id}?saved=1`)

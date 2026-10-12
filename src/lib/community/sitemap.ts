@@ -1,7 +1,7 @@
 import { TYPE_PATH, type ContributionType } from './constants'
 import { contributionPath } from './contributions'
 import { cms, run, sql } from './db'
-import { siteIndexable } from './seo'
+import { ACTIVITY_INDEX_DAYS_AFTER_END, siteIndexable } from './seo'
 import { getSettings } from './settings'
 
 export type SitemapEntry = { path: string; lastModified?: string }
@@ -27,10 +27,13 @@ export async function communitySitemap(options: { ignoreSiteFlag?: boolean } = {
   const policyQuestions = settings.questionsAuto
     ? sql`OR ("indexing" = 'policy' AND "type" = 'question' AND COALESCE("reply_count", 0) >= ${settings.questionMinAnswers} AND "question_duplicate_of_id" IS NULL)`
     : sql``
+  const policyActivities = settings.activitiesAuto
+    ? sql`OR ("indexing" = 'policy' AND "type" = 'activity' AND COALESCE("activity_ends_at", "activity_starts_at") > now() - make_interval(days => ${ACTIVITY_INDEX_DAYS_AFTER_END}))`
+    : sql``
   const posts = await run(
     payload,
     sql`SELECT "type", "short_id", "slug", COALESCE("content_updated_at", "published_at") AS modified FROM "contributions"
-        WHERE "state" = 'published' AND ("indexing" = 'allow' ${policyQuestions})
+        WHERE "state" = 'published' AND ("indexing" = 'allow' ${policyQuestions} ${policyActivities})
         ORDER BY "published_at" DESC NULLS LAST, "id" LIMIT 20000`,
   )
   const typesWithIndexable = new Set<string>()
@@ -41,6 +44,8 @@ export async function communitySitemap(options: { ignoreSiteFlag?: boolean } = {
   // A listing page is worth indexing only once it lists something indexable.
   for (const type of ['question', 'trip', 'activity'] as ContributionType[]) if (typesWithIndexable.has(type)) entries.push({ path: TYPE_PATH[type] })
   if (typesWithIndexable.size) entries.push({ path: '/community' })
+  // The page that explains business listings is useful to businesses whatever is listed today.
+  entries.push({ path: '/activities/list-your-activity' })
 
   const hubs = await run(
     payload,

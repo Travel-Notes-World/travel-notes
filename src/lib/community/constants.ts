@@ -167,6 +167,7 @@ export const MODERATION_ACTIONS = [
   'resolve_report', 'dismiss_report',
   'suspend', 'unsuspend', 'set_trust', 'account_deleted', 'send_password_reset', 'resend_verification', 'confirm_email',
   'accept_suggestion', 'reject_suggestion',
+  'listing_paid', 'refund_listing',
 ] as const
 export type ModerationAction = (typeof MODERATION_ACTIONS)[number]
 

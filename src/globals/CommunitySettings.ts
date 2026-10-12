@@ -27,8 +27,39 @@ export const CommunitySettings: GlobalConfig = {
       admin: { description: 'Approval makes a page public. This policy decides separately whether search engines may index it. A moderator can override it per page.' },
       fields: [
         { name: 'questionsAuto', type: 'checkbox', defaultValue: true, admin: { description: 'ON: a question becomes indexable once it has enough approved answers. OFF: every question needs a moderator decision.' } },
+        { name: 'activitiesAuto', type: 'checkbox', defaultValue: true, admin: { description: 'ON: a published activity (always checked by a moderator) is indexable until 30 days after it ends. OFF: every activity needs an administrator decision.' } },
         { name: 'questionMinAnswers', type: 'number', defaultValue: 1, min: 1, max: 10, admin: { description: 'Approved answers needed before a question is indexable.' } },
         { name: 'profileMinPublished', type: 'number', defaultValue: 2, min: 1, max: 50, admin: { description: 'Approved contributions or answers a member needs before their public profile is indexable.' } },
+      ],
+    },
+    {
+      name: 'listings',
+      type: 'group',
+      label: 'Paid business listings',
+      admin: {
+        description:
+          'A fee for commercial activities (tours, classes, paid experiences run by a business). Member meet-ups and public events stay free. Payments are taken by Stripe and only work once the STRIPE_SECRET_KEY and STRIPE_WEBHOOK_SECRET settings are added in Vercel and the seller details below are filled in. Until then, business listings are free.',
+      },
+      fields: [
+        { name: 'enabled', type: 'checkbox', defaultValue: false, label: 'Charge for business listings' },
+        { name: 'feeAud', type: 'number', defaultValue: 5, min: 0, max: 1000, label: 'Price per listing (AUD, including GST)' },
+        { name: 'priceLabel', type: 'text', defaultValue: 'Launch price', maxLength: 40, label: 'Price label', admin: { description: 'Shown next to the price, for example “Launch price”. Never show an earlier price that was not really charged.' } },
+        { name: 'gstRegistered', type: 'checkbox', defaultValue: true, label: 'The seller is registered for GST', admin: { description: 'ON: invoices are “Tax invoice” and show the GST included (1/11 of the price). OFF: a receipt with no GST.' } },
+        { name: 'sellerName', type: 'text', maxLength: 120, label: 'Seller legal name', admin: { description: 'The person or entity that receives the money and is named on invoices. Check with your accountant.' } },
+        {
+          name: 'sellerAbn',
+          type: 'text',
+          maxLength: 14,
+          label: 'Seller ABN',
+          validate: (value: unknown) => {
+            if (!value) return true
+            const digits = String(value).replace(/\s/g, '')
+            if (!/^\d{11}$/.test(digits)) return 'An ABN has 11 digits.'
+            const weights = [10, 1, 3, 5, 7, 9, 11, 13, 15, 17, 19]
+            const sum = digits.split('').reduce((total, d, i) => total + (Number(d) - (i === 0 ? 1 : 0)) * weights[i], 0)
+            return sum % 89 === 0 ? true : 'This is not a valid ABN. Please check the number.'
+          },
+        },
       ],
     },
     {

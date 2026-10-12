@@ -16,7 +16,10 @@ export const siteIndexable = (): boolean => process.env.NEXT_PUBLIC_INDEXABLE ==
 
 export type IndexDecision = { index: boolean; reason: string }
 
-export function contributionIndexing(post: Pick<Detail, 'type' | 'indexing' | 'replyCount'> & { questionDetail?: Detail['questionDetail'] }, settings: Settings): IndexDecision {
+/** How long after it ends an activity page stays in search engines, so people searching for it afterwards still find it. */
+export const ACTIVITY_INDEX_DAYS_AFTER_END = 30
+
+export function contributionIndexing(post: Pick<Detail, 'type' | 'indexing' | 'replyCount'> & { questionDetail?: Detail['questionDetail']; activity?: Pick<NonNullable<Detail['activity']>, 'startsAt' | 'endsAt'> | null }, settings: Settings, now = new Date()): IndexDecision {
   if (post.indexing === 'block') return { index: false, reason: 'A moderator kept this page out of search engines.' }
   if (post.indexing === 'allow') return { index: true, reason: 'An administrator allowed indexing.' }
   if (post.type === 'question') {
@@ -27,7 +30,17 @@ export function contributionIndexing(post: Pick<Detail, 'type' | 'indexing' | 'r
       ? { index: true, reason: `Has at least ${settings.questionMinAnswers} approved answer(s).` }
       : { index: false, reason: 'No approved answer yet.' }
   }
-  // Trip reports and activities are indexed only after an eligibility review ("allow").
+  if (post.type === 'activity') {
+    // Every activity is checked by a moderator before it is published, so a published one is
+    // eligible. Past events drop out a while after they end.
+    if (!settings.activitiesAuto) return { index: false, reason: 'Activities need an administrator decision before indexing.' }
+    const end = post.activity?.endsAt ?? post.activity?.startsAt
+    if (end && now.getTime() - new Date(end).getTime() > ACTIVITY_INDEX_DAYS_AFTER_END * 86_400_000) {
+      return { index: false, reason: `Ended more than ${ACTIVITY_INDEX_DAYS_AFTER_END} days ago.` }
+    }
+    return { index: true, reason: 'Reviewed by a moderator, and upcoming or recently ended.' }
+  }
+  // Trip reports are indexed only after an eligibility review ("allow").
   return { index: false, reason: 'Waiting for an eligibility review by an administrator.' }
 }
 
@@ -100,6 +113,11 @@ function isoInZone(local: string, instant: string | null, allDay: boolean): stri
  * Event markup, only for a listing that really is a dated event with a place or an online format.
  * A general activity with no date gets none. Travel Notes is never named as the organiser.
  */
+function paidOffer(priceMinor: number, currency: string, url: string): Record<string, unknown> {
+  const digits = new Intl.NumberFormat('en', { style: 'currency', currency }).resolvedOptions().maximumFractionDigits ?? 2
+  return { '@type': 'Offer', url, priceCurrency: currency, price: (priceMinor / 10 ** digits).toFixed(digits), availability: 'https://schema.org/InStock' }
+}
+
 export function eventJsonLd(post: Detail): Record<string, unknown> | null {
   const a = post.activity
   if (!a || !a.startLocal || !a.timeZone) return null
@@ -119,10 +137,8 @@ export function eventJsonLd(post: Detail): Record<string, unknown> | null {
       : { '@type': 'Place', name: a.venueName || a.venueAddress, ...(a.venueAddress ? { address: a.venueAddress } : {}) },
     ...(a.organiserName ? { organizer: { '@type': 'Organization', name: a.organiserName } } : {}),
     ...(post.photos.length ? { image: post.photos.map((p) => abs(p.url)) } : {}),
-    ...(a.priceState === 'free' ? { isAccessibleForFree: true } : {}),
-    ...(a.priceState === 'paid' && a.priceMinor !== null && a.priceCurrency && a.bookingUrl
-      ? { offers: { '@type': 'Offer', url: a.bookingUrl, priceCurrency: a.priceCurrency, price: (a.priceMinor / 10 ** new Intl.NumberFormat('en', { style: 'currency', currency: a.priceCurrency }).resolvedOptions().maximumFractionDigits!).toFixed(new Intl.NumberFormat('en', { style: 'currency', currency: a.priceCurrency }).resolvedOptions().maximumFractionDigits!) } }
-      : {}),
+    ...(a.priceState === 'free' ? { isAccessibleForFree: true, offers: { '@type': 'Offer', price: '0', priceCurrency: a.priceCurrency ?? 'AUD', url: a.bookingUrl ?? abs(post.path), availability: 'https://schema.org/InStock' } } : {}),
+    ...(a.priceState === 'paid' && a.priceMinor !== null && a.priceCurrency ? { offers: paidOffer(a.priceMinor, a.priceCurrency, a.bookingUrl ?? abs(post.path)) } : {}),
   }
 }
 

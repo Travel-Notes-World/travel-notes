@@ -1,4 +1,5 @@
 import { Contributions } from './Contributions'
+import { ListingPayments } from './ListingPayments'
 import { Bookmarks, Follows, Plans, Rsvps, Votes } from './Engagement'
 import { Media } from './Media'
 import { Members } from './Members'
@@ -10,4 +11,5 @@ import { JobRuns, MetricCounters, RateLimits } from './System'
 export const communityCollections = [
   Members, Contributions, Replies, Revisions, Media, Votes, Bookmarks, Follows, Rsvps, Plans,
   Reports, ModerationActions, DestinationSuggestions, Notifications, EmailOutbox, RateLimits, MetricCounters, JobRuns,
+  ListingPayments,
 ]
