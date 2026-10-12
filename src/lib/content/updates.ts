@@ -36,6 +36,8 @@ export type UpdateView = {
   categoryLabel: string
   affectsAustralians: boolean
   destinations: { name: string; path: string }[]
+  /** Ids of the published places, for finding related updates. */
+  destinationIds: string[]
   sources: { name: string; url: string }[]
   author: { name: string; slug: string } | null
   firstPublished: string
@@ -55,10 +57,10 @@ const populated = <T extends { id: string }>(value: string | T | null | undefine
 
 export function toView(doc: TravelUpdate): UpdateView {
   const author = populated<Author>(doc.author)
-  const destinations = (doc.destinations ?? [])
+  const places = (doc.destinations ?? [])
     .map((d) => populated<Destination>(d))
     .filter((d): d is Destination => Boolean(d?.path) && d?._status === 'published')
-    .map((d) => ({ name: d.name, path: d.path as string }))
+  const destinations = places.map((d) => ({ name: d.name, path: d.path as string }))
   const firstPublished = doc.firstPublishedAt ?? doc.createdAt
   return {
     id: doc.id,
@@ -70,6 +72,7 @@ export function toView(doc: TravelUpdate): UpdateView {
     categoryLabel: categoryLabel(doc.category),
     affectsAustralians: Boolean(doc.affectsAustralians),
     destinations,
+    destinationIds: places.map((d) => d.id),
     // Only well-formed https links are ever shown, whatever is in the database.
     sources: (doc.sources ?? []).filter((s) => s.name && validSourceUrl(s.url)).map((s) => ({ name: s.name, url: s.url.trim() })),
     author: author ? { name: author.name, slug: author.slug } : null,
@@ -138,6 +141,21 @@ export async function activeUpdatesFor(payload: Payload, destinationIds: string[
   return found.docs.map(toView)
 }
 
+/**
+ * Other updates a reader of this one may need: the newest about the same places, then the newest in
+ * the same category. Never the update itself, and never more than `limit`.
+ */
+export async function relatedUpdates(payload: Payload, update: Pick<UpdateView, 'id' | 'category' | 'destinationIds'>, limit = 4): Promise<UpdateView[]> {
+  const seen = new Set([update.id])
+  const out: UpdateView[] = []
+  const add = (items: UpdateView[]) => {
+    for (const u of items) if (!seen.has(u.id) && out.length < limit) { seen.add(u.id); out.push(u) }
+  }
+  if (update.destinationIds?.length) add((await listUpdates(payload, { destinationIds: update.destinationIds, pageSize: limit + 1 })).items)
+  if (out.length < limit) add((await listUpdates(payload, { category: update.category, pageSize: limit + 1 })).items)
+  return out
+}
+
 /** Updates first published in the last `days` days, newest first: the list to copy into the newsletter. */
 export async function updatesSince(payload: Payload, days: number, now = new Date()): Promise<UpdateView[]> {
   const since = new Date(now.getTime() - days * 86_400_000).toISOString()
@@ -177,9 +195,12 @@ export async function updateSitemapEntries(payload: Payload): Promise<{ path: st
 const cached = <T>(key: string[], fn: (payload: Payload) => Promise<T>, tags: string[] = [UPDATES_TAG]) =>
   unstable_cache(async () => fn(await getPayload({ config })), key, { tags, revalidate: REVALIDATE_SECONDS })()
 
-export const getUpdate = (slug: string) => cached(['travel-update', slug], (p) => findUpdate(p, slug), [UPDATES_TAG, updateTag(slug)])
+export const getUpdate = (slug: string) => cached(['travel-update-v2', slug], (p) => findUpdate(p, slug), [UPDATES_TAG, updateTag(slug)])
 
 export const getUpdates = (filters: UpdateFilters) =>
-  cached(['travel-updates', String(filters.page ?? 1), filters.category ?? '', (filters.destinationIds ?? []).join(','), String(filters.pageSize ?? '')], (p) => listUpdates(p, filters))
+  cached(['travel-updates-v2', String(filters.page ?? 1), filters.category ?? '', (filters.destinationIds ?? []).join(','), String(filters.pageSize ?? '')], (p) => listUpdates(p, filters))
 
 export const getRecentUpdates = (days: number) => cached(['travel-updates-since', String(days)], (p) => updatesSince(p, days))
+
+export const getRelatedUpdates = (update: UpdateView) =>
+  cached(['travel-updates-related', update.id, update.category, (update.destinationIds ?? []).join(',')], (p) => relatedUpdates(p, update))
