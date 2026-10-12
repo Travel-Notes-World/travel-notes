@@ -29,3 +29,9 @@ export function validSourceUrl(value: unknown): boolean {
     return false
   }
 }
+
+/** True once the whole end day is over (UTC), so an update is never marked ended on its last day. */
+export function hasEnded(endDate: string | null, now: Date = new Date()): boolean {
+  if (!endDate) return false
+  return new Date(`${endDate.slice(0, 10)}T23:59:59Z`).getTime() < now.getTime()
+}

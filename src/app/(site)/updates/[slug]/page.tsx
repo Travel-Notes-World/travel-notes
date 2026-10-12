@@ -5,9 +5,10 @@ import { notFound } from "next/navigation";
 import { Breadcrumbs } from "@/components/Breadcrumbs";
 import { JsonLd } from "@/components/community/ui";
 import { RichBody } from "@/components/RichBody";
-import { AustraliaBadge, formatDay, formatPublished } from "@/components/UpdateItem";
+import { AustraliaBadge, formatDay, formatPublished, UpdateItem } from "@/components/UpdateItem";
 import { breadcrumbJsonLd } from "@/lib/community/seo";
-import { getUpdate, type UpdateView } from "@/lib/content/updates";
+import { hasEnded } from "@/lib/content/updateRules";
+import { getRelatedUpdates, getUpdate, type UpdateView } from "@/lib/content/updates";
 import { siteUrl } from "@/lib/site";
 
 /** One travel update: /updates/<slug>. Built on first visit and cached; publishing expires it. */
@@ -25,11 +26,28 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   return {
     title: u.seo.title,
     description: u.seo.description,
-    alternates: { canonical: u.path },
+    alternates: { canonical: u.path, types: { "application/rss+xml": "/updates/feed.xml" } },
     ...(u.seo.noindex ? { robots: { index: false, follow: true } } : {}),
-    openGraph: { type: "article", title: u.seo.title, description: u.seo.description, url: u.path, publishedTime: u.firstPublished, ...(u.updated ? { modifiedTime: u.updated } : {}) },
+    openGraph: {
+      type: "article",
+      siteName: "Travel Notes",
+      locale: "en_AU",
+      title: u.seo.title,
+      description: u.seo.description,
+      url: u.path,
+      publishedTime: u.firstPublished,
+      ...(u.updated ? { modifiedTime: u.updated } : {}),
+      section: u.categoryLabel,
+      ...(u.author ? { authors: [`${siteUrl}/authors/${u.author.slug}`] } : {}),
+      tags: u.destinations.map((d) => d.name),
+      images: [{ url: shareImage(u.slug), width: 1200, height: 630, alt: u.title }],
+    },
+    twitter: { card: "summary_large_image", title: u.seo.title, description: u.seo.description, images: [shareImage(u.slug)] },
   };
 }
+
+/** The generated 1200 × 630 share image for an update (src/app/og/updates/[slug]/route.tsx). */
+const shareImage = (slug: string) => `/og/updates/${slug}`;
 
 /** Structured data built only from what the page shows. */
 function newsJsonLd(u: UpdateView) {
@@ -42,8 +60,11 @@ function newsJsonLd(u: UpdateView) {
     dateModified: u.updated ?? u.firstPublished,
     articleSection: u.categoryLabel,
     mainEntityOfPage: `${siteUrl}${u.path}`,
+    url: `${siteUrl}${u.path}`,
+    inLanguage: "en-AU",
+    image: [`${siteUrl}${shareImage(u.slug)}`],
     ...(u.author ? { author: { "@type": "Person", name: u.author.name, url: `${siteUrl}/authors/${u.author.slug}` } } : {}),
-    publisher: { "@type": "Organization", name: "Travel Notes", url: siteUrl },
+    publisher: { "@type": "Organization", name: "Travel Notes", url: siteUrl, logo: { "@type": "ImageObject", url: `${siteUrl}/brand/logo.png`, width: 600, height: 120 } },
     isBasedOn: u.sources.map((s) => s.url),
     ...(u.destinations.length ? { about: u.destinations.map((d) => ({ "@type": "Place", name: d.name, url: `${siteUrl}/destinations/${d.path}` })) } : {}),
   };
@@ -54,6 +75,9 @@ export default async function UpdatePage({ params }: Props) {
   if (!u) notFound();
   const crumbs = [{ label: "Home", href: "/" }, { label: "Travel updates", href: "/updates" }, { label: u.title }];
   const main = u.sources[0];
+  const related = await getRelatedUpdates(u);
+  // An update stays published after its end date (people still search for it), but says clearly that it has ended.
+  const ended = hasEnded(u.endDate);
 
   return (
     <article className="mx-auto max-w-container px-4 md:px-6 lg:px-8 pt-6 md:pt-10 pb-16">
@@ -98,6 +122,12 @@ export default async function UpdatePage({ params }: Props) {
         )}
       </dl>
 
+      {ended && (
+        <p role="note" className="mt-6 max-w-measure t-body-sm border-l-4 border-signal-warning pl-4 m-0">
+          <strong>This has ended.</strong> It applied until {formatDay(u.endDate!)}. Check the official source for the current rules.
+        </p>
+      )}
+
       {u.updateNote && (
         <p role="note" className="mt-6 max-w-measure t-body-sm border-l-4 border-ochre-500 pl-4 m-0">
           <strong>What changed{u.updated ? ` on ${formatPublished(u.updated)}` : ""}:</strong> {u.updateNote}
@@ -125,6 +155,15 @@ export default async function UpdatePage({ params }: Props) {
           or read <Link href="/corrections" className="text-marine-600 underline">how we handle corrections</Link>.
         </p>
       </section>
+
+      {related.length > 0 && (
+        <section className="mt-12 max-w-measure" aria-labelledby="related-heading">
+          <h2 id="related-heading" className="t-heading-3 m-0">Related travel updates</h2>
+          <div className="mt-4 grid gap-4">
+            {related.map((r) => <UpdateItem key={r.id} update={r} headingLevel="h3" />)}
+          </div>
+        </section>
+      )}
 
       <p className="mt-10 t-body-sm m-0"><Link href="/updates" className="text-marine-600 underline">All travel updates</Link></p>
     </article>

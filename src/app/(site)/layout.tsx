@@ -34,7 +34,7 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" className={`${newsreader.variable} ${instrumentSans.variable}`} suppressHydrationWarning>
+    <html lang="en-AU" className={`${newsreader.variable} ${instrumentSans.variable}`} suppressHydrationWarning>
       <body suppressHydrationWarning>
         <a href="#main" className="sr-only focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:z-50 focus:bg-marine-600 focus:text-on-marine focus:px-4 focus:py-2 focus:rounded-md">
           Skip to content

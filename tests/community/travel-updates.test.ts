@@ -184,3 +184,28 @@ describe('travel updates: addresses, sitemap and feed', () => {
     assert.ok(xml.trim().endsWith('</rss>'))
   })
 })
+
+describe('travel updates: search and sharing', () => {
+  it('related updates: same places first, then the same category, never itself, never drafts', async () => {
+    const main = await publish('Related main', { destinations: [places.japan.id], category: 'entry-rules' })
+    const samePlace = await publish('Related same place', { destinations: [places.japan.id], category: 'closures' })
+    const sameCategory = await publish('Related same category', { destinations: [places.thailand.id], category: 'entry-rules' })
+    await draft('Related draft', { destinations: [places.japan.id] })
+    const view = await U.findUpdate(payload, main.slug)
+    assert.deepEqual(view.destinationIds, [places.japan.id])
+    const related = titles(await U.relatedUpdates(payload, view, 10))
+    assert.ok(!related.includes('Related main'), 'never the update itself')
+    assert.ok(!related.includes('Related draft'), 'never a draft')
+    assert.ok(related.indexOf('Related same place') < related.indexOf('Related same category'), 'same place comes first')
+    assert.equal((await U.relatedUpdates(payload, view, 1)).length, 1, 'respects the limit')
+    void samePlace
+    void sameCategory
+  })
+
+  it('an update counts as ended only after its whole end day', async () => {
+    const { hasEnded } = await import('../../src/lib/content/updateRules')
+    assert.equal(hasEnded(null), false)
+    assert.equal(hasEnded('2026-10-12', new Date('2026-10-12T20:00:00Z')), false)
+    assert.equal(hasEnded('2026-10-12', new Date('2026-10-13T00:00:01Z')), true)
+  })
+})
