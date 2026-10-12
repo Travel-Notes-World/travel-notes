@@ -6,7 +6,7 @@ import { findDestinationsAction, type DestinationOption } from "@/lib/community/
 import { COST_BASES, COST_CATEGORIES, COST_KINDS, COST_SCOPES, LIMITS, PARTY_TYPES } from "@/lib/community/constants";
 import { formatMoney, isCurrency, parseAmount, totalsByCurrency, type CostLine } from "@/lib/community/money";
 import type { ActionState } from "@/lib/community/next/forms";
-import { ContributionForm, CurrencyInput, type FieldsProps, type FormInitial } from "./contribution-form";
+import { ContributionForm, CurrencyInput, DEFAULT_CURRENCY, type FieldsProps, type FormInitial } from "./contribution-form";
 import { PhotoUpload } from "./photo-upload";
 import { describedBy, Field, FieldError, inputClass, secondaryButtonClass } from "./ui";
 
@@ -179,7 +179,7 @@ function toCostRow(r: Raw, key: number): CostRow {
     category: text(r.category),
     note: text(r.note),
     amount: text(r.amount),
-    currency: text(r.currency).toUpperCase(),
+    currency: text(r.currency).toUpperCase() || DEFAULT_CURRENCY,
     basis: text(r.basis) || "total",
     quantity: text(r.quantity) || "1",
     kind: text(r.kind) || "measured",
@@ -330,7 +330,7 @@ const toStop = (r: Raw, key: number): Stop => ({
   place: text(r.place),
   timeNote: text(r.timeNote),
   cost: text(r.cost),
-  costCurrency: text(r.costCurrency).toUpperCase(),
+  costCurrency: text(r.costCurrency).toUpperCase() || DEFAULT_CURRENCY,
   description: text(r.description),
 });
 
