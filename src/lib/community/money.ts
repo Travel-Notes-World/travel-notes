@@ -31,7 +31,8 @@ export function minorDigits(currency: string): number {
  */
 export function parseAmount(input: unknown, currency: string): number | null {
   if (typeof input !== 'string' && typeof input !== 'number') return null
-  const text = String(input).trim().replace(/[\s,_']/g, '')
+  // People often type "$1,599" or "A$1500": the symbol is dropped, the currency field says which one.
+  const text = String(input).trim().replace(/^(?:[A-Z]{1,3})?[$€£¥₹]/i, '').replace(/[\s,_']/g, '')
   if (!/^\d{1,12}(\.\d{1,3})?$/.test(text)) return null
   const digits = minorDigits(currency)
   const [whole, fraction = ''] = text.split('.')

@@ -112,7 +112,7 @@ export async function parseContent(
     const durationDays = intIn(input.durationDays, 1, 730)
     if (Number.isNaN(durationDays)) errors.durationDays = 'Enter a whole number of days.'
     const budget = money(input.budget, input.budgetCurrency)
-    if (!budget) errors.budget = 'Enter the amount as a number and choose its currency.'
+    if (!budget) errors.budget = isCurrency(String(input.budgetCurrency ?? '').trim().toUpperCase()) ? 'Enter the budget as a number, for example 1500.' : 'Choose a currency, for example AUD.'
     content.question = {
       travelMonth: travelMonth && validYearMonth(travelMonth) ? travelMonth : null,
       durationDays: Number.isNaN(durationDays) ? null : durationDays,

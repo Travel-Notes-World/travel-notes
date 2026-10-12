@@ -59,6 +59,9 @@ export function ContributionForm({
     const v = initial.extra[name];
     return typeof v === "string" ? v : typeof v === "number" ? String(v) : "";
   };
+  const extrasRef = useRef<HTMLDetailsElement>(null);
+  const EXTRA_FIELDS = ["style", "travelMonth", "durationDays", "partyType", "budget"];
+  const extrasOpen = EXTRA_FIELDS.some((f) => value(f) || errors[f]) || initial.topics.length > 0 || Boolean(errors.topics);
   const checked = (name: string) => (submitted ? submitted[name] === "on" : Boolean(initial.extra[name]));
 
   // Background save for an existing draft, a few seconds after the last change.
@@ -79,7 +82,7 @@ export function ContributionForm({
 
   return (
     <form ref={formRef} action={action} noValidate className="max-w-[760px]">
-      <RestoreBanner restorable={restorable} onRestore={() => { restoreInto(formRef.current, restorable ?? {}); clear(); }} onDiscard={clear} />
+      <RestoreBanner restorable={restorable} onRestore={() => { restoreInto(formRef.current, restorable ?? {}); if (extrasRef.current) extrasRef.current.open = true; clear(); }} onDiscard={clear} />
       <FormMessage state={state} successTitle="Saved" />
       {intro}
       <input type="hidden" name="type" value={type} />
@@ -102,7 +105,20 @@ export function ContributionForm({
         <textarea {...describedBy("body", true, errors.body)} name="body" rows={type === "trip" ? 14 : 8} maxLength={LIMITS.bodyMax} required defaultValue={value("body")} className={inputClass} />
       </Field>
 
-      {children?.({ value, checked, errors, state, destinationZone: zone })}
+      {type !== "question" && children?.({ value, checked, errors, state, destinationZone: zone })}
+
+      {/* Optional extras stay folded away so the form looks as short as it really is. They open by
+          themselves when they already hold something or have an error. */}
+      <details ref={extrasRef} open={extrasOpen || undefined} className="mt-6 rounded-md border border-paper-200 group">
+        <summary className="cursor-pointer list-none flex items-center justify-between gap-3 min-h-11 px-4 py-2 t-ui text-marine-600 [&::-webkit-details-marker]:hidden">
+          <span>
+            {type === "question" ? "Add trip details" : "Add travel style and topics"}{" "}
+            <span className="text-ink-600 font-normal">(optional{type === "question" ? ", helps people give better answers" : ""})</span>
+          </span>
+          <span aria-hidden="true" className="transition-transform group-open:rotate-180">▾</span>
+        </summary>
+        <div className="px-4 pb-5">
+      {type === "question" && children?.({ value, checked, errors, state, destinationZone: zone })}
 
       <Field id="style" label="Travel style" optional error={errors.style}>
         <select {...describedBy("style", null, errors.style)} name="style" defaultValue={value("style")} className={inputClass}>
@@ -122,6 +138,8 @@ export function ContributionForm({
           </div>
         </fieldset>
       )}
+        </div>
+      </details>
 
       <div className="mt-8 border-t border-paper-200 pt-6">
         {published ? (
@@ -172,13 +190,16 @@ function SimilarQuestions({ formRef }: { formRef: React.RefObject<HTMLFormElemen
   );
 }
 
+/** Most members are in Australia. An empty amount ignores the currency, so this default is always safe. */
+export const DEFAULT_CURRENCY = "AUD";
+
 const CURRENCIES = ["AUD", "USD", "EUR", "GBP", "JPY", "THB", "NZD", "CAD", "SGD", "INR", "IDR", "VND", "CNY", "HKD", "KRW", "MYR", "PHP", "CHF", "ZAR", "AED", "MXN", "BRL"];
 
 /** A currency choice: common currencies in a list, any other ISO code can be typed. */
 export function CurrencyInput({ id, name, value, error, label = "Currency" }: { id: string; name: string; value: string; error?: string; label?: string }) {
   return (
     <>
-      <input {...describedBy(id, null, error)} name={name} list={`${id}-list`} maxLength={3} defaultValue={value} placeholder="AUD" aria-label={label} className={`${inputClass} uppercase max-w-[8rem]`} autoComplete="off" />
+      <input {...describedBy(id, null, error)} name={name} list={`${id}-list`} maxLength={3} defaultValue={value || DEFAULT_CURRENCY} aria-label={label} className={`${inputClass} uppercase max-w-[8rem]`} autoComplete="off" />
       <datalist id={`${id}-list`}>{CURRENCIES.map((c) => <option key={c} value={c} />)}</datalist>
     </>
   );
@@ -187,8 +208,8 @@ export function CurrencyInput({ id, name, value, error, label = "Currency" }: { 
 /** The extra fields of a question. All optional: they help people give a useful answer. */
 export function QuestionFields({ value, errors }: FieldsProps) {
   return (
-    <fieldset className="mt-6 border border-paper-200 rounded-md p-4">
-      <legend className="t-ui px-1">About your trip <span className="text-ink-600 font-normal">(optional)</span></legend>
+    <fieldset className="border-0 p-0 m-0">
+      <legend className="sr-only">About your trip</legend>
       <div className="grid gap-x-6 md:grid-cols-2">
         <Field id="travelMonth" label="When are you going?" error={errors.travelMonth}>
           <input {...describedBy("travelMonth", null, errors.travelMonth)} name="travelMonth" type="month" defaultValue={value("travelMonth")} className={inputClass} />
@@ -202,9 +223,9 @@ export function QuestionFields({ value, errors }: FieldsProps) {
             {PARTY_TYPES.map((p) => <option key={p.value} value={p.value}>{p.label}</option>)}
           </select>
         </Field>
-        <Field id="budget" label="Rough budget" hint="Total for the trip, in the currency you think in." error={errors.budget}>
+        <Field id="budget" label="Rough budget" hint="Total for the trip. Change the currency if you think in another one." error={errors.budget}>
           <div className="flex gap-2">
-            <input {...describedBy("budget", true, errors.budget)} name="budget" inputMode="decimal" defaultValue={value("budget")} placeholder="1500" className={inputClass} />
+            <input {...describedBy("budget", true, errors.budget)} name="budget" inputMode="decimal" defaultValue={value("budget")} placeholder="For example 1500" className={inputClass} />
             <CurrencyInput id="budgetCurrency" name="budgetCurrency" value={value("budgetCurrency")} label="Budget currency" />
           </div>
         </Field>
