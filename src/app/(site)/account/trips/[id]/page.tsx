@@ -9,6 +9,8 @@ import { AccountNav } from "@/components/community/account-nav";
 import { PlanEditor, type EditorDay } from "@/components/community/plan-editor";
 import { buttonClass, formatDay, Notice, PageHeader, PageShell } from "@/components/community/ui";
 import { AiPanel, ShareForm, TripDetailsForm, UpgradeForm } from "@/components/planner/ai-panel";
+import { DaysView } from "@/components/planner/days-view";
+import { PlanSteps } from "@/components/planner/plan-steps";
 import { deletePlanAction } from "@/lib/community/actions/plans";
 import { isCommunityError } from "@/lib/community/errors";
 import { confirmListingPayment } from "@/lib/community/listings";
@@ -72,6 +74,9 @@ export default async function PlanPage({ params, searchParams }: { params: Promi
   const budget = budgetGuide(view.details, view.days.length);
   // The stored days carry the saved-post ids; the view carries the links that are public right now.
   const days: EditorDay[] = plan.days.map((d, i) => ({ ...d, stops: d.stops.map((s, j) => ({ ...s, saved: view.days[i]?.stops[j]?.saved ?? null })) }));
+  const detailsFilled = Boolean(view.details.travellers || view.details.departFrom || view.details.interests.length || view.details.budgetAmount || view.details.accessibility || (view.purpose === "visa" && view.visa.arrivalDate));
+  const hasStops = view.days.some((d) => d.stops.length > 0);
+  const aiUsable = ai.available || ai.generated;
   const shareUrl = view.share.enabled && view.share.token ? `${siteUrl}/trip-planner/shared/${view.share.token}` : null;
 
   return (
@@ -97,6 +102,18 @@ export default async function PlanPage({ params, searchParams }: { params: Promi
       </div>
 
       {view.planner && (
+        <PlanSteps
+          steps={[
+            { label: "Trip details", hint: "A few questions so the plan fits you.", done: detailsFilled, href: "#trip-details" },
+            aiUsable
+              ? { label: "Your AI plan", hint: ai.generated ? (unlocked ? "Detailed plan written." : "Free plan written.") : "The AI writes your days. The first one is free.", done: ai.generated, href: "#ai-heading" }
+              : { label: "Your days", hint: "Add stops and notes to each day.", done: hasStops, href: "#days" },
+            { label: "PDF and sharing", hint: unlocked ? "Download, print or share." : "Included when you upgrade a plan.", done: unlocked && Boolean(view.share.enabled), href: unlocked ? "#share-doc-heading" : "#ai-heading" },
+          ]}
+        />
+      )}
+
+      {view.planner && (
         <p className="t-body-sm mb-6 max-w-measure">
           <Link href={plannerHref({ placeIds, start: view.startDate, days: Math.max(1, days.length), party: (view.planner.party as never) ?? null, pace: (view.planner.pace as never) ?? undefined, purpose: view.purpose })} className="text-marine-600 underline">
             Open the Trip Planner ideas for this trip
@@ -106,8 +123,8 @@ export default async function PlanPage({ params, searchParams }: { params: Promi
       )}
 
       {view.planner && (
-        <details className="mb-8 max-w-[860px] border border-paper-200 rounded-md p-4" open={!ai.generated}>
-          <summary className="t-heading-3 cursor-pointer min-h-11 inline-flex items-center">Trip details</summary>
+        <details id="trip-details" className="mb-8 max-w-[860px] border border-paper-200 rounded-md p-4 scroll-mt-28" open={!detailsFilled}>
+          <summary className="t-heading-3 cursor-pointer min-h-11 inline-flex items-center">1. Trip details{detailsFilled ? <span className="t-body-sm text-ink-600 font-normal ml-2">(saved, open to change)</span> : null}</summary>
           <TripDetailsForm
             id={view.id}
             initial={{ purpose: view.purpose, ...view.details, ...view.visa }}
@@ -130,6 +147,21 @@ export default async function PlanPage({ params, searchParams }: { params: Promi
           <p className="t-body-sm text-ink-600 mt-2 mb-0">Written by AI from Travel Notes content{view.ai.generatedAt ? ` on ${formatDay(view.ai.generatedAt)}` : ""}. Check opening times, prices, bookings and entry rules with official sources before you travel.</p>
         </section>
       )}
+
+      <section id="days" aria-labelledby="days-heading" className="mb-10 scroll-mt-28">
+        <h2 id="days-heading" className="t-heading-2 m-0">Your days</h2>
+        {hasStops ? (
+          <>
+            <div className="mt-4"><DaysView days={view.days} /></div>
+            <details className="mt-8 max-w-[860px] border border-paper-200 rounded-md p-4">
+              <summary className="t-ui cursor-pointer min-h-11 inline-flex items-center">Edit the days yourself</summary>
+              <div className="mt-4"><PlanEditor id={view.id} title={view.title} startDate={view.startDate} endDate={view.endDate} notes={view.notes} days={days} /></div>
+            </details>
+          </>
+        ) : (
+          <div className="mt-4"><PlanEditor id={view.id} title={view.title} startDate={view.startDate} endDate={view.endDate} notes={view.notes} days={days} /></div>
+        )}
+      </section>
 
       {budget && (
         <section aria-labelledby="budget-heading" className="mb-8 max-w-measure">
@@ -208,9 +240,6 @@ export default async function PlanPage({ params, searchParams }: { params: Promi
         </section>
       ) : null}
 
-      <div className="print:hidden">
-        <PlanEditor id={view.id} title={view.title} startDate={view.startDate} endDate={view.endDate} notes={view.notes} days={days} />
-      </div>
 
       <section aria-labelledby="privacy-heading" className="mt-12 border-t border-paper-200 pt-6 max-w-[860px] print:hidden">
         <h2 id="privacy-heading" className="t-heading-3 m-0">Your details</h2>

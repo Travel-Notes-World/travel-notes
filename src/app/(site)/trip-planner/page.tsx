@@ -7,7 +7,7 @@ import { ArticleCard } from "@/components/ArticleCard";
 import { Breadcrumbs } from "@/components/Breadcrumbs";
 import { CardList } from "@/components/community/cards";
 import { JsonLd, Notice, PageShell } from "@/components/community/ui";
-import { PlannerForm, SavePlanForm } from "@/components/planner/planner-forms";
+import { PlannerWizard, SavePlanForm } from "@/components/planner/planner-forms";
 import { ShareButtons } from "@/components/ShareButtons";
 import { UpdateItem } from "@/components/UpdateItem";
 import { breadcrumbJsonLd } from "@/lib/community/seo";
@@ -82,10 +82,9 @@ export default async function TripPlannerPage({ searchParams }: Props) {
           <p className="t-meta text-ochre-700 m-0">Trip Planner</p>
           <h1 className="t-heading-1 mt-2 m-0">Plan your trip, day by day</h1>
           <p className="t-body-sm text-ink-600 mt-2 mb-0">Created by <Link href="/about#who" className="text-marine-600 underline">Jeeva Palasundram</Link>, founder of Travel Notes</p>
-          <p className="t-deck mt-3 mb-0">Choose where and when you are going. The planner sets out your days and brings together what Travel Notes has checked for those places: the best months to go, entry and health facts with their official sources, current travel updates, guides and trip reports from travellers.</p>
+          <p className="t-deck mt-3 mb-0">Answer four quick questions. We set out your days and bring together what Travel Notes has checked: the best months to go, entry rules with official sources, travel updates, guides and trip reports.</p>
         </header>
-        {noPlaces && <div className="mb-6 max-w-measure"><Notice tone="error" title="Choose a destination">{result?.missing ? "That destination is no longer available. Choose another one." : "Add at least one place you are going to, then press Plan my trip."}</Notice></div>}
-        <PlannerForm purpose={input.purpose} places={[]} start={input.start} month={input.month} days={input.days} party={input.party} pace={input.pace} errors={{ ...errors, to: noPlaces ? "Choose at least one destination." : errors.to }} />
+        <PlannerWizard purpose={input.purpose} places={[]} start={input.start} month={input.month} days={input.days} party={input.party} pace={input.pace} startStep={noPlaces ? 1 : 0} error={noPlaces ? "Choose at least one place you are going to." : errors.start ?? errors.days} />
 
         <section aria-labelledby="purposes-heading" className="mt-12">
           <h2 id="purposes-heading" className="t-heading-2 m-0">Plans for every kind of trip</h2>
@@ -164,16 +163,23 @@ export default async function TripPlannerPage({ searchParams }: Props) {
         {params.signedin && member && <Notice tone="success" title="You are signed in">Press “Save to my trips” to keep this plan.</Notice>}
       </div>
 
-      {aiOn && <p className="t-body-sm mb-3 max-w-measure">Save this plan to let the AI helper fill in your days. Your first AI plan is free.</p>}
-      <div className="flex flex-wrap items-start gap-4 mb-10">
-        <SavePlanForm query={query} signedIn={Boolean(member)} />
-        <details className="w-full sm:w-auto">
-          <summary className="inline-flex items-center justify-center min-h-11 px-4 rounded-md border border-line-500 bg-paper-000 text-ink-900 t-ui cursor-pointer hover:border-ink-900">Change trip details</summary>
-          <div className="mt-4 p-4 border border-paper-200 rounded-md bg-paper-000">
-            <PlannerForm purpose={input.purpose} places={places.map((p) => ({ id: p.id, label: p.label }))} start={input.start} month={input.month} days={total} party={input.party} pace={input.pace} errors={errors} submitLabel="Update my plan" />
-          </div>
-        </details>
-      </div>
+      <section aria-labelledby="next-heading" className="mb-10 max-w-[860px] rounded-md border-2 border-marine-600 bg-marine-100 p-4 md:p-5">
+        <h2 id="next-heading" className="t-heading-3 m-0">Next step: save your plan</h2>
+        <ol className="t-body-sm mt-2 mb-4 pl-5 grid gap-1">
+          <li><strong>Save it</strong> to your trips{member ? "" : " (free account; sign in or create one)"}.</li>
+          {aiOn ? <li><strong>Let the AI write your days</strong>, using Travel Notes guides first. Your first plan is free.</li> : <li><strong>Add your own stops</strong> and notes to each day.</li>}
+          <li><strong>Print or share</strong> it when you are ready.</li>
+        </ol>
+        <div className="flex flex-wrap items-center gap-4">
+          <SavePlanForm query={query} signedIn={Boolean(member)} />
+          <details>
+            <summary className="t-ui text-marine-600 underline cursor-pointer min-h-11 inline-flex items-center">Change your answers</summary>
+            <div className="mt-4 p-4 border border-paper-200 rounded-md bg-paper-000">
+              <PlannerWizard purpose={input.purpose} places={places.map((p) => ({ id: p.id, label: p.label }))} start={input.start} month={input.month} days={total} party={input.party} pace={input.pace} startStep={4} />
+            </div>
+          </details>
+        </div>
+      </section>
 
       <section aria-labelledby="outline-heading" className="max-w-[860px]">
         <h2 id="outline-heading" className="t-heading-2 m-0">Your days</h2>
