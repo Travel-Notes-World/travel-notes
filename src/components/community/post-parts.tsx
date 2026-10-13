@@ -1,5 +1,8 @@
 import Link from "next/link";
 
+import { ShareButtons } from "@/components/ShareButtons";
+import { siteUrl } from "@/lib/site";
+
 import type { PostPage } from "@/lib/community/next/pages";
 import type { GuideLink } from "@/lib/community/queries";
 import { AcceptButton, BookmarkButton, HelpfulButton, RemoveReplyButton, ReplyForm, ReplyVotes, ReportButton, SignInTo, VoteCounts } from "./post-actions";
@@ -17,6 +20,14 @@ export function PostToolbar({ page }: { page: PostPage }) {
       {viewer.staff?.canModerate ? <Link href={`/moderation/posts/${post.id}`} className="t-ui text-marine-600 underline min-h-11 inline-flex items-center">Open in moderation</Link> : null}
     </div>
   );
+}
+
+const SHARE_HEADING = { question: "Share this question", trip: "Share this trip report", activity: "Share this activity" } as const;
+
+/** Share buttons for a published community post. */
+export function PostShare({ page }: { page: PostPage }) {
+  const { post } = page;
+  return <ShareButtons url={`${siteUrl}${post.path}`} title={post.title} heading={SHARE_HEADING[post.type as keyof typeof SHARE_HEADING] ?? "Share this post"} />;
 }
 
 /**

@@ -3,7 +3,7 @@ import Link from "next/link";
 
 import { Breadcrumbs } from "@/components/Breadcrumbs";
 import { Attendees, EventFacts, EventStatusBanner, OrganiserStatusForm, RsvpControl } from "@/components/community/event-parts";
-import { PostMeta, PostToolbar, RelatedGuides, RepliesSection } from "@/components/community/post-parts";
+import { PostMeta, PostShare, PostToolbar, RelatedGuides, RepliesSection } from "@/components/community/post-parts";
 import { CommunityClosed, CommunityLabel, JsonLd, PageShell, StatusBadge, UserText } from "@/components/community/ui";
 import { publicAttendees } from "@/lib/community/engagement";
 import { loadPostPage, postMetadata } from "@/lib/community/next/pages";
@@ -67,6 +67,7 @@ export default async function ActivityPage({ params, searchParams }: Props) {
         {state?.isAuthor && <OrganiserStatusForm postId={post.id} status={a.status} returnTo={page.returnTo} flash={flashCode(query.status)} />}
         <PostToolbar page={page} />
       </article>
+      <PostShare page={page} />
       <RepliesSection page={page} answersPage={answersPage} kind="comment" />
       <RelatedGuides guides={guides} />
     </PageShell>

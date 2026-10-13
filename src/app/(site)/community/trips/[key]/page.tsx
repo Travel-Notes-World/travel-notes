@@ -3,7 +3,7 @@ import Link from "next/link";
 
 import { Breadcrumbs } from "@/components/Breadcrumbs";
 import { SignInTo } from "@/components/community/post-actions";
-import { PostMeta, PostToolbar, RelatedGuides, RepliesSection } from "@/components/community/post-parts";
+import { PostMeta, PostShare, PostToolbar, RelatedGuides, RepliesSection } from "@/components/community/post-parts";
 import { CommunityClosed, CommunityLabel, JsonLd, Notice, PageShell, UserText, secondaryButtonClass, styleLabel } from "@/components/community/ui";
 import { copyItineraryAction } from "@/lib/community/actions/engagement";
 import { COST_BASES, COST_CATEGORIES, COST_SCOPES, labelOf, PARTY_TYPES } from "@/lib/community/constants";
@@ -234,6 +234,7 @@ export default async function TripPage({ params, searchParams }: Props) {
         <PhotoGallery post={post} />
         <PostToolbar page={page} />
       </article>
+      <PostShare page={page} />
       <RepliesSection page={page} answersPage={repliesPage} kind="comment" />
       <RelatedGuides guides={guides} />
     </PageShell>
