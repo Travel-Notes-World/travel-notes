@@ -51,6 +51,51 @@ export function HelpfulButton({ targetType, targetId, on, count, returnTo, own }
   );
 }
 
+/**
+ * Like, love (red heart) and dislike on an answer or reply. Pressing the chosen one again takes the vote back;
+ * pressing the other one switches. Counts are always shown; voting needs an account.
+ */
+export function ReplyVotes({ replyId, likes, loves, dislikes, mine, returnTo, own }: { replyId: string; likes: number; loves: number; dislikes: number; mine: 1 | 2 | -1 | 0; returnTo: string; own?: boolean }) {
+  const [state, action] = useActionState(voteAction, initialState);
+  const current = (typeof state.data?.value === "number" ? state.data.value : mine) as 1 | 2 | -1 | 0;
+  const likeCount = typeof state.data?.likes === "number" ? (state.data.likes as number) : likes;
+  const loveCount = typeof state.data?.loves === "number" ? (state.data.loves as number) : loves;
+  const dislikeCount = typeof state.data?.dislikes === "number" ? (state.data.dislikes as number) : dislikes;
+  if (own) return <VoteCounts likes={likeCount} loves={loveCount} dislikes={dislikeCount} />;
+  const button = (value: 1 | 2 | -1, label: string, icon: string, count: number) => (
+    <form action={action}>
+      <input type="hidden" name="targetType" value="reply" />
+      <input type="hidden" name="targetId" value={replyId} />
+      <input type="hidden" name="value" value={current === value ? "0" : String(value)} />
+      <input type="hidden" name="returnTo" value={returnTo} />
+      <button type="submit" aria-pressed={current === value} className={smallButton}>
+        <span aria-hidden="true">{icon}</span> {label} <span className="text-ink-600">({count})</span>
+        <span className="sr-only">{current === value ? `, you chose ${label.toLowerCase()}. Press to undo.` : ""}</span>
+      </button>
+    </form>
+  );
+  return (
+    <div className="inline-flex flex-wrap items-center gap-2" role="group" aria-label="React to this reply">
+      {button(1, "Like", "👍", likeCount)}
+      {button(2, "Love", "❤️", loveCount)}
+      {button(-1, "Dislike", "👎", dislikeCount)}
+      <InlineStatus state={state} />
+    </div>
+  );
+}
+
+/** The like and dislike counts as plain text, for people who cannot vote (signed out, or the author). */
+export function VoteCounts({ likes, loves, dislikes, signInHref }: { likes: number; loves: number; dislikes: number; signInHref?: string }) {
+  return (
+    <span className="t-body-sm text-ink-600 inline-flex flex-wrap items-center gap-3">
+      <span><span aria-hidden="true">👍 </span>{likes}<span className="sr-only"> likes</span></span>
+      <span><span aria-hidden="true">❤️ </span>{loves}<span className="sr-only"> hearts</span></span>
+      <span><span aria-hidden="true">👎 </span>{dislikes}<span className="sr-only"> dislikes</span></span>
+      {signInHref && <Link href={signInHref} className="text-marine-600 underline min-h-11 inline-flex items-center">Sign in to react</Link>}
+    </span>
+  );
+}
+
 export function FollowButton({ destinationId, name, on, returnTo }: { destinationId: string; name: string; on: boolean; returnTo: string }) {
   const [state, action] = useActionState(followAction, initialState);
   const current = typeof state.data?.on === "boolean" ? (state.data.on as boolean) : on;

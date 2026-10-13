@@ -21,6 +21,7 @@ export const Votes: CollectionConfig = {
     member,
     { name: 'targetType', type: 'select', required: true, options: ['contribution', 'reply'] },
     { name: 'targetId', type: 'text', required: true },
+    { name: 'value', type: 'number', required: true, defaultValue: 1, admin: { description: '1 = like (helpful), 2 = love (red heart), -1 = dislike. Posts only take likes.' } },
   ],
 }
 

@@ -186,16 +186,17 @@ export async function setResolved(actor: MemberActor, input: { contributionId: u
   return { ok: true }
 }
 
-export type ReplyView = { id: string; body: string; author: PublicAuthor; authorId: string | null; publishedAt: string | null; helpfulCount: number; accepted: boolean; children: ReplyView[] }
+export type ReplyView = { id: string; body: string; author: PublicAuthor; authorId: string | null; publishedAt: string | null; helpfulCount: number; loveCount: number; dislikeCount: number; accepted: boolean; children: ReplyView[] }
 
-/** Approved answers for a post, a page at a time, each with its approved replies. The accepted answer comes first. */
+/** Approved answers for a post, a page at a time, each with its approved replies. The accepted answer comes first, then the most liked. */
 export async function listReplies(contributionId: string, options: { page?: number; acceptedId?: string | null } = {}): Promise<Page<ReplyView>> {
   const payload = await cms()
   const page = Math.max(1, Math.floor(options.page ?? 1))
   const top = await payload.find({
     collection: 'replies',
     where: { and: [{ contribution: { equals: contributionId } }, { state: { equals: 'published' } }, { parent: { exists: false } }] },
-    sort: ['publishedAt', 'id'], limit: LIMITS.replyPageSize, page, depth: 0, overrideAccess: false,
+    // The most liked answers first (likes and hearts minus dislikes), then the oldest. Replies to an answer stay in time order.
+    sort: ['-score', 'publishedAt', 'id'], limit: LIMITS.replyPageSize, page, depth: 0, overrideAccess: false,
   })
   const ids = top.docs.map((r) => r.id)
   const children = ids.length
@@ -205,12 +206,12 @@ export async function listReplies(contributionId: string, options: { page?: numb
   const view = (r: Reply): ReplyView => {
     const authorId = relId(r.author)
     const author = (authorId && authors.get(authorId)) || { handle: null, displayName: 'Deleted member', hasProfile: false }
-    return { id: r.id, body: r.body, author, authorId: author.hasProfile ? authorId : null, publishedAt: r.publishedAt ?? null, helpfulCount: r.helpfulCount ?? 0, accepted: r.id === options.acceptedId, children: [] }
+    return { id: r.id, body: r.body, author, authorId: author.hasProfile ? authorId : null, publishedAt: r.publishedAt ?? null, helpfulCount: r.helpfulCount ?? 0, loveCount: r.loveCount ?? 0, dislikeCount: r.dislikeCount ?? 0, accepted: r.id === options.acceptedId, children: [] }
   }
   const items = top.docs.map(view)
   const byId = new Map(items.map((i) => [i.id, i]))
   for (const child of children.docs) byId.get(relId(child.parent) ?? '')?.children.push(view(child))
-  // The accepted answer leads on the first page; the rest stay in the order they were approved.
+  // The accepted answer leads on the first page; the rest follow by score.
   if (page === 1 && options.acceptedId) items.sort((a, b) => Number(b.accepted) - Number(a.accepted))
   return { items, page: top.page ?? page, totalPages: top.totalPages, total: top.totalDocs }
 }

@@ -429,10 +429,8 @@ export async function deleteAccount(actor: MemberActor, input: { password: unkno
     await run(p, sql`UPDATE "revisions" SET "snapshot" = jsonb_set("snapshot", '{activity,organiserContact}', '""'::jsonb) WHERE "snapshot" ? 'activity' AND ("editor_id" = ${id}::uuid OR "contribution_id" IN (SELECT "id" FROM "contributions" WHERE "author_id" = ${id}::uuid))`, req)
     // Helpful votes are private choices: delete them and recount what they were on.
     const votes = await run(p, sql`DELETE FROM "votes" WHERE "member_id" = ${id}::uuid RETURNING "target_type"::text AS t, "target_id" AS i`, req)
-    for (const v of votes.rows) {
-      const table = v.t === 'reply' ? sql`"replies"` : sql`"contributions"`
-      await run(p, sql`UPDATE ${table} SET "helpful_count" = (SELECT COUNT(*) FROM "votes" WHERE "target_type" = ${String(v.t)}::"enum_votes_target_type" AND "target_id" = ${String(v.i)}) WHERE "id" = ${String(v.i)}::uuid`, req)
-    }
+    const { recountVotes } = await import('./engagement')
+    for (const v of votes.rows) await recountVotes(p, v.t === 'reply' ? 'reply' : 'contribution', String(v.i), req)
     await run(p, sql`DELETE FROM "destination_suggestions" WHERE "member_id" = ${id}::uuid AND "status" = 'pending'`, req)
     if (input.removeContent) {
       // Removed posts keep only an empty shell, so the audit trail still points somewhere.

@@ -22,6 +22,9 @@ export const Replies: CollectionConfig = {
     { name: 'publishedAt', type: 'date' },
     { name: 'moderationNote', type: 'textarea', admin: { description: 'Reason shown to the author.' } },
     { name: 'reviewedBy', type: 'relationship', relationTo: 'staff', access: { read: moderatorOnlyField } },
-    { name: 'helpfulCount', type: 'number', defaultValue: 0 },
+    { name: 'helpfulCount', type: 'number', defaultValue: 0, admin: { description: 'Likes.' } },
+    { name: 'loveCount', type: 'number', defaultValue: 0, admin: { description: 'Red hearts.' } },
+    { name: 'dislikeCount', type: 'number', defaultValue: 0 },
+    { name: 'score', type: 'number', defaultValue: 0, index: true, admin: { description: 'Likes plus hearts minus dislikes. Answers are listed by this, after the accepted one.' } },
   ],
 }

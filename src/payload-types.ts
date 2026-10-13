@@ -1330,7 +1330,19 @@ export interface Reply {
    */
   moderationNote?: string | null;
   reviewedBy?: (string | null) | Staff;
+  /**
+   * Likes.
+   */
   helpfulCount?: number | null;
+  /**
+   * Red hearts.
+   */
+  loveCount?: number | null;
+  dislikeCount?: number | null;
+  /**
+   * Likes plus hearts minus dislikes. Answers are listed by this, after the accepted one.
+   */
+  score?: number | null;
   updatedAt: string;
   createdAt: string;
 }
@@ -1344,6 +1356,10 @@ export interface Vote {
   member: string | Member;
   targetType: 'contribution' | 'reply';
   targetId: string;
+  /**
+   * 1 = like (helpful), 2 = love (red heart), -1 = dislike. Posts only take likes.
+   */
+  value: number;
   updatedAt: string;
   createdAt: string;
 }
@@ -2431,6 +2447,9 @@ export interface RepliesSelect<T extends boolean = true> {
   moderationNote?: T;
   reviewedBy?: T;
   helpfulCount?: T;
+  loveCount?: T;
+  dislikeCount?: T;
+  score?: T;
   updatedAt?: T;
   createdAt?: T;
 }
@@ -2508,6 +2527,7 @@ export interface VotesSelect<T extends boolean = true> {
   member?: T;
   targetType?: T;
   targetId?: T;
+  value?: T;
   updatedAt?: T;
   createdAt?: T;
 }

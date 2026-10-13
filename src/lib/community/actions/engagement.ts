@@ -19,9 +19,13 @@ const refresh = (form: FormData) => {
 export async function voteAction(_: ActionState, form: FormData): Promise<ActionState> {
   try {
     const { member } = await getViewer()
-    const result = await setVote(member!, { targetType: str(form, 'targetType'), targetId: str(form, 'targetId'), on: bool(form, 'on') })
+    const value = str(form, 'value')
+    const result = await setVote(member!, { targetType: str(form, 'targetType'), targetId: str(form, 'targetId'), ...(value ? { value: Number(value) } : { on: bool(form, 'on') }) })
     refresh(form)
-    return { ok: true, message: result.on ? 'Marked as helpful.' : 'Helpful mark removed.', data: result }
+    const message = str(form, 'targetType') === 'reply'
+      ? result.value === 1 ? 'You liked this.' : result.value === 2 ? 'You loved this.' : result.value === -1 ? 'You disliked this.' : 'Your vote is removed.'
+      : result.on ? 'Marked as helpful.' : 'Helpful mark removed.'
+    return { ok: true, message, data: result }
   } catch (error) {
     return toState(error)
   }
