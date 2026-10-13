@@ -12,7 +12,7 @@ import { ShareButtons } from "@/components/ShareButtons";
 import { UpdateItem } from "@/components/UpdateItem";
 import { breadcrumbJsonLd } from "@/lib/community/seo";
 import { getViewer } from "@/lib/community/next/session";
-import { formatAud } from "@/lib/community/listings";
+import { aiPlanPrice } from "@/lib/planner/payments";
 import { canViewCommunity, getSettings } from "@/lib/community/settings";
 import { aiConfigured } from "@/lib/planner/ai";
 import { MONTH_NAMES, type MonthRating } from "@/lib/content/destinationFacts";
@@ -65,7 +65,7 @@ export default async function TripPlannerPage({ searchParams }: Props) {
   const months = tripMonths(input);
   const settings = await getSettings();
   const aiOn = settings.planner.aiEnabled && aiConfigured();
-  const aiPrice = formatAud(settings.planner.priceMinor);
+  const aiPrice = aiPlanPrice(settings).text;
 
   const result = input.placeIds.length ? await loadPlanner(payload, input, { pageFor: (doc) => getDestinationPage(doc), months, community }) : null;
   const places = result?.places ?? [];
@@ -85,7 +85,17 @@ export default async function TripPlannerPage({ searchParams }: Props) {
           <p className="t-deck mt-3 mb-0">Choose where and when you are going. The planner sets out your days and brings together what Travel Notes has checked for those places: the best months to go, entry and health facts with their official sources, current travel updates, guides and trip reports from travellers.</p>
         </header>
         {noPlaces && <div className="mb-6 max-w-measure"><Notice tone="error" title="Choose a destination">{result?.missing ? "That destination is no longer available. Choose another one." : "Add at least one place you are going to, then press Plan my trip."}</Notice></div>}
-        <PlannerForm places={[]} start={input.start} month={input.month} days={input.days} party={input.party} pace={input.pace} errors={{ ...errors, to: noPlaces ? "Choose at least one destination." : errors.to }} />
+        <PlannerForm purpose={input.purpose} places={[]} start={input.start} month={input.month} days={input.days} party={input.party} pace={input.pace} errors={{ ...errors, to: noPlaces ? "Choose at least one destination." : errors.to }} />
+
+        <section aria-labelledby="purposes-heading" className="mt-12">
+          <h2 id="purposes-heading" className="t-heading-2 m-0">Plans for every kind of trip</h2>
+          <ul className="list-none m-0 mt-4 p-0 grid gap-4 sm:grid-cols-2 max-w-[860px]">
+            <li className="border border-paper-200 rounded-md p-4"><h3 className="t-card-title m-0">Holidays</h3><p className="t-body-sm mt-2 mb-0">Day-by-day ideas with time for meals and rest, the best months to go, and what to check before you book.</p></li>
+            <li className="border border-paper-200 rounded-md p-4"><h3 className="t-card-title m-0">Visa itineraries</h3><p className="t-body-sm mt-2 mb-0">A clear, factual proposed itinerary for another country’s visitor visa, with your own bookings marked as confirmed and everything else as proposed. It is a planning document only: it does not guarantee a visa. Not available for Australian visas.</p></li>
+            <li className="border border-paper-200 rounded-md p-4"><h3 className="t-card-title m-0">Visiting family or friends</h3><p className="t-body-sm mt-2 mb-0">Plenty of time with your hosts, with a few outings that suit a group.</p></li>
+            <li className="border border-paper-200 rounded-md p-4"><h3 className="t-card-title m-0">Business with some leisure</h3><p className="t-body-sm mt-2 mb-0">Work days kept clear, with ideas for free evenings and days.</p></li>
+          </ul>
+        </section>
 
         <section aria-labelledby="how-heading" className="mt-12 max-w-measure">
           <h2 id="how-heading" className="t-heading-2 m-0">How the planner works</h2>
@@ -93,7 +103,7 @@ export default async function TripPlannerPage({ searchParams }: Props) {
             <li>It uses only information Travel Notes has published. When we have not checked something for a place yet, the planner says so instead of guessing.</li>
             <li>Entry rules, government advice and health facts are shown with their official source and the date our editors last checked them.</li>
             <li>You do not need an account. Your plan is saved in the page address, so you can bookmark it or share the link. Sign in to keep it in your trips and add your own stops and notes.</li>
-            {aiOn && <li>Save your plan and the AI helper can fill in your days, using Travel Notes guides and trip reports first. Your first AI plan is free; after that it is {aiPrice} a plan.</li>}
+            {aiOn && <li>Save your plan and the AI helper can write it for you, using Travel Notes guides and trip reports first. Your first brief plan is free; a detailed plan with revisions, sharing and a PDF is {aiPrice}. <Link href="/trip-planner/pricing" className="text-marine-600 underline">See what is included</Link>.</li>}
             <li>It does not book anything. Always confirm prices, opening hours and entry rules with the official source before you travel.</li>
           </ul>
         </section>
@@ -160,7 +170,7 @@ export default async function TripPlannerPage({ searchParams }: Props) {
         <details className="w-full sm:w-auto">
           <summary className="inline-flex items-center justify-center min-h-11 px-4 rounded-md border border-line-500 bg-paper-000 text-ink-900 t-ui cursor-pointer hover:border-ink-900">Change trip details</summary>
           <div className="mt-4 p-4 border border-paper-200 rounded-md bg-paper-000">
-            <PlannerForm places={places.map((p) => ({ id: p.id, label: p.label }))} start={input.start} month={input.month} days={total} party={input.party} pace={input.pace} errors={errors} submitLabel="Update my plan" />
+            <PlannerForm purpose={input.purpose} places={places.map((p) => ({ id: p.id, label: p.label }))} start={input.start} month={input.month} days={total} party={input.party} pace={input.pace} errors={errors} submitLabel="Update my plan" />
           </div>
         </details>
       </div>
@@ -191,6 +201,7 @@ export default async function TripPlannerPage({ searchParams }: Props) {
               {input.start ? <input type="hidden" name="start" value={input.start} /> : input.month ? <input type="hidden" name="month" value={input.month} /> : null}
               {input.party && <input type="hidden" name="with" value={input.party} />}
               <input type="hidden" name="pace" value={input.pace} />
+              <input type="hidden" name="for" value={input.purpose} />
               <div className="mt-2 flex flex-wrap items-end gap-3">
                 {places.map((p, i) => (
                   <label key={p.id} className="t-body-sm grid gap-1">

@@ -16,20 +16,33 @@ import type { MemberActor } from './types'
  *
  * A plan belongs to one member and nobody else can read or change it: every function here looks
  * the plan up by id AND owner, so another member's plan answers exactly like one that does not
- * exist. There is no public sharing in this release, so there is no share button.
+ * exist. A paid plan can be shown to others through a private share link the member turns on
+ * (see src/lib/planner/share.ts); nothing else is ever public.
  */
 
 export type StopOrigin = 'own' | 'travel_notes' | 'ai_idea'
-export type PlanStop = { title: string; place: string; notes: string; saved: { title: string; path: string } | null; origin: StopOrigin; sourcePath: string | null }
-export type PlanDay = { title: string; date: string | null; stops: PlanStop[] }
+export type TimeOfDay = 'morning' | 'afternoon' | 'evening' | null
+export type PlanStop = { title: string; place: string; notes: string; saved: { title: string; path: string } | null; origin: StopOrigin; sourcePath: string | null; timeOfDay: TimeOfDay }
+export type PlanDay = { title: string; date: string | null; overnight: string; overnightConfirmed: boolean; transport: string; stops: PlanStop[] }
+export type PlanPurpose = 'holiday' | 'visa' | 'family' | 'business'
+export type PlanOption = { style: 'budget' | 'balanced' | 'premium'; summary: string; choices: string }
 export type PlanView = {
   id: string; title: string; startDate: string | null; endDate: string | null; notes: string; days: PlanDay[]; updatedAt: string
   /** Where the itinerary was copied from, with credit to its author. */
   source: { title: string; authorName: string; path: string | null; copiedAt: string | null } | null
   /** Set when the plan was started in the Trip Planner, so its ideas can be opened again. */
   planner: { placeIds: string[]; party: string | null; pace: string | null } | null
-  ai: { generatedAt: string | null; model: string | null; summary: string; unlocked: boolean }
+  ai: { generatedAt: string | null; model: string | null; summary: string; unlocked: boolean; tier: 'brief' | 'detailed' | null; revisionsUsed: number; options: PlanOption[] }
+  purpose: PlanPurpose
+  details: { departFrom: string; travellers: number | null; budgetAmount: number | null; budgetCurrency: string; interests: string[]; accessibility: string }
+  visa: { travellerName: string; visitPurpose: string; arrivalDate: string | null; departureDate: string | null; cities: string; accommodation: string; transport: string; funding: string | null; fundingNote: string }
+  share: { enabled: boolean; token: string | null }
 }
+
+const TIMES = ['morning', 'afternoon', 'evening']
+const toTime = (v: unknown): TimeOfDay => (TIMES.includes(v as string) ? (v as TimeOfDay) : null)
+const PURPOSES: PlanPurpose[] = ['holiday', 'visa', 'family', 'business']
+export const toPurpose = (v: unknown): PlanPurpose => (PURPOSES.includes(v as PlanPurpose) ? (v as PlanPurpose) : 'holiday')
 
 const ORIGINS: StopOrigin[] = ['own', 'travel_notes', 'ai_idea']
 const toOrigin = (v: unknown): StopOrigin => (ORIGINS.includes(v as StopOrigin) ? (v as StopOrigin) : 'own')
@@ -60,6 +73,9 @@ function parsePlan(input: Raw): { data: Pick<Plan, 'title' | 'startDate' | 'endD
     return {
       title: cleanLine(day.title, 140),
       date: dayDate && isLocalDate(dayDate) ? dayDate : null,
+      overnight: cleanLine(day.overnight, 140),
+      overnightConfirmed: day.overnightConfirmed === true,
+      transport: cleanText(day.transport, 600),
       stops: list(day.stops).slice(0, LIMITS.maxStopsPerDay).map((s) => obj(s)).filter((s) => cleanLine(s.title, 140)).map((s) => ({
         title: cleanLine(s.title, 140),
         place: cleanLine(s.place, 200),
@@ -67,6 +83,7 @@ function parsePlan(input: Raw): { data: Pick<Plan, 'title' | 'startDate' | 'endD
         savedContribution: isUuid(s.savedContribution) ? s.savedContribution : null,
         origin: toOrigin(s.origin),
         sourcePath: cleanSourcePath(s.sourcePath),
+        timeOfDay: toTime(s.timeOfDay),
       })),
     }
   })
@@ -90,8 +107,25 @@ async function toView(plan: Plan): Promise<PlanView> {
   const sourceId = relId(plan.source?.contribution)
   return {
     id: plan.id, title: plan.title, startDate: plan.startDate ?? null, endDate: plan.endDate ?? null, notes: plan.notes ?? '', updatedAt: plan.updatedAt,
-    days: (plan.days ?? []).map((d) => ({ title: d.title ?? '', date: d.date ?? null, stops: (d.stops ?? []).map((s) => ({ title: s.title, place: s.place ?? '', notes: s.notes ?? '', saved: links.get(relId(s.savedContribution) ?? '') ?? null, origin: toOrigin(s.origin), sourcePath: cleanSourcePath(s.sourcePath) })) })),
-    ai: { generatedAt: plan.ai?.generatedAt ?? null, model: plan.ai?.model ?? null, summary: plan.ai?.summary ?? '', unlocked: Boolean(plan.ai?.unlocked) },
+    days: (plan.days ?? []).map((d) => ({
+      title: d.title ?? '', date: d.date ?? null, overnight: d.overnight ?? '', overnightConfirmed: Boolean(d.overnightConfirmed), transport: d.transport ?? '',
+      stops: (d.stops ?? []).map((s) => ({ title: s.title, place: s.place ?? '', notes: s.notes ?? '', saved: links.get(relId(s.savedContribution) ?? '') ?? null, origin: toOrigin(s.origin), sourcePath: cleanSourcePath(s.sourcePath), timeOfDay: toTime(s.timeOfDay) })),
+    })),
+    ai: {
+      generatedAt: plan.ai?.generatedAt ?? null, model: plan.ai?.model ?? null, summary: plan.ai?.summary ?? '', unlocked: Boolean(plan.ai?.unlocked),
+      tier: plan.ai?.tier ?? null, revisionsUsed: plan.ai?.revisionsUsed ?? 0,
+      options: (plan.ai?.options ?? []).map((o) => ({ style: o.style, summary: o.summary ?? '', choices: o.choices ?? '' })),
+    },
+    purpose: toPurpose(plan.purpose),
+    details: {
+      departFrom: plan.details?.departFrom ?? '', travellers: plan.details?.travellers ?? null, budgetAmount: plan.details?.budgetAmount ?? null,
+      budgetCurrency: plan.details?.budgetCurrency ?? '', interests: plan.details?.interests ?? [], accessibility: plan.details?.accessibility ?? '',
+    },
+    visa: {
+      travellerName: plan.visa?.travellerName ?? '', visitPurpose: plan.visa?.visitPurpose ?? '', arrivalDate: plan.visa?.arrivalDate ?? null, departureDate: plan.visa?.departureDate ?? null, cities: plan.visa?.cities ?? '',
+      accommodation: plan.visa?.accommodation ?? '', transport: plan.visa?.transport ?? '', funding: plan.visa?.funding ?? null, fundingNote: plan.visa?.fundingNote ?? '',
+    },
+    share: { enabled: Boolean(plan.share?.enabled && plan.share?.token), token: plan.share?.token ?? null },
     planner: (plan.destinations ?? []).length ? { placeIds: (plan.destinations ?? []).map(relId).filter(isUuid), party: plan.party ?? null, pace: plan.pace ?? null } : null,
     source: plan.source?.title ? { title: plan.source.title, authorName: plan.source.authorName ?? 'a member', path: (sourceId && links.get(sourceId)?.path) || null, copiedAt: plan.source.copiedAt ?? null } : null,
   }
@@ -107,14 +141,17 @@ export async function listPlans(actor: MemberActor): Promise<{ id: string; title
 export const getPlan = async (actor: MemberActor, id: unknown): Promise<PlanView> => toView(await ownPlan(actor, id))
 
 /** The raw stored days of a plan, including saved-post ids, for the editor. Owner only. */
-export type StoredStop = { title: string; place: string; notes: string; savedContribution: string | null; origin: StopOrigin; sourcePath: string | null }
-export type StoredDay = { title: string; date: string | null; stops: StoredStop[] }
+export type StoredStop = { title: string; place: string; notes: string; savedContribution: string | null; origin: StopOrigin; sourcePath: string | null; timeOfDay: TimeOfDay }
+export type StoredDay = { title: string; date: string | null; overnight: string; overnightConfirmed: boolean; transport: string; stops: StoredStop[] }
 
 export const storedDays = (plan: Plan): StoredDay[] =>
   (plan.days ?? []).map((d) => ({
     title: d.title ?? '',
     date: d.date ?? null,
-    stops: (d.stops ?? []).map((s) => ({ title: s.title, place: s.place ?? '', notes: s.notes ?? '', savedContribution: relId(s.savedContribution), origin: toOrigin(s.origin), sourcePath: cleanSourcePath(s.sourcePath) })),
+    overnight: d.overnight ?? '',
+    overnightConfirmed: Boolean(d.overnightConfirmed),
+    transport: d.transport ?? '',
+    stops: (d.stops ?? []).map((s) => ({ title: s.title, place: s.place ?? '', notes: s.notes ?? '', savedContribution: relId(s.savedContribution), origin: toOrigin(s.origin), sourcePath: cleanSourcePath(s.sourcePath), timeOfDay: toTime(s.timeOfDay) })),
   }))
 
 export async function getPlanForEdit(actor: MemberActor, id: unknown): Promise<{ view: PlanView; days: StoredDay[] }> {
@@ -167,7 +204,7 @@ export async function deletePlan(actor: MemberActor, id: unknown): Promise<{ ok:
  */
 export async function createPlanFromPlanner(
   actor: MemberActor,
-  input: { title: string; start: string | null; days: { title: string; date: string | null }[]; placeIds: string[]; party: string | null; pace: string | null },
+  input: { title: string; start: string | null; days: { title: string; date: string | null }[]; placeIds: string[]; party: string | null; pace: string | null; purpose?: string | null },
 ): Promise<{ id: string }> {
   if (!actor || actor.kind !== 'member') fail('auth', 'Please sign in to continue.')
   await limit('engagement', actor.id)
@@ -179,7 +216,7 @@ export async function createPlanFromPlanner(
   const destinations = input.placeIds.filter(isUuid).slice(0, 5)
   const party = ['solo', 'couple', 'family', 'friends'].includes(input.party ?? '') ? (input.party as Plan['party']) : null
   const pace = ['relaxed', 'balanced', 'full'].includes(input.pace ?? '') ? (input.pace as Plan['pace']) : null
-  const plan = await payload.create({ collection: 'plans', data: { ...data, owner: actor.id, destinations, party, pace } })
+  const plan = await payload.create({ collection: 'plans', data: { ...data, owner: actor.id, destinations, party, pace, purpose: toPurpose(input.purpose) } })
   await track('plan_created')
   return { id: plan.id }
 }
@@ -225,11 +262,11 @@ export async function addPostToPlan(actor: MemberActor, input: { planId: unknown
   const post = await payload.findByID({ collection: 'contributions', id: input.contributionId as string, depth: 0, disableErrors: true })
   if (!post || post.state !== 'published') return fail('not_found', 'That post could not be found.')
   const days = storedDays(plan)
-  if (!days.length) days.push({ title: 'Saved ideas', date: null, stops: [] })
+  if (!days.length) days.push({ title: 'Saved ideas', date: null, overnight: '', overnightConfirmed: false, transport: '', stops: [] })
   const last = days[days.length - 1]
   if (last.stops.some((s) => s.savedContribution === post.id)) return { id: plan.id }
   if (last.stops.length >= LIMITS.maxStopsPerDay) fail('conflict', 'The last day of that plan is full. Add a new day first.')
-  last.stops.push({ title: cleanLine(post.title, 140), place: post.type === 'activity' ? post.activity?.venueName ?? '' : '', notes: '', savedContribution: post.id, origin: 'own', sourcePath: null })
+  last.stops.push({ title: cleanLine(post.title, 140), place: post.type === 'activity' ? post.activity?.venueName ?? '' : '', notes: '', savedContribution: post.id, origin: 'own', sourcePath: null, timeOfDay: null })
   await payload.update({ collection: 'plans', id: plan.id, data: { days } })
   return { id: plan.id }
 }

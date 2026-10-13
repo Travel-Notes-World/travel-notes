@@ -67,10 +67,15 @@ const sections: PolicySection[] = [
             email address). We never receive your card number.
           </li>
           <li>
-            <strong>AI trip plans:</strong> when you ask the AI helper to fill in a plan, we send the places, dates, number of days,
-            the &ldquo;who is travelling&rdquo; and pace choices, and your plan&apos;s day titles, together with Travel Notes content
-            about those places, to Anthropic to write the suggestions. We do not send your name, email address or your own notes. We
-            keep a record of each request (the date, the plan, the AI model and its cost) to run free allowances and limits.
+            <strong>AI trip plans:</strong> the trip details you give (purpose, where you are travelling from, number of
+            travellers, budget, interests, accessibility needs, and for visa itineraries your dates, cities, accommodation, travel
+            and funding) are stored with your private plan. When you ask the AI helper to write a plan, we send the places, dates,
+            day titles, purpose, budget, interests, accessibility needs and visa dates and cities, together with Travel Notes
+            content, to Anthropic to write the suggestions. We never send your name, email address, the traveller&apos;s name on
+            a visa document, your accommodation or travel details, or your own notes. You can remove these details from a plan at
+            any time, and they are deleted with the plan or your account. We keep a record of each AI request (the date, the plan,
+            the AI model and its cost) to run free allowances and limits. A plan is private unless you create a share link; a
+            shared plan never shows your personal details.
           </li>
           <li>
             <strong>Activity organiser contact:</strong> if you submit an activity, the contact details you give for the organiser

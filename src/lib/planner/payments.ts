@@ -25,7 +25,7 @@ export function aiPlanPrice(settings: Settings): AiPlanPrice {
   if (!stripeConfigured()) notReady.push('Stripe keys are not set')
   if (!l.sellerName) notReady.push('seller name is empty')
   if (!validAbn(l.sellerAbn)) notReady.push('seller ABN is missing or invalid')
-  return { charge: notReady.length === 0, amountMinor, gstMinor: l.gstRegistered ? gstIncluded(amountMinor) : 0, text: formatAud(amountMinor), notReady }
+  return { charge: notReady.length === 0, amountMinor, gstMinor: l.gstRegistered ? gstIncluded(amountMinor) : 0, text: `A${formatAud(amountMinor)}`, notReady }
 }
 
 const invoiceNumber = (): string => `TN-${new Date().toISOString().slice(0, 10).replace(/-/g, '')}-${randomBytes(3).toString('hex').toUpperCase()}`

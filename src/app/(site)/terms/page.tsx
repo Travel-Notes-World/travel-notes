@@ -154,17 +154,23 @@ const sections: PolicySection[] = [
     body: (
       <>
         <p>
-          The Trip Planner is free to use. Members can also ask the AI helper to fill in the days of a saved plan. The AI uses Travel
-          Notes content first; any stop it suggests on its own is labelled &ldquo;AI idea&rdquo; because we have not checked it.
-          AI suggestions can be wrong or out of date. Check opening times, prices, bookings and entry rules with the official source
-          before you rely on them.
+          The Trip Planner is free to use. Members can also ask the AI helper to write a saved plan. The AI uses Travel Notes
+          content first; any suggestion it adds on its own is labelled &ldquo;AI idea&rdquo; because we have not checked it. AI
+          suggestions can be wrong or out of date. Check opening times, prices, bookings and entry rules with the official source
+          before you rely on them. The AI does not make bookings and does not give prices.
         </p>
         <ul>
-          <li>Each member gets a number of free AI plans, shown in your account. After that, an AI plan has a price, shown before you pay, including GST where GST applies.</li>
-          <li>One payment covers one plan: AI suggestions for that plan and printing or saving it as a PDF.</li>
-          <li>You pay by card on Stripe&apos;s secure checkout page. We do not see or store your card number.</li>
-          <li>If the AI cannot finish your plan, nothing is used from your free allowance or your payment, and you can try again.</li>
-          <li>Payments are not refunded once the AI has written the plan, except where the Australian Consumer Law gives you a right to a refund.</li>
+          <li>Your first AI plan is a free brief plan for one destination. The limits are shown before it is written.</li>
+          <li>Upgrading a plan costs the price shown before you pay, including GST where GST applies. One payment covers one plan: the detailed plan, the number of revisions shown, a private share link, and the PDF and print version.</li>
+          <li>You pay by card on Stripe&apos;s secure checkout page. We do not see or store your card number. Paid access starts when Stripe confirms the payment.</li>
+          <li>If the AI cannot finish your plan, nothing is used from your free plan or your payment, and you can try again.</li>
+          <li>Payments are not refunded once the detailed plan has been written, except where the Australian Consumer Law gives you a right to a refund.</li>
+          <li>A share link lets anyone who has it read the plan, without your personal details. You can turn it off at any time; the old link then stops working.</li>
+          <li>
+            A visa-purpose itinerary is a planning document you prepare yourself. It is not an official document, does not guarantee
+            that a visa will be granted, and is not legal or migration advice. You are responsible for checking that it is accurate
+            and meets the current requirements of the relevant authority. It is not offered for Australian visa applications.
+          </li>
           <li>AI plans may pause for a while when demand is high. A tax invoice or receipt is available in your account straight after you pay.</li>
         </ul>
       </>

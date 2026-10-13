@@ -42,7 +42,7 @@ export async function savePlannerAction(_: ActionState, form: FormData): Promise
       : input.month ? MONTH_NAMES[input.month] : ''
     const joined = placeNames.length > 1 ? `${placeNames.slice(0, -1).join(', ')} and ${placeNames.at(-1)}` : placeNames[0]
     const title = `${joined}${when ? `, ${when}` : ''}`.slice(0, 140)
-    id = (await createPlanFromPlanner(member, { title, start: input.start, days, placeIds, party: input.party, pace: input.pace })).id
+    id = (await createPlanFromPlanner(member, { title, start: input.start, days, placeIds, party: input.party, pace: input.pace, purpose: input.purpose })).id
   } catch (error) {
     return toState(error)
   }
