@@ -16,7 +16,8 @@ import * as migration_20261011_083215_guide_photos_sources from './20261011_0832
 import * as migration_20261012_044025_smart_publish from './20261012_044025_smart_publish';
 import * as migration_20261012_045421_report_sexual_content from './20261012_045421_report_sexual_content';
 import * as migration_20261012_062418_paid_listings from './20261012_062418_paid_listings';
-import * as migration_20261012_235004_reply_reactions from './20261012_235004_reply_reactions';
+import * as migration_20261012_233814_reply_likes from './20261012_233814_reply_likes';
+import * as migration_20261013_000421_reply_love from './20261013_000421_reply_love';
 
 export const migrations = [
   {
@@ -110,8 +111,13 @@ export const migrations = [
     name: '20261012_062418_paid_listings',
   },
   {
-    up: migration_20261012_235004_reply_reactions.up,
-    down: migration_20261012_235004_reply_reactions.down,
-    name: '20261012_235004_reply_reactions'
+    up: migration_20261012_233814_reply_likes.up,
+    down: migration_20261012_233814_reply_likes.down,
+    name: '20261012_233814_reply_likes',
+  },
+  {
+    up: migration_20261013_000421_reply_love.up,
+    down: migration_20261013_000421_reply_love.down,
+    name: '20261013_000421_reply_love'
   },
 ];
