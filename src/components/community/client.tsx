@@ -123,14 +123,17 @@ export type PickedPlace = { id: string; label: string };
  * Choose destinations by typing a name. The member always chooses: nothing is selected for them,
  * and their location is never guessed. Each choice is sent as a hidden field with the record id.
  */
-export function DestinationPicker({ name = "destinations", label = "Destinations", hint, initial, max = 5, error, required = false, onTimeZone, suggestLink = true }: {
+export function DestinationPicker({ name = "destinations", label = "Destinations", hint, initial, max = 5, error, required = false, onTimeZone, suggestLink = true, onChange }: {
   name?: string; label?: string; hint?: string; initial: PickedPlace[]; max?: number; error?: string; required?: boolean; onTimeZone?: (zone: string | null) => void; suggestLink?: boolean;
+  /** Called with the chosen places whenever they change. */
+  onChange?: (picked: PickedPlace[]) => void;
 }) {
   const id = useId();
   const [picked, setPicked] = useState<PickedPlace[]>(initial);
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<DestinationOption[]>([]);
   const [status, setStatus] = useState("");
+  useEffect(() => { onChange?.(picked); }, [picked, onChange]);
   useEffect(() => {
     const q = query.trim();
     if (q.length < 2) return;

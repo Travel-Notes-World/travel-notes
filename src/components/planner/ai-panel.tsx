@@ -79,7 +79,7 @@ export function AiPanel({ id, status }: { id: string; status: AiPanelStatus }) {
     body = (
       <form action={generate} className="mt-4">
         <input type="hidden" name="id" value={id} />
-        <p className="t-body-sm mt-0">Your free plan is a short outline for one destination. Save your trip details above first: the AI uses them.</p>
+        <p className="t-body-sm mt-0">Your free plan is a short outline for one destination. Trip details above are optional, but they help the AI fit the plan to you.</p>
         <SubmitButton pendingText={pending}>Write my free plan</SubmitButton>
       </form>
     );
