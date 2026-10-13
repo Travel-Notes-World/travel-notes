@@ -1,7 +1,8 @@
 /**
- * AI Trip Planner: switched off by default; fills a plan's days from Travel Notes content first,
- * labelling anything else as an unchecked AI idea; one free plan per member, then paid per plan
- * (which also unlocks printing); failures never use the allowance; a daily spending limit.
+ * AI Trip Planner MVP: off by default; a free brief plan (one destination, short outline); a paid
+ * upgrade per plan (detailed plan, revisions, share link, PDF); failures never use an allowance;
+ * visa itineraries mark only the traveller's own bookings as confirmed and are not offered for
+ * Australia; personal details are never sent to the AI or shared; a daily spending limit.
  * The model and Stripe are replaced by fakes, so no network is used.
  */
 import assert from 'node:assert/strict'
@@ -9,44 +10,37 @@ import { after, before, describe, it } from 'node:test'
 
 import { newMember, payload, places, rejects, setup, type Any } from './helpers'
 
-let AI: Any, P: Any, PAY: Any, L: Any, STRIPE: Any
+let AI: Any, P: Any, PAY: Any, L: Any, STRIPE: Any, DET: Any, SHARE: Any, DOC: Any, PDF: Any, EX: Any
 
 const TEST_ABN = '51 824 753 556' // A valid ABN checksum, used only in tests.
 const requests: Any[] = []
-let nextAnswer: () => Any = () => goodAnswer()
 
-const goodAnswer = () => ({
-  text: JSON.stringify({
-    summary: 'Two easy days in Kyoto, starting with temples and ending with gardens.',
-    days: [
-      { day: 1, title: 'Temples', stops: [
-        { title: 'Walk around Kyoto', place: 'Kyoto', notes: 'Start with the area our guide covers.', source: '/destinations/japan/kyoto' },
-        { title: 'Made-up tea house', place: 'Gion', notes: 'A quiet stop.', source: '/stories/does-not-exist' },
-        { title: 'Philosopher’s Path walk', place: 'Higashiyama', notes: 'Go early.', source: '' },
-      ] },
-      { day: 2, title: 'Gardens', stops: [{ title: 'Garden morning', place: 'Kyoto', notes: 'Allow time.', source: '' }] },
-    ],
-    checks: ['Check entry rules for Australians with Smartraveller.'],
-  }),
-  inputTokens: 4000,
-  outputTokens: 1000,
-  stopReason: 'end_turn',
+const stop = (title: string, source = '', timeOfDay = 'morning') => ({ title, place: 'Kyoto', notes: 'A short note.', source, timeOfDay })
+const answer = (over: Any = {}) => ({
+  summary: 'A gentle trip through Kyoto.',
+  days: [1, 2, 3].map((day) => ({
+    day,
+    title: `Day ${day} title`,
+    overnight: 'Kyoto',
+    transport: 'Walk and use local buses.',
+    stops: [stop('Walk around Kyoto', '/destinations/japan/kyoto'), stop('Made-up tea house', '/stories/not-real', 'afternoon'), stop('Riverside walk', '', 'afternoon'), stop('Evening market area', '', 'evening'), stop('Fifth stop', '', 'evening'), stop('Sixth stop is cut', '', 'evening')],
+  })),
+  options: [
+    { style: 'budget', summary: 'Saves money.', choices: 'Stay near a station\nEat at markets' },
+    { style: 'balanced', summary: 'A mix.', choices: 'Mid-range area' },
+    { style: 'premium', summary: 'More comfort.', choices: 'Central hotel area' },
+  ],
+  checks: ['Check entry rules with Smartraveller.'],
+  ...over,
 })
-
-const fakeAi = {
-  async generate(request: Any) {
-    requests.push(request)
-    const answer = nextAnswer()
-    if (answer instanceof Error) throw answer
-    return answer
-  },
-}
+let next: () => Any = () => ({ text: JSON.stringify(answer()), inputTokens: 4000, outputTokens: 1000, stopReason: 'end_turn' })
+const fakeAi = { async generate(r: Any) { requests.push(r); const a = next(); if (a instanceof Error) throw a; return a } }
 
 const sessions = new Map<string, Any>()
 let counter = 0
 const fakeStripe = {
   async createCheckout(input: Any) {
-    const id = `cs_test_ai_${++counter}`
+    const id = `cs_test_mvp_${++counter}`
     const s = { id, url: `https://checkout.example/${id}`, paymentStatus: 'unpaid', paymentIntentId: null, customerEmail: input.customerEmail, metadata: input.metadata }
     sessions.set(id, s)
     return s
@@ -60,15 +54,21 @@ const configure = (planner: Any = {}) =>
   payload.updateGlobal({
     slug: 'community-settings',
     data: {
-      planner: { aiEnabled: true, model: 'claude-sonnet-5-5', dailyBudgetUsd: 5, freePlans: 1, priceAud: 4.99, ...planner },
+      planner: { aiEnabled: true, model: 'claude-sonnet-5-5', dailyBudgetUsd: 5, freePlans: 1, priceAud: 9.99, revisionsPerPlan: 2, ...planner },
       listings: { enabled: false, feeAud: 5, priceLabel: 'Launch price', gstRegistered: true, sellerName: 'Test Seller', sellerAbn: TEST_ABN },
     } as Any,
   })
 
-const twoDayPlan = async (member: Any, extraDays = 0) => {
-  const days = [{ title: 'Kyoto', date: '2026-11-02' }, { title: 'Kyoto', date: '2026-11-03' }, ...Array.from({ length: extraDays }, () => ({ title: 'Kyoto', date: null }))]
-  const { id } = await P.createPlanFromPlanner(member, { title: 'Kyoto, November 2026', start: '2026-11-02', days, placeIds: [places.kyoto.id], party: 'couple', pace: 'balanced' })
-  return id as string
+const newPlan = async (member: Any, placeIds: string[] = [places.kyoto.id], purpose = 'holiday', count = 3) => {
+  const days = Array.from({ length: count }, (_, i) => ({ title: 'Kyoto', date: `2026-11-0${i + 2}` }))
+  return (await P.createPlanFromPlanner(member, { title: 'Kyoto, November 2026', start: '2026-11-02', days, placeIds, party: 'couple', pace: 'balanced', purpose })).id as string
+}
+const upgrade = async (member: Any, planId: string) => {
+  const { url } = await PAY.startAiPlanCheckout(member, planId, { base: 'https://travelnotes.test' })
+  const id = new URL(url).pathname.slice(1)
+  sessions.get(id).paymentStatus = 'paid'
+  sessions.get(id).paymentIntentId = `pi_${id}`
+  return L.confirmListingPayment(id)
 }
 const runsOf = async (planId: string) => (await payload.find({ collection: 'ai-runs', where: { plan: { equals: planId } }, sort: 'createdAt', depth: 0 })).docs as Any[]
 
@@ -79,8 +79,11 @@ before(async () => {
   PAY = await import('../../src/lib/planner/payments')
   L = await import('../../src/lib/community/listings')
   STRIPE = await import('../../src/lib/community/payments/stripe')
-  await payload.delete({ collection: 'ai-runs', where: { id: { exists: true } } })
-  await payload.delete({ collection: 'listing-payments', where: { id: { exists: true } } })
+  DET = await import('../../src/lib/planner/details')
+  SHARE = await import('../../src/lib/planner/share')
+  DOC = await import('../../src/lib/planner/document')
+  PDF = await import('../../src/lib/planner/pdf')
+  EX = await import('../../src/lib/planner/extras')
   await payload.updateGlobal({ slug: 'community-settings', data: { planner: { aiEnabled: false } } as Any })
 })
 after(() => {
@@ -91,122 +94,227 @@ after(() => {
 describe('switched off', () => {
   it('does nothing until an administrator turns it on and a key is set', async () => {
     const member = await newMember('Early Bird')
-    const id = await twoDayPlan(member)
-    const status = await AI.aiStatus(member, id)
-    assert.equal(status.available, false)
-    assert.match(status.reason, /not switched on/)
+    const id = await newPlan(member)
+    assert.match((await AI.aiStatus(member, id)).reason, /not switched on/)
     await rejects(AI.generateAiPlan(member, id), 'closed')
     AI.setAiGatewayForTests(fakeAi)
     STRIPE.setPaymentGatewayForTests(fakeStripe)
     await configure()
-    assert.equal((await AI.aiStatus(member, id)).available, true)
+    assert.equal((await AI.aiStatus(member, id)).next, 'brief')
   })
 })
 
-describe('writing a plan', () => {
-  it('fills the days, links stops to Travel Notes pages it was given, and labels the rest as AI ideas', async () => {
-    const member = await newMember('Planner')
-    const id = await twoDayPlan(member)
-    await P.updatePlan(member, id, { title: 'Kyoto, November 2026', startDate: '2026-11-02', notes: 'PRIVATE NOTE 123', days: [
-      { title: 'Kyoto', date: '2026-11-02', stops: [{ title: 'Dinner with friends', origin: 'own' }] },
-      { title: 'Kyoto', date: '2026-11-03', stops: [] },
-    ] })
+describe('the free brief plan', () => {
+  it('writes a short outline for one destination, without personal details in the request', async () => {
+    const member = await newMember('Free Planner')
+    const id = await newPlan(member)
+    await DET.updateTripDetails(member, id, { purpose: 'holiday', travellers: '2', budgetAmount: '3000', budgetCurrency: 'AUD', interests: ['food', 'bogus'], accessibility: 'Step-free access please', departFrom: 'Sydney' })
     requests.length = 0
     const result = await AI.generateAiPlan(member, id)
-    assert.equal(result.free, true)
-
+    assert.equal(result.kind, 'brief')
     const sent = requests[0]
-    assert.equal(sent.model, 'claude-sonnet-5-5')
-    assert.match(sent.prompt, /\/destinations\/japan\/kyoto/)
-    assert.ok(!sent.prompt.includes('PRIVATE NOTE 123') && !sent.prompt.includes('Dinner with friends') && !sent.prompt.includes('@example.test'), 'no notes, own stops or email are sent')
+    assert.match(sent.system, /BRIEF plan/)
     assert.match(sent.system, /Never state prices/)
+    assert.match(sent.prompt, /Step-free access please/, 'accessibility needs shape the plan')
+    assert.ok(!sent.prompt.includes('@example.test'), 'no email address is sent')
 
     const view = await P.getPlan(member, id)
-    const day1 = view.days[0].stops
-    assert.deepEqual(day1.map((s: Any) => [s.title, s.origin, s.sourcePath]), [
-      ['Walk around Kyoto', 'travel_notes', '/destinations/japan/kyoto'],
-      ['Made-up tea house', 'ai_idea', null],
-      ['Philosopher’s Path walk', 'ai_idea', null],
-      ['Dinner with friends', 'own', null],
-    ])
-    assert.equal(view.days[1].stops[0].origin, 'ai_idea')
-    assert.match(view.ai.summary, /Two easy days/)
-    assert.match(view.ai.summary, /Smartraveller/)
-    assert.equal(view.ai.unlocked, false, 'a free plan cannot be printed')
-
-    const [run] = await runsOf(id)
-    assert.equal(run.status, 'ok')
-    assert.equal(run.free, true)
-    assert.equal(run.costMicroUsd, 4000 * 2 + 1000 * 10)
-
-    // Writing again replaces the AI stops and keeps the member's own.
-    const status = await AI.aiStatus(member, id)
-    assert.equal(status.freeLeft, 0)
+    assert.deepEqual(view.details.interests, ['food'], 'unknown interests are dropped')
+    assert.equal(view.days[0].stops.length, 2, 'two suggestions a day')
+    assert.deepEqual(view.days[0].stops.map((s: Any) => [s.origin, s.sourcePath, s.timeOfDay]), [['travel_notes', '/destinations/japan/kyoto', null], ['ai_idea', null, null]])
+    assert.equal(view.days[0].overnight, '', 'brief plans do not plan nights')
+    assert.deepEqual(view.ai.options, [], 'no comparison in the free plan')
+    assert.equal(view.ai.tier, 'brief')
+    const status = await AI.aiStatus(member, id, { canPay: true })
+    assert.equal(status.next, null)
+    assert.match(status.blocked, /Upgrade/)
     await rejects(AI.generateAiPlan(member, id), 'forbidden')
+    const [run] = await runsOf(id)
+    assert.equal(run.kind, 'brief')
+    assert.equal(run.free, true)
   })
 
-  it('a second plan is paid for once, which also unlocks printing', async () => {
-    const member = await newMember('Payer')
-    const first = await twoDayPlan(member)
-    await AI.generateAiPlan(member, first)
-    const second = await twoDayPlan(member)
-    await rejects(AI.generateAiPlan(member, second), 'forbidden')
-
-    const { url } = await PAY.startAiPlanCheckout(member, second, { base: 'https://travelnotes.test' })
-    const sessionId = new URL(url).pathname.slice(1)
-    assert.equal((await L.confirmListingPayment(sessionId)).status, 'unpaid')
-    sessions.get(sessionId).paymentStatus = 'paid'
-    sessions.get(sessionId).paymentIntentId = `pi_${sessionId}`
-    const confirmed = await L.confirmListingPayment(sessionId)
-    assert.deepEqual(confirmed, { status: 'paid', planId: second })
-    await L.confirmListingPayment(sessionId) // the webhook and the browser can both confirm
-
-    const payments = (await payload.find({ collection: 'listing-payments', where: { plan: { equals: second } }, depth: 0 })).docs as Any[]
-    assert.equal(payments.length, 1)
-    assert.equal(payments[0].purpose, 'ai_plan')
-    assert.equal(payments[0].amountMinor, 499)
-    assert.equal(payments[0].gstMinor, 45)
-    assert.equal((await P.getPlan(member, second)).ai.unlocked, true, 'paid plans can be printed')
-
-    let status = await AI.aiStatus(member, second, { canPay: true })
-    assert.equal(status.paidCredit, true)
-    const result = await AI.generateAiPlan(member, second)
-    assert.equal(result.free, false)
-    const runs = await runsOf(second)
-    assert.equal(runs.at(-1).payment, payments[0].id)
-    status = await AI.aiStatus(member, second)
-    assert.equal(status.paidCredit, false, 'one payment covers one AI plan')
-    assert.equal((await P.getPlan(member, second)).ai.unlocked, true)
-
-    const invoice = await L.getInvoice({ member, staff: null }, payments[0].id)
-    assert.equal(invoice.planId, second)
+  it('covers one destination only', async () => {
+    const member = await newMember('Two Places')
+    const id = await newPlan(member, [places.kyoto.id, places.bangkok.id])
+    assert.match((await AI.aiStatus(member, id)).blocked, /one destination/)
+    await rejects(AI.generateAiPlan(member, id), 'forbidden')
   })
 
   it('a failed or unfinished answer never uses the free plan', async () => {
     const member = await newMember('Unlucky')
-    const id = await twoDayPlan(member)
-    nextAnswer = () => new Error('network down')
+    const id = await newPlan(member)
+    next = () => new Error('network down')
     await rejects(AI.generateAiPlan(member, id), 'unavailable')
-    nextAnswer = () => ({ ...goodAnswer(), stopReason: 'max_tokens', text: '{"summary":' })
+    next = () => ({ text: '{"summary":', inputTokens: 4000, outputTokens: 1000, stopReason: 'max_tokens' })
     await rejects(AI.generateAiPlan(member, id), 'unavailable')
-    nextAnswer = () => ({ ...goodAnswer(), text: 'not json' })
+    next = () => ({ text: 'not json', inputTokens: 10, outputTokens: 10, stopReason: 'end_turn' })
     await rejects(AI.generateAiPlan(member, id), 'unavailable')
-    const runs = await runsOf(id)
-    assert.deepEqual(runs.map((r: Any) => r.status), ['failed', 'failed', 'failed'])
-    assert.equal(runs[1].costMicroUsd, 4000 * 2 + 1000 * 10, 'the cost of an unfinished answer still counts towards the daily limit')
+    assert.deepEqual((await runsOf(id)).map((r: Any) => r.status), ['failed', 'failed', 'failed'])
     assert.equal((await AI.aiStatus(member, id)).freeLeft, 1)
-    nextAnswer = () => goodAnswer()
-    assert.equal((await AI.generateAiPlan(member, id)).free, true)
+    next = () => ({ text: JSON.stringify(answer()), inputTokens: 4000, outputTokens: 1000, stopReason: 'end_turn' })
+    assert.equal((await AI.generateAiPlan(member, id)).kind, 'brief')
+  })
+})
+
+describe('the paid detailed plan', () => {
+  it('upgrading unlocks the detailed plan, a comparison and a fixed number of revisions', async () => {
+    const member = await newMember('Upgrader')
+    const id = await newPlan(member, [places.kyoto.id, places.bangkok.id])
+    const confirmed = await upgrade(member, id)
+    assert.deepEqual(confirmed, { status: 'paid', planId: id })
+    const payment = (await payload.find({ collection: 'listing-payments', where: { plan: { equals: id } }, depth: 0 })).docs[0] as Any
+    assert.equal(payment.amountMinor, 999)
+    assert.equal(payment.gstMinor, 91)
+
+    assert.equal((await AI.aiStatus(member, id)).next, 'detailed')
+    requests.length = 0
+    assert.equal((await AI.generateAiPlan(member, id)).kind, 'detailed')
+    assert.match(requests[0].system, /DETAILED plan/)
+    let view = await P.getPlan(member, id)
+    assert.equal(view.ai.tier, 'detailed')
+    assert.equal(view.days[0].stops.length, 5, 'up to five stops a day')
+    assert.deepEqual(view.days[0].stops.slice(0, 2).map((s: Any) => s.timeOfDay), ['morning', 'afternoon'])
+    assert.equal(view.days[0].overnight, 'Kyoto')
+    assert.match(view.days[0].transport, /buses/)
+    assert.deepEqual(view.ai.options.map((o: Any) => o.style), ['budget', 'balanced', 'premium'])
+    const [run] = await runsOf(id)
+    assert.equal(run.kind, 'detailed')
+    assert.equal(run.free, false)
+    assert.equal(run.payment, payment.id)
+
+    requests.length = 0
+    assert.equal((await AI.generateAiPlan(member, id, { instruction: 'More food markets please' })).kind, 'revision')
+    assert.match(requests[0].prompt, /More food markets please/)
+    assert.match(requests[0].prompt, /CURRENT PLAN/)
+    assert.equal((await P.getPlan(member, id)).ai.revisionsUsed, 1)
+    await AI.generateAiPlan(member, id, { instruction: 'Slower please' })
+    const status = await AI.aiStatus(member, id)
+    assert.equal(status.revisionsLeft, 0)
+    assert.match(status.blocked, /revisions/)
+    await rejects(AI.generateAiPlan(member, id), 'forbidden')
+    assert.equal((await AI.freePlansUsed(payload, member.id)), 0, 'the paid plan did not touch the free allowance')
+    view = await P.getPlan(member, id)
+    assert.equal(view.ai.unlocked, true)
   })
 
-  it('refuses plans that are too long, without places, or belong to someone else', async () => {
-    const member = await newMember('Long Tripper')
-    const long = await twoDayPlan(member, 13)
-    await rejects(AI.generateAiPlan(member, long), 'validation')
-    const manual = (await P.createPlan(member, { title: 'Hand-made plan', days: [{ title: 'Day one', stops: [] }] })).id
-    await rejects(AI.generateAiPlan(member, manual), 'validation')
-    const stranger = await newMember('Stranger')
-    await rejects(AI.generateAiPlan(stranger, long), 'not_found')
+  it('keeps a night the traveller booked', async () => {
+    const member = await newMember('Booker')
+    const id = await newPlan(member)
+    await upgrade(member, id)
+    const { days } = await P.getPlanForEdit(member, id)
+    days[1].overnight = 'My booked hotel, Kyoto'
+    days[1].overnightConfirmed = true
+    await P.updatePlan(member, id, { title: 'Kyoto trip', startDate: '2026-11-02', days })
+    await AI.generateAiPlan(member, id)
+    const view = await P.getPlan(member, id)
+    assert.equal(view.days[1].overnight, 'My booked hotel, Kyoto')
+    assert.equal(view.days[0].overnight, 'Kyoto')
+  })
+})
+
+describe('visa itineraries', () => {
+  it('need arrival and departure dates, never send the traveller’s name, and mark only bookings as confirmed', async () => {
+    const member = await newMember('Visa Applicant')
+    const id = await newPlan(member, [places.kyoto.id], 'visa')
+    await rejects(DET.updateTripDetails(member, id, { purpose: 'visa' }), 'validation')
+    await DET.updateTripDetails(member, id, { purpose: 'visa', arrivalDate: '2026-11-02', departureDate: '2026-11-04', travellerName: 'SECRET NAME', accommodation: 'SECRET HOTEL booked', transport: 'Flight booked', funding: 'self', cities: 'Kyoto' })
+    await upgrade(member, id)
+    requests.length = 0
+    await AI.generateAiPlan(member, id)
+    assert.ok(!requests[0].prompt.includes('SECRET NAME') && !requests[0].prompt.includes('SECRET HOTEL'), 'name and accommodation are not sent to the AI')
+    assert.match(requests[0].system, /visitor visa application/)
+
+    const { days } = await P.getPlanForEdit(member, id)
+    days[0].overnightConfirmed = true
+    await P.updatePlan(member, id, { title: 'Kyoto trip', startDate: '2026-11-02', days })
+    const view = await P.getPlan(member, id)
+    assert.deepEqual(view.ai.options, [], 'no holiday comparison on a visa itinerary')
+    const doc = DOC.documentModel(view, { budget: null, legs: [], site: 'https://travelnotes.test', now: new Date('2026-10-13T00:00:00Z') })
+    assert.equal(doc.layout, 'visa')
+    assert.equal(doc.title, 'Proposed travel itinerary')
+    assert.ok(doc.facts.some((f: Any) => f.label === 'Traveller' && f.value === 'SECRET NAME'))
+    assert.deepEqual(doc.days.map((d: Any) => d.overnightStatus), ['confirmed', 'proposed', 'proposed'])
+    assert.match(doc.disclaimer, /does not guarantee that a visa will be granted/)
+    const pdf = await PDF.renderPlanPdf(doc)
+    assert.equal(pdf.subarray(0, 4).toString(), '%PDF')
+    assert.ok(pdf.length > 2000)
+  })
+
+  it('are not offered for Australia', async () => {
+    const au = await payload.create({ collection: 'destinations', data: { name: 'Australia', slug: `australia-${Date.now()}`, kind: 'country', isoCountryCode: 'AU', summary: 'Test.', seo: { title: 'Australia', description: 'Test.' }, _status: 'published' } as Any })
+    const syd = await payload.create({ collection: 'destinations', data: { name: 'Sydney', slug: `sydney-${Date.now()}`, kind: 'city', parent: au.id, summary: 'Test.', seo: { title: 'Sydney', description: 'Test.' }, _status: 'published' } as Any })
+    const member = await newMember('Visitor To Australia')
+    const id = await newPlan(member, [syd.id], 'visa')
+    await DET.updateTripDetails(member, id, { purpose: 'visa', arrivalDate: '2026-11-02', departureDate: '2026-11-04' })
+    const refused = await rejects(AI.generateAiPlan(member, id), 'validation')
+    assert.match(refused.message, /Australian visa/)
+  })
+})
+
+describe('sharing, documents and personal details', () => {
+  it('only paid plans can be shared; the shared view hides personal details; turning it off kills the link', async () => {
+    const member = await newMember('Sharer')
+    const id = await newPlan(member)
+    await rejects(SHARE.setSharing(member, id, true), 'forbidden')
+    await upgrade(member, id)
+    await AI.generateAiPlan(member, id)
+    const { days } = await P.getPlanForEdit(member, id)
+    days[0].stops.push({ title: 'Dinner with Aunty', place: '', notes: 'Her address is private', savedContribution: null, origin: 'own', sourcePath: null, timeOfDay: null })
+    days[1].overnight = 'Hotel Private'
+    days[1].overnightConfirmed = true
+    await P.updatePlan(member, id, { title: 'Kyoto trip', startDate: '2026-11-02', notes: 'My private notes', days })
+    const { token } = await SHARE.setSharing(member, id, true)
+    const shared = await SHARE.getSharedPlan(token)
+    assert.ok(shared)
+    const text = JSON.stringify(shared)
+    assert.ok(!text.includes('Her address is private') && !text.includes('Hotel Private') && !text.includes('My private notes'))
+    assert.ok(text.includes('Dinner with Aunty'))
+    await SHARE.setSharing(member, id, false)
+    assert.equal(await SHARE.getSharedPlan(token), null)
+    assert.equal(await SHARE.getSharedPlan('short'), null)
+  })
+
+  it('builds the holiday PDF with labels, budget arithmetic and distances', async () => {
+    const member = await newMember('Printer')
+    const id = await newPlan(member)
+    await DET.updateTripDetails(member, id, { purpose: 'holiday', travellers: '2', budgetAmount: '3000', budgetCurrency: 'AUD' })
+    await upgrade(member, id)
+    await AI.generateAiPlan(member, id)
+    const view = await P.getPlan(member, id)
+    const budget = EX.budgetGuide(view.details, view.days.length)
+    assert.equal(budget.perDay, 1000)
+    assert.equal(budget.perPersonPerDay, 500)
+    const doc = DOC.documentModel(view, { budget, legs: [{ from: 'Kyoto', to: 'Osaka', km: 43 }], site: 'https://travelnotes.test' })
+    assert.equal(doc.layout, 'holiday')
+    assert.ok(doc.days[0].stops.some((s: Any) => s.label.startsWith('AI suggestion')))
+    assert.ok(doc.days[0].stops.some((s: Any) => s.link === 'https://travelnotes.test/destinations/japan/kyoto'))
+    assert.match(doc.budget[1], /not a quote/)
+    assert.equal((await PDF.renderPlanPdf(doc)).subarray(0, 4).toString(), '%PDF')
+  })
+
+  it('removes personal details on request', async () => {
+    const member = await newMember('Private Person')
+    const id = await newPlan(member, [places.kyoto.id], 'visa')
+    await DET.updateTripDetails(member, id, { purpose: 'visa', arrivalDate: '2026-11-02', departureDate: '2026-11-04', travellerName: 'Name', accommodation: 'Hotel', accessibility: 'Wheelchair', funding: 'self', departFrom: 'Perth' })
+    await DET.removePersonalDetails(member, id)
+    const view = await P.getPlan(member, id)
+    assert.equal(view.visa.travellerName, '')
+    assert.equal(view.visa.accommodation, '')
+    assert.equal(view.visa.funding, null)
+    assert.equal(view.details.accessibility, '')
+    assert.equal(view.details.departFrom, '')
+    assert.equal(view.visa.arrivalDate, '2026-11-02', 'the trip itself stays')
+  })
+
+  it('works out straight-line distances and nearby places from coordinates', async () => {
+    assert.equal(Math.round(EX.distanceKm({ latitude: 35.0116, longitude: 135.7681 }, { latitude: 34.6937, longitude: 135.5023 })), 43)
+    assert.equal(EX.tripType(120), 'day')
+    assert.equal(EX.tripType(200), 'overnight')
+    await payload.update({ collection: 'destinations', id: places.kyoto.id, data: { latitude: 35.0116, longitude: 135.7681 } as Any })
+    await payload.create({ collection: 'destinations', data: { name: 'Osaka', slug: `osaka-${Date.now()}`, kind: 'city', parent: places.japan.id, latitude: 34.6937, longitude: 135.5023, population: 2700000, summary: 'Test.', seo: { title: 'Osaka', description: 'Test.' }, _status: 'published' } as Any })
+    const near = await EX.nearbyPlaces(payload, [places.kyoto.id])
+    assert.deepEqual(near.map((n: Any) => [n.name, n.km, n.type]), [['Osaka', 43, 'day']])
   })
 })
 
@@ -214,7 +322,7 @@ describe('the daily spending limit', () => {
   it('pauses AI plans for the rest of the Sydney day once the limit is reached', async () => {
     await configure({ dailyBudgetUsd: 0.5 })
     const member = await newMember('Late Comer')
-    const id = await twoDayPlan(member)
+    const id = await newPlan(member)
     await payload.create({ collection: 'ai-runs', data: { status: 'ok', model: 'claude-sonnet-5-5', costMicroUsd: 600_000 } as Any })
     const status = await AI.aiStatus(member, id)
     assert.equal(status.available, false)
@@ -223,12 +331,9 @@ describe('the daily spending limit', () => {
     await configure()
   })
 
-  it('works out midnight in Sydney, with daylight saving', () => {
+  it('works out midnight in Sydney, with daylight saving, and estimates cost from the published prices', () => {
     assert.equal(AI.sydneyDayStart(new Date('2026-10-13T02:00:00Z')).toISOString(), '2026-10-12T13:00:00.000Z')
     assert.equal(AI.sydneyDayStart(new Date('2026-07-01T05:00:00Z')).toISOString(), '2026-06-30T14:00:00.000Z')
-  })
-
-  it('estimates cost from the published prices', () => {
     assert.equal(AI.costMicroUsd('claude-sonnet-5-5', 1_000_000, 0), 2_000_000)
     assert.equal(AI.costMicroUsd('claude-haiku-5-5', 1_000_000, 1_000_000), 600_000)
   })

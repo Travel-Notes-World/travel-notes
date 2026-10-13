@@ -97,14 +97,86 @@ export const Plans: CollectionConfig = {
       ],
     },
     {
+      name: 'purpose',
+      type: 'select',
+      defaultValue: 'holiday',
+      options: [
+        { value: 'holiday', label: 'Holiday or sightseeing' },
+        { value: 'visa', label: 'Itinerary for a visitor visa application' },
+        { value: 'family', label: 'Visiting family or friends' },
+        { value: 'business', label: 'Business travel with some leisure' },
+      ],
+    },
+    {
+      name: 'details',
+      type: 'group',
+      admin: { description: 'Trip details the member gave for the AI planner. Private to the member.' },
+      fields: [
+        { name: 'departFrom', type: 'text', maxLength: 120 },
+        { name: 'travellers', type: 'number', min: 1, max: 20 },
+        { name: 'budgetAmount', type: 'number', min: 0, max: 10_000_000 },
+        { name: 'budgetCurrency', type: 'text', maxLength: 3 },
+        { name: 'interests', type: 'text', hasMany: true, maxRows: 10 },
+        { name: 'accessibility', type: 'textarea', maxLength: 600 },
+      ],
+    },
+    {
+      name: 'visa',
+      type: 'group',
+      admin: { description: 'Only for a visa-purpose itinerary. Entered by the member; never checked by Travel Notes. No passport or booking numbers are collected.' },
+      fields: [
+        { name: 'travellerName', type: 'text', maxLength: 120 },
+        { name: 'visitPurpose', type: 'text', maxLength: 120, admin: { description: 'For example "Tourism" or "Visiting my sister". Shown on the document.' } },
+        { name: 'arrivalDate', type: 'text', maxLength: 10 },
+        { name: 'departureDate', type: 'text', maxLength: 10 },
+        { name: 'cities', type: 'text', maxLength: 300 },
+        { name: 'accommodation', type: 'textarea', maxLength: 1500 },
+        { name: 'transport', type: 'textarea', maxLength: 1500 },
+        {
+          name: 'funding',
+          type: 'select',
+          options: [
+            { value: 'self', label: 'The traveller' },
+            { value: 'family', label: 'Family' },
+            { value: 'employer', label: 'Employer' },
+            { value: 'host', label: 'The person being visited' },
+            { value: 'other', label: 'Other' },
+          ],
+        },
+        { name: 'fundingNote', type: 'text', maxLength: 200 },
+      ],
+    },
+    {
       name: 'ai',
       type: 'group',
-      admin: { description: 'AI Trip Planner: when the days were filled in, and whether this plan is paid for (paid plans can be printed).' },
+      admin: { description: 'AI Trip Planner: when the days were filled in, and whether this plan is paid for (paid plans get the detailed plan, revisions, sharing and the PDF).' },
       fields: [
         { name: 'generatedAt', type: 'date' },
         { name: 'model', type: 'text' },
         { name: 'summary', type: 'textarea' },
         { name: 'unlocked', type: 'checkbox', defaultValue: false },
+        { name: 'tier', type: 'select', options: [{ value: 'brief', label: 'Free brief plan' }, { value: 'detailed', label: 'Detailed plan' }] },
+        { name: 'revisionsUsed', type: 'number', defaultValue: 0 },
+        {
+          name: 'options',
+          type: 'array',
+          maxRows: 3,
+          admin: { description: 'Holiday plans: budget-friendly, balanced and premium ways to do the same trip.' },
+          fields: [
+            { name: 'style', type: 'select', required: true, options: [{ value: 'budget', label: 'Budget-friendly' }, { value: 'balanced', label: 'Balanced' }, { value: 'premium', label: 'Premium' }] },
+            { name: 'summary', type: 'textarea' },
+            { name: 'choices', type: 'textarea' },
+          ],
+        },
+      ],
+    },
+    {
+      name: 'share',
+      type: 'group',
+      admin: { description: 'A private link the member can turn on to show the plan to others. Paid plans only.' },
+      fields: [
+        { name: 'token', type: 'text', unique: true, index: true },
+        { name: 'enabled', type: 'checkbox', defaultValue: false },
       ],
     },
     {
@@ -113,6 +185,10 @@ export const Plans: CollectionConfig = {
       fields: [
         { name: 'title', type: 'text', maxLength: 140 },
         { name: 'date', type: 'text', maxLength: 10 },
+        // Where the traveller sleeps that night, and how they get around or move on that day.
+        { name: 'overnight', type: 'text', maxLength: 140 },
+        { name: 'overnightConfirmed', type: 'checkbox', defaultValue: false },
+        { name: 'transport', type: 'textarea', maxLength: 600 },
         {
           name: 'stops',
           type: 'array',
@@ -133,6 +209,7 @@ export const Plans: CollectionConfig = {
               ],
             },
             { name: 'sourcePath', type: 'text', maxLength: 300 },
+            { name: 'timeOfDay', type: 'select', options: [{ value: 'morning', label: 'Morning' }, { value: 'afternoon', label: 'Afternoon' }, { value: 'evening', label: 'Evening' }] },
           ],
         },
       ],

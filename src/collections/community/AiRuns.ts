@@ -32,6 +32,7 @@ export const AiRuns: CollectionConfig = {
       ],
     },
     { name: 'model', type: 'text', required: true },
+    { name: 'kind', type: 'select', defaultValue: 'brief', options: [{ value: 'brief', label: 'Free brief plan' }, { value: 'detailed', label: 'Detailed plan' }, { value: 'revision', label: 'Revision' }] },
     { name: 'free', type: 'checkbox', defaultValue: false, admin: { description: 'Used the member’s free allowance.' } },
     { name: 'payment', type: 'relationship', relationTo: 'listing-payments', admin: { description: 'The paid plan this request used, if any.' } },
     { name: 'inputTokens', type: 'number', defaultValue: 0 },

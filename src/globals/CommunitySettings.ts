@@ -104,7 +104,7 @@ export const CommunitySettings: GlobalConfig = {
       label: 'AI Trip Planner',
       admin: {
         description:
-          'AI fills in the days of a saved plan, using Travel Notes content first. It only works when the ANTHROPIC_API_KEY setting is added in Vercel and the switch below is ON. Each member gets a number of free AI plans; after that, each AI plan is paid through Stripe (the seller details in "Paid business listings" are used on the invoice). Printing a plan is unlocked by paying for that plan.',
+          'AI fills in the days of a saved plan, using Travel Notes content first. It only works when the ANTHROPIC_API_KEY setting is added in Vercel and the switch below is ON. Each member’s first brief AI plan is free. A detailed plan (more detail, revisions, sharing, PDF and print) is paid once per plan through Stripe (the seller details in "Paid business listings" are used on the invoice).',
       },
       fields: [
         { name: 'aiEnabled', type: 'checkbox', defaultValue: false, label: 'Turn on AI plans' },
@@ -118,8 +118,9 @@ export const CommunitySettings: GlobalConfig = {
           ],
         },
         { name: 'dailyBudgetUsd', type: 'number', defaultValue: 5, min: 0.5, max: 500, label: 'Daily AI spending limit (US dollars)', admin: { description: 'When the estimated AI cost for the day (Sydney time) reaches this, AI plans pause until midnight. The normal planner keeps working.' } },
-        { name: 'freePlans', type: 'number', defaultValue: 1, min: 0, max: 20, label: 'Free AI plans per member' },
-        { name: 'priceAud', type: 'number', defaultValue: 4.99, min: 0, max: 500, label: 'Price per AI plan (AUD, including GST)', admin: { description: 'One payment covers one plan: the AI days for that plan and printing it.' } },
+        { name: 'freePlans', type: 'number', defaultValue: 1, min: 0, max: 20, label: 'Free brief AI plans per member' },
+        { name: 'priceAud', type: 'number', defaultValue: 9.99, min: 0, max: 500, label: 'Price per detailed plan (AUD, including GST)', admin: { description: 'One payment covers one plan: the detailed AI plan, revisions, a share link, and the PDF and print version.' } },
+        { name: 'revisionsPerPlan', type: 'number', defaultValue: 5, min: 0, max: 20, label: 'AI revisions included in a paid plan' },
       ],
     },
   ],

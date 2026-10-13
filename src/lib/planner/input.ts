@@ -37,7 +37,17 @@ export const PACES = [
 ] as const
 export type Pace = (typeof PACES)[number]['value']
 
+/** Why the traveller needs a plan. It changes the questions, the AI's instructions and the document. */
+export const PURPOSES = [
+  { value: 'holiday', label: 'Holiday or sightseeing', hint: 'Things to see and do, day by day.' },
+  { value: 'visa', label: 'Itinerary for a visa application', hint: 'A clear, factual day-by-day plan for another country’s visitor visa. Not for Australian visas.' },
+  { value: 'family', label: 'Visiting family or friends', hint: 'Time with your hosts, with a few outings.' },
+  { value: 'business', label: 'Business trip with some leisure', hint: 'Work days with free evenings and days.' },
+] as const
+export type Purpose = (typeof PURPOSES)[number]['value']
+
 export type PlannerInput = {
+  purpose: Purpose
   placeIds: string[]
   /** First day of the trip, YYYY-MM-DD. */
   start: string | null
@@ -113,15 +123,18 @@ export function readPlannerInput(params: Params): { input: PlannerInput; errors:
 
   const partyRaw = one(params.with)
   const party = PARTIES.some((p) => p.value === partyRaw) ? (partyRaw as Party) : null
+  const purposeRaw = one(params.for)
+  const purpose = PURPOSES.some((p) => p.value === purposeRaw) ? (purposeRaw as Purpose) : 'holiday'
   const paceRaw = one(params.pace)
   const pace = PACES.some((p) => p.value === paceRaw) ? (paceRaw as Pace) : 'balanced'
 
-  return { input: { placeIds, start, month, days: shared.days, split: shared.split, party, pace }, errors, submitted: ids.length > 0 }
+  return { input: { purpose, placeIds, start, month, days: shared.days, split: shared.split, party, pace }, errors, submitted: ids.length > 0 }
 }
 
 /** The address of a plan. Only the parts that differ from the defaults are written, so links stay short. */
 export function plannerHref(input: Partial<PlannerInput> & { placeIds: string[] }): string {
   const q = new URLSearchParams()
+  if (input.purpose && input.purpose !== 'holiday') q.set('for', input.purpose)
   for (const id of input.placeIds) q.append('to', id)
   if (input.start) q.set('start', input.start)
   else if (input.month) q.set('month', input.month)

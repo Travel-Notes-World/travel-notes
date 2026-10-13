@@ -54,7 +54,7 @@ export async function editorialSitemap(): Promise<EditorialSitemapEntry[]> {
     for (const a of authors.docs) entries.push({ path: `/authors/${a.slug}` })
   }
   // The empty Trip Planner is a real page; filled-in plans are noindex and never listed.
-  entries.push({ path: '/trip-planner' })
+  entries.push({ path: '/trip-planner' }, { path: '/trip-planner/pricing' })
   entries.push(...(await indexableDestinationPaths(payload)), ...(await indexableTopicPaths(payload)), ...(await updateSitemapEntries(payload)))
   return entries
 }

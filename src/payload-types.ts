@@ -1418,19 +1418,71 @@ export interface Plan {
   destinations?: (string | Destination)[] | null;
   party?: ('solo' | 'couple' | 'family' | 'friends') | null;
   pace?: ('relaxed' | 'balanced' | 'full') | null;
+  purpose?: ('holiday' | 'visa' | 'family' | 'business') | null;
   /**
-   * AI Trip Planner: when the days were filled in, and whether this plan is paid for (paid plans can be printed).
+   * Trip details the member gave for the AI planner. Private to the member.
+   */
+  details?: {
+    departFrom?: string | null;
+    travellers?: number | null;
+    budgetAmount?: number | null;
+    budgetCurrency?: string | null;
+    interests?: string[] | null;
+    accessibility?: string | null;
+  };
+  /**
+   * Only for a visa-purpose itinerary. Entered by the member; never checked by Travel Notes. No passport or booking numbers are collected.
+   */
+  visa?: {
+    travellerName?: string | null;
+    /**
+     * For example "Tourism" or "Visiting my sister". Shown on the document.
+     */
+    visitPurpose?: string | null;
+    arrivalDate?: string | null;
+    departureDate?: string | null;
+    cities?: string | null;
+    accommodation?: string | null;
+    transport?: string | null;
+    funding?: ('self' | 'family' | 'employer' | 'host' | 'other') | null;
+    fundingNote?: string | null;
+  };
+  /**
+   * AI Trip Planner: when the days were filled in, and whether this plan is paid for (paid plans get the detailed plan, revisions, sharing and the PDF).
    */
   ai?: {
     generatedAt?: string | null;
     model?: string | null;
     summary?: string | null;
     unlocked?: boolean | null;
+    tier?: ('brief' | 'detailed') | null;
+    revisionsUsed?: number | null;
+    /**
+     * Holiday plans: budget-friendly, balanced and premium ways to do the same trip.
+     */
+    options?:
+      | {
+          style: 'budget' | 'balanced' | 'premium';
+          summary?: string | null;
+          choices?: string | null;
+          id?: string | null;
+        }[]
+      | null;
+  };
+  /**
+   * A private link the member can turn on to show the plan to others. Paid plans only.
+   */
+  share?: {
+    token?: string | null;
+    enabled?: boolean | null;
   };
   days?:
     | {
         title?: string | null;
         date?: string | null;
+        overnight?: string | null;
+        overnightConfirmed?: boolean | null;
+        transport?: string | null;
         stops?:
           | {
               title: string;
@@ -1439,6 +1491,7 @@ export interface Plan {
               savedContribution?: (string | null) | Contribution;
               origin?: ('own' | 'travel_notes' | 'ai_idea') | null;
               sourcePath?: string | null;
+              timeOfDay?: ('morning' | 'afternoon' | 'evening') | null;
               id?: string | null;
             }[]
           | null;
@@ -1715,6 +1768,7 @@ export interface AiRun {
   plan?: (string | null) | Plan;
   status: 'started' | 'ok' | 'failed';
   model: string;
+  kind?: ('brief' | 'detailed' | 'revision') | null;
   /**
    * Used the member’s free allowance.
    */
@@ -2630,6 +2684,30 @@ export interface PlansSelect<T extends boolean = true> {
   destinations?: T;
   party?: T;
   pace?: T;
+  purpose?: T;
+  details?:
+    | T
+    | {
+        departFrom?: T;
+        travellers?: T;
+        budgetAmount?: T;
+        budgetCurrency?: T;
+        interests?: T;
+        accessibility?: T;
+      };
+  visa?:
+    | T
+    | {
+        travellerName?: T;
+        visitPurpose?: T;
+        arrivalDate?: T;
+        departureDate?: T;
+        cities?: T;
+        accommodation?: T;
+        transport?: T;
+        funding?: T;
+        fundingNote?: T;
+      };
   ai?:
     | T
     | {
@@ -2637,12 +2715,31 @@ export interface PlansSelect<T extends boolean = true> {
         model?: T;
         summary?: T;
         unlocked?: T;
+        tier?: T;
+        revisionsUsed?: T;
+        options?:
+          | T
+          | {
+              style?: T;
+              summary?: T;
+              choices?: T;
+              id?: T;
+            };
+      };
+  share?:
+    | T
+    | {
+        token?: T;
+        enabled?: T;
       };
   days?:
     | T
     | {
         title?: T;
         date?: T;
+        overnight?: T;
+        overnightConfirmed?: T;
+        transport?: T;
         stops?:
           | T
           | {
@@ -2652,6 +2749,7 @@ export interface PlansSelect<T extends boolean = true> {
               savedContribution?: T;
               origin?: T;
               sourcePath?: T;
+              timeOfDay?: T;
               id?: T;
             };
         id?: T;
@@ -2818,6 +2916,7 @@ export interface AiRunsSelect<T extends boolean = true> {
   plan?: T;
   status?: T;
   model?: T;
+  kind?: T;
   free?: T;
   payment?: T;
   inputTokens?: T;
@@ -2958,7 +3057,7 @@ export interface CommunitySetting {
     autoApproveTrustedReplies?: boolean | null;
   };
   /**
-   * AI fills in the days of a saved plan, using Travel Notes content first. It only works when the ANTHROPIC_API_KEY setting is added in Vercel and the switch below is ON. Each member gets a number of free AI plans; after that, each AI plan is paid through Stripe (the seller details in "Paid business listings" are used on the invoice). Printing a plan is unlocked by paying for that plan.
+   * AI fills in the days of a saved plan, using Travel Notes content first. It only works when the ANTHROPIC_API_KEY setting is added in Vercel and the switch below is ON. Each member’s first brief AI plan is free. A detailed plan (more detail, revisions, sharing, PDF and print) is paid once per plan through Stripe (the seller details in "Paid business listings" are used on the invoice).
    */
   planner?: {
     aiEnabled?: boolean | null;
@@ -2969,9 +3068,10 @@ export interface CommunitySetting {
     dailyBudgetUsd?: number | null;
     freePlans?: number | null;
     /**
-     * One payment covers one plan: the AI days for that plan and printing it.
+     * One payment covers one plan: the detailed AI plan, revisions, a share link, and the PDF and print version.
      */
     priceAud?: number | null;
+    revisionsPerPlan?: number | null;
   };
   updatedAt?: string | null;
   createdAt?: string | null;
@@ -3019,6 +3119,7 @@ export interface CommunitySettingsSelect<T extends boolean = true> {
         dailyBudgetUsd?: T;
         freePlans?: T;
         priceAud?: T;
+        revisionsPerPlan?: T;
       };
   updatedAt?: T;
   createdAt?: T;

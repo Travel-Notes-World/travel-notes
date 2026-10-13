@@ -10,11 +10,11 @@ import { initialState } from "@/lib/community/next/state";
 import { FormMessage, SubmitButton } from "./client";
 import { describedBy, Field, FieldError, inputClass } from "./ui";
 
-export type EditorStop = { title: string; place: string; notes: string; savedContribution: string | null; saved: { title: string; path: string } | null; origin?: "own" | "travel_notes" | "ai_idea"; sourcePath?: string | null };
-export type EditorDay = { title: string; date: string | null; stops: EditorStop[] };
+export type EditorStop = { title: string; place: string; notes: string; savedContribution: string | null; saved: { title: string; path: string } | null; origin?: "own" | "travel_notes" | "ai_idea"; sourcePath?: string | null; timeOfDay?: "morning" | "afternoon" | "evening" | null };
+export type EditorDay = { title: string; date: string | null; overnight?: string; overnightConfirmed?: boolean; transport?: string; stops: EditorStop[] };
 
 type Stop = EditorStop & { key: number };
-type Day = { key: number; title: string; date: string; stops: Stop[] };
+type Day = { key: number; title: string; date: string; overnight: string; overnightConfirmed: boolean; transport: string; stops: Stop[] };
 
 
 const move = <T,>(list: T[], from: number, to: number): T[] => {
@@ -42,7 +42,7 @@ export function PlanEditor({ id, title, startDate, endDate, notes, days: initial
   // Keys are numbered in order from the stored plan, so the server and the browser render the same ids.
   const [days, setDays] = useState<Day[]>(() => {
     let n = 0;
-    return initialDays.map((d) => ({ key: ++n, title: d.title, date: d.date ?? "", stops: d.stops.map((s) => ({ ...s, key: ++n })) }));
+    return initialDays.map((d) => ({ key: ++n, title: d.title, date: d.date ?? "", overnight: d.overnight ?? "", overnightConfirmed: Boolean(d.overnightConfirmed), transport: d.transport ?? "", stops: d.stops.map((s) => ({ ...s, key: ++n })) }));
   });
   const counter = useRef(100_000);
   const key = () => ++counter.current;
@@ -68,7 +68,7 @@ export function PlanEditor({ id, title, startDate, endDate, notes, days: initial
   const dayName = (d: number) => `day ${d + 1}${days[d]?.title ? ` (${days[d].title})` : ""}`;
   const stopName = (stop: Stop) => stop.title || "unnamed stop";
 
-  const addDay = () => update([...days, { key: key(), title: "", date: "", stops: [{ key: key(), title: "", place: "", notes: "", savedContribution: null, saved: null }] }], `Day ${days.length + 1} added at the end.`);
+  const addDay = () => update([...days, { key: key(), title: "", date: "", overnight: "", overnightConfirmed: false, transport: "", stops: [{ key: key(), title: "", place: "", notes: "", savedContribution: null, saved: null }] }], `Day ${days.length + 1} added at the end.`);
   const addStop = (d: number) => setDayWithMessage(d, { stops: [...days[d].stops, { key: key(), title: "", place: "", notes: "", savedContribution: null, saved: null }] }, `Stop added at the end of ${dayName(d)}.`);
   function setDayWithMessage(d: number, patch: Partial<Day>, message: string) {
     update(days.map((day, i) => (i === d ? { ...day, ...patch } : day)), message);
@@ -84,7 +84,7 @@ export function PlanEditor({ id, title, startDate, endDate, notes, days: initial
     <form ref={formRef} action={action} noValidate onInput={() => setDirty(true)} className="max-w-[860px]">
       <FormMessage state={state} successTitle="Saved" />
       <input type="hidden" name="id" value={id} />
-      <input type="hidden" name="daysJson" value={JSON.stringify(days.map((d) => ({ title: d.title, date: d.date || null, stops: d.stops.map((s) => ({ title: s.title, place: s.place, notes: s.notes, savedContribution: s.savedContribution, origin: s.origin ?? "own", sourcePath: s.sourcePath ?? null })) })))} />
+      <input type="hidden" name="daysJson" value={JSON.stringify(days.map((d) => ({ title: d.title, date: d.date || null, overnight: d.overnight, overnightConfirmed: d.overnightConfirmed, transport: d.transport, stops: d.stops.map((s) => ({ title: s.title, place: s.place, notes: s.notes, savedContribution: s.savedContribution, origin: s.origin ?? "own", sourcePath: s.sourcePath ?? null, timeOfDay: s.timeOfDay ?? null })) })))} />
 
       <Field id="title" label="Name of the plan" error={f.title} required>
         <input {...describedBy("title", null, f.title)} name="title" maxLength={140} required defaultValue={v("title", title)} className={inputClass} />
@@ -122,6 +122,18 @@ export function PlanEditor({ id, title, startDate, endDate, notes, days: initial
                     <input {...describedBy(`${dayId}-date`, null, f[`days.${d}`])} type="date" value={day.date} onChange={(e) => setDay(d, { date: e.target.value })} className={inputClass} />
                   </Field>
                 </div>
+                <div className="grid gap-x-6 sm:grid-cols-[2fr_1fr] items-end">
+                  <Field id={`${dayId}-overnight`} label="Overnight" hint="Town, area or the place you booked." optional>
+                    <input id={`${dayId}-overnight`} aria-describedby={`${dayId}-overnight-hint`} value={day.overnight} maxLength={140} onChange={(e) => setDay(d, { overnight: e.target.value })} className={inputClass} />
+                  </Field>
+                  <label className="mt-3 inline-flex items-center gap-2 min-h-11 t-body-sm cursor-pointer">
+                    <input type="checkbox" checked={day.overnightConfirmed} onChange={(e) => setDay(d, { overnightConfirmed: e.target.checked })} className="w-4 h-4" />
+                    I have booked this
+                  </label>
+                </div>
+                <Field id={`${dayId}-transport`} label="Getting around" optional>
+                  <textarea id={`${dayId}-transport`} value={day.transport} rows={2} maxLength={600} onChange={(e) => setDay(d, { transport: e.target.value })} className={inputClass} />
+                </Field>
                 <div className="mt-3 flex flex-wrap gap-2" role="group" aria-label={`Arrange day ${d + 1}`}>
                   <button type="button" className={small} disabled={d === 0} onClick={() => update(move(days, d, d - 1), `Day ${d + 1} moved up. It is now day ${d}.`)}>↑ Move day up<span className="sr-only"> (day {d + 1})</span></button>
                   <button type="button" className={small} disabled={d === days.length - 1} onClick={() => update(move(days, d, d + 1), `Day ${d + 1} moved down. It is now day ${d + 2}.`)}>↓ Move day down<span className="sr-only"> (day {d + 1})</span></button>
@@ -134,7 +146,7 @@ export function PlanEditor({ id, title, startDate, endDate, notes, days: initial
                     return (
                       <li key={stop.key} className="border-t border-paper-200 pt-4">
                         <fieldset className="border-0 p-0 m-0 min-w-0">
-                          <legend className="t-ui p-0">Stop {s + 1} of day {d + 1}</legend>
+                          <legend className="t-ui p-0">Stop {s + 1} of day {d + 1}{stop.timeOfDay ? <span className="text-ink-600 font-normal"> · {stop.timeOfDay[0].toUpperCase() + stop.timeOfDay.slice(1)}</span> : null}</legend>
                           {stop.saved && (
                             <p className="t-body-sm m-0 mt-1">From the community: <Link href={stop.saved.path} className="text-marine-600 underline">{stop.saved.title}</Link></p>
                           )}

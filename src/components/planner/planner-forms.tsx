@@ -7,20 +7,31 @@ import { describedBy, Field, inputClass } from "@/components/community/ui";
 import { initialState } from "@/lib/community/next/state";
 import { savePlannerAction } from "@/lib/planner/actions";
 import { MONTH_NAMES, MONTHS, type Month } from "@/lib/content/destinationFacts";
-import { PACES, PARTIES, PLANNER, type Pace, type Party } from "@/lib/planner/input";
+import { PACES, PARTIES, PLANNER, PURPOSES, type Pace, type Party, type Purpose } from "@/lib/planner/input";
 
 /**
  * The trip details. A plain GET form: the answers become the page address, so the plan can be
  * shared or bookmarked and nothing is stored. Choosing places needs JavaScript (a search list);
  * the rest works without it.
  */
-export function PlannerForm({ places, start, month, days, party, pace, errors = {}, submitLabel = "Plan my trip" }: {
-  places: PickedPlace[]; start: string | null; month: Month | null; days: number; party: Party | null; pace: Pace;
+export function PlannerForm({ purpose = "holiday", places, start, month, days, party, pace, errors = {}, submitLabel = "Plan my trip" }: {
+  purpose?: Purpose; places: PickedPlace[]; start: string | null; month: Month | null; days: number; party: Party | null; pace: Pace;
   errors?: Partial<Record<"to" | "start" | "days", string>>; submitLabel?: string;
 }) {
   return (
     <form method="get" action="/trip-planner" className="max-w-[640px]">
       <input type="hidden" name="go" value="1" />
+      <fieldset className="border-0 p-0 m-0 min-w-0">
+        <legend className="t-ui text-ink-900 p-0">Why do you need a travel plan?</legend>
+        <div className="mt-2 grid gap-2 sm:grid-cols-2">
+          {PURPOSES.map((p) => (
+            <label key={p.value} className="flex items-start gap-2 rounded-sm border border-line-500 p-3 cursor-pointer has-[:checked]:border-marine-600 has-[:checked]:bg-marine-100">
+              <input type="radio" name="for" value={p.value} defaultChecked={purpose === p.value} className="mt-1 w-4 h-4" />
+              <span><span className="t-ui block">{p.label}</span><span className="t-body-sm text-ink-600">{p.hint}</span></span>
+            </label>
+          ))}
+        </div>
+      </fieldset>
       <DestinationPicker
         // A new set of places from the server (for example after "Edit") resets the list.
         key={places.map((p) => p.id).join(",")}
