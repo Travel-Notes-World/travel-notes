@@ -10,7 +10,7 @@ import { after, before, describe, it } from 'node:test'
 
 import { newMember, payload, places, rejects, setup, type Any } from './helpers'
 
-let AI: Any, P: Any, PAY: Any, L: Any, STRIPE: Any, DET: Any, SHARE: Any, DOC: Any, PDF: Any, EX: Any
+let AI: Any, P: Any, PAY: Any, L: Any, STRIPE: Any, DET: Any, SHARE: Any, DOC: Any, PDF: Any, EX: Any, PRE: Any, IN: Any
 
 const TEST_ABN = '51 824 753 556' // A valid ABN checksum, used only in tests.
 const requests: Any[] = []
@@ -84,6 +84,8 @@ before(async () => {
   DOC = await import('../../src/lib/planner/document')
   PDF = await import('../../src/lib/planner/pdf')
   EX = await import('../../src/lib/planner/extras')
+  PRE = await import('../../src/lib/planner/preview')
+  IN = await import('../../src/lib/planner/input')
   await payload.updateGlobal({ slug: 'community-settings', data: { planner: { aiEnabled: false } } as Any })
 })
 after(() => {
@@ -134,11 +136,10 @@ describe('the free brief plan', () => {
     assert.equal(run.free, true)
   })
 
-  it('covers one destination only', async () => {
+  it('covers several places too', async () => {
     const member = await newMember('Two Places')
     const id = await newPlan(member, [places.kyoto.id, places.bangkok.id])
-    assert.match((await AI.aiStatus(member, id)).blocked, /one destination/)
-    await rejects(AI.generateAiPlan(member, id), 'forbidden')
+    assert.equal((await AI.aiStatus(member, id)).next, 'brief')
   })
 
   it('a failed or unfinished answer never uses the free plan', async () => {
@@ -315,6 +316,54 @@ describe('sharing, documents and personal details', () => {
     await payload.create({ collection: 'destinations', data: { name: 'Osaka', slug: `osaka-${Date.now()}`, kind: 'city', parent: places.japan.id, latitude: 34.6937, longitude: 135.5023, population: 2700000, summary: 'Test.', seo: { title: 'Osaka', description: 'Test.' }, _status: 'published' } as Any })
     const near = await EX.nearbyPlaces(payload, [places.kyoto.id])
     assert.deepEqual(near.map((n: Any) => [n.name, n.km, n.type]), [['Osaka', 43, 'day']])
+  })
+})
+
+describe('the instant itinerary for visitors', () => {
+  const input = (over: Any = {}) => IN.readPlannerInput({ to: places.kyoto.id, start: '2026-11-02', days: '3', ...over }).input
+
+  it('writes a real itinerary straight away, once per visitor a day, and shows the same one again', async () => {
+    const ip = `203.0.113.${Math.floor(Math.random() * 200)}`
+    requests.length = 0
+    const first = await PRE.writePreview(ip, input())
+    assert.equal(first.status, 'ready')
+    assert.equal(first.preview.days.length, 3)
+    assert.equal(first.preview.days[0].stops.length, 2)
+    assert.deepEqual(first.preview.days[0].stops.map((s: Any) => s.origin), ['travel_notes', 'ai_idea'])
+    assert.equal(requests.length, 1)
+    assert.match(requests[0].system, /BRIEF plan/)
+
+    const again = await PRE.writePreview(ip, input())
+    assert.equal(again.status, 'ready')
+    assert.equal(requests.length, 1, 'the same plan is not written twice')
+    assert.deepEqual(await PRE.findPreview(ip, input()), first.preview)
+
+    assert.equal((await PRE.writePreview(ip, input({ days: '4' }))).status, 'limited', 'one new itinerary per visitor a day')
+    assert.equal((await PRE.writePreview(`198.51.100.${Math.floor(Math.random() * 200)}`, input({ days: '4' }))).status, 'ready', 'another visitor can')
+    const runs = (await payload.find({ collection: 'ai-runs', where: { member: { exists: false } }, depth: 0, limit: 50 })).docs as Any[]
+    assert.ok(runs.some((r: Any) => r.status === 'ok' && r.free && r.kind === 'brief'), 'counted in the daily spending')
+  })
+
+  it('is not offered for visa itineraries, without a network address, or while AI is off', async () => {
+    assert.equal((await PRE.writePreview('192.0.2.10', input({ for: 'visa' }))).status, 'off')
+    await rejects(PRE.writePreview(null, input({ days: '5' })), 'forbidden')
+    await configure({ aiEnabled: false })
+    assert.equal((await PRE.writePreview('192.0.2.11', input())).status, 'off')
+    await configure()
+  })
+
+  it('comes with the visitor into their account when they save the plan', async () => {
+    const ip = '192.0.2.77'
+    const i = input({ days: '2' })
+    await PRE.writePreview(ip, i)
+    const member = await newMember('Saver Of Previews')
+    const id = (await P.createPlanFromPlanner(member, { title: 'Kyoto', start: '2026-11-02', days: [{ title: 'Kyoto', date: '2026-11-02' }, { title: 'Kyoto', date: '2026-11-03' }], placeIds: [places.kyoto.id], party: null, pace: 'balanced', purpose: 'holiday' })).id
+    assert.equal(await PRE.attachPreview(member, id, ip, i), true)
+    const view = await P.getPlan(member, id)
+    assert.equal(view.days[0].stops.length, 2)
+    assert.equal(view.ai.tier, 'brief')
+    assert.equal((await AI.aiStatus(member, id)).next, null, 'the free plan for this trip is already written')
+    assert.equal((await AI.freePlansUsed(payload, member.id)), 0, 'the account’s own free plan is still there for another trip')
   })
 })
 

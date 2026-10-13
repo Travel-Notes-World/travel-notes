@@ -22,6 +22,7 @@ import * as migration_20261013_015441_trip_planner from './20261013_015441_trip_
 import * as migration_20261013_023017_ai_trip_planner from './20261013_023017_ai_trip_planner';
 import * as migration_20261013_122239_trip_planner_mvp from './20261013_122239_trip_planner_mvp';
 import * as migration_20261013_122958_visa_visit_purpose from './20261013_122958_visa_visit_purpose';
+import * as migration_20261013_135853_ai_previews from './20261013_135853_ai_previews';
 
 export const migrations = [
   {
@@ -142,6 +143,11 @@ export const migrations = [
   {
     up: migration_20261013_122958_visa_visit_purpose.up,
     down: migration_20261013_122958_visa_visit_purpose.down,
-    name: '20261013_122958_visa_visit_purpose'
+    name: '20261013_122958_visa_visit_purpose',
+  },
+  {
+    up: migration_20261013_135853_ai_previews.up,
+    down: migration_20261013_135853_ai_previews.down,
+    name: '20261013_135853_ai_previews'
   },
 ];

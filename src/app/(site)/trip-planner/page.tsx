@@ -7,12 +7,14 @@ import { ArticleCard } from "@/components/ArticleCard";
 import { Breadcrumbs } from "@/components/Breadcrumbs";
 import { CardList } from "@/components/community/cards";
 import { JsonLd, Notice, PageShell } from "@/components/community/ui";
+import { InstantPlan } from "@/components/planner/instant-plan";
 import { PlannerWizard, SavePlanForm } from "@/components/planner/planner-forms";
 import { ShareButtons } from "@/components/ShareButtons";
 import { UpdateItem } from "@/components/UpdateItem";
 import { breadcrumbJsonLd } from "@/lib/community/seo";
-import { getViewer } from "@/lib/community/next/session";
+import { clientIp, getViewer } from "@/lib/community/next/session";
 import { aiPlanPrice } from "@/lib/planner/payments";
+import { findPreview, previewsOpen } from "@/lib/planner/preview";
 import { canViewCommunity, getSettings } from "@/lib/community/settings";
 import { aiConfigured } from "@/lib/planner/ai";
 import { MONTH_NAMES, type MonthRating } from "@/lib/content/destinationFacts";
@@ -32,6 +34,8 @@ import { siteUrl } from "@/lib/site";
  * those are noindex with the planner itself as the canonical address.
  */
 export const dynamic = "force-dynamic";
+// The instant itinerary is written by a server action on this page and can take about a minute.
+export const maxDuration = 120;
 
 type Props = { searchParams: Promise<Record<string, string | string[] | undefined>> };
 
@@ -135,6 +139,10 @@ export default async function TripPlannerPage({ searchParams }: Props) {
   const pace = PACES.find((p) => p.value === input.pace)!;
   const href = plannerHref({ ...input, placeIds: places.map((p) => p.id), split, days: total });
   const query = href.split("?")[1] ?? "";
+  // The instant itinerary uses the same normalised answers as the save button, so both find the same one.
+  const keyInput = readPlannerInput(Object.fromEntries([...new URLSearchParams(query)].reduce((m, [k, v]) => m.set(k, [...(m.get(k) ?? []), v]), new Map<string, string[]>()))).input;
+  const instant = await previewsOpen(keyInput);
+  const ready = instant ? await findPreview(await clientIp(), keyInput) : null;
   const ranges = new Map<string, { from: number; to: number }>();
   for (const d of days) {
     const id = places[d.placeIndex].id;
@@ -163,11 +171,18 @@ export default async function TripPlannerPage({ searchParams }: Props) {
         {params.signedin && member && <Notice tone="success" title="You are signed in">Press “Save to my trips” to keep this plan.</Notice>}
       </div>
 
+      {instant && (
+        <section aria-labelledby="itinerary-heading" className="mb-10 max-w-[860px]">
+          <h2 id="itinerary-heading" className="t-heading-2 m-0 mb-4">Your itinerary</h2>
+          <InstantPlan query={query} initial={ready} signedIn={Boolean(member)} />
+        </section>
+      )}
+
       <section aria-labelledby="next-heading" className="mb-10 max-w-[860px] rounded-md border-2 border-marine-600 bg-marine-100 p-4 md:p-5">
-        <h2 id="next-heading" className="t-heading-3 m-0">Next step: save your plan</h2>
+        <h2 id="next-heading" className="t-heading-3 m-0">{instant ? "Keep this plan" : "Next step: save your plan"}</h2>
         <ol className="t-body-sm mt-2 mb-4 pl-5 grid gap-1">
           <li><strong>Save it</strong> to your trips{member ? "" : " (free account; sign in or create one)"}.</li>
-          {aiOn ? <li><strong>Let the AI write your days</strong>, using Travel Notes guides first. Your first plan is free.</li> : <li><strong>Add your own stops</strong> and notes to each day.</li>}
+          {instant ? <li><strong>Change it</strong>: add your own stops, or upgrade for the detailed plan (morning to evening, where to stay, PDF).</li> : aiOn ? <li><strong>Let the AI write your days</strong>, using Travel Notes guides first. Your first plan is free.</li> : <li><strong>Add your own stops</strong> and notes to each day.</li>}
           <li><strong>Print or share</strong> it when you are ready.</li>
         </ol>
         <div className="flex flex-wrap items-center gap-4">
@@ -181,9 +196,9 @@ export default async function TripPlannerPage({ searchParams }: Props) {
         </div>
       </section>
 
-      <section aria-labelledby="outline-heading" className="max-w-[860px]">
-        <h2 id="outline-heading" className="t-heading-2 m-0">Your days</h2>
-        <p className="t-body-sm text-ink-600 mt-2 mb-0">{pace.hint} This is a suggested outline, not a tested itinerary. Save it to add your own stops, times and notes for each day.</p>
+      {(!instant || places.length > 1) && <section aria-labelledby="outline-heading" className="max-w-[860px]">
+        <h2 id="outline-heading" className="t-heading-2 m-0">{instant ? "Days in each place" : "Your days"}</h2>
+        {!instant && <><p className="t-body-sm text-ink-600 mt-2 mb-0">{pace.hint} This is a suggested outline, not a tested itinerary. Save it to add your own stops, times and notes for each day.</p>
         <ol className="list-none m-0 mt-4 p-0 border-t border-paper-200">
           {days.map((d) => {
             const place = places[d.placeIndex];
@@ -198,7 +213,7 @@ export default async function TripPlannerPage({ searchParams }: Props) {
               </li>
             );
           })}
-        </ol>
+        </ol></>}
         {places.length > 1 && (
           <form method="get" action="/trip-planner" className="mt-4">
             <fieldset className="border-0 p-0 m-0 min-w-0">
@@ -220,7 +235,7 @@ export default async function TripPlannerPage({ searchParams }: Props) {
             </fieldset>
           </form>
         )}
-      </section>
+      </section>}
 
       {places.map((p) => (
         <section key={p.id} id={`place-${p.id}`} aria-labelledby={`h-${p.id}`} className="mt-14 scroll-mt-28">

@@ -98,6 +98,7 @@ export interface Config {
     'job-runs': JobRun;
     'listing-payments': ListingPayment;
     'ai-runs': AiRun;
+    'ai-previews': AiPreview;
     'totp-attempts': TotpAttempt;
     'payload-kv': PayloadKv;
     'payload-locked-documents': PayloadLockedDocument;
@@ -136,6 +137,7 @@ export interface Config {
     'job-runs': JobRunsSelect<false> | JobRunsSelect<true>;
     'listing-payments': ListingPaymentsSelect<false> | ListingPaymentsSelect<true>;
     'ai-runs': AiRunsSelect<false> | AiRunsSelect<true>;
+    'ai-previews': AiPreviewsSelect<false> | AiPreviewsSelect<true>;
     'totp-attempts': TotpAttemptsSelect<false> | TotpAttemptsSelect<true>;
     'payload-kv': PayloadKvSelect<false> | PayloadKvSelect<true>;
     'payload-locked-documents': PayloadLockedDocumentsSelect<false> | PayloadLockedDocumentsSelect<true>;
@@ -1788,6 +1790,37 @@ export interface AiRun {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "ai-previews".
+ */
+export interface AiPreview {
+  id: string;
+  key: string;
+  visitor: string;
+  query: string;
+  summary?: string | null;
+  days?:
+    | {
+        [k: string]: unknown;
+      }
+    | unknown[]
+    | string
+    | number
+    | boolean
+    | null;
+  paths?:
+    | {
+        [k: string]: unknown;
+      }
+    | unknown[]
+    | string
+    | number
+    | boolean
+    | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "totp-attempts".
  */
 export interface TotpAttempt {
@@ -1938,6 +1971,10 @@ export interface PayloadLockedDocument {
     | ({
         relationTo: 'ai-runs';
         value: string | AiRun;
+      } | null)
+    | ({
+        relationTo: 'ai-previews';
+        value: string | AiPreview;
       } | null);
   globalSlug?: string | null;
   user:
@@ -2921,6 +2958,20 @@ export interface AiRunsSelect<T extends boolean = true> {
   outputTokens?: T;
   costMicroUsd?: T;
   error?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "ai-previews_select".
+ */
+export interface AiPreviewsSelect<T extends boolean = true> {
+  key?: T;
+  visitor?: T;
+  query?: T;
+  summary?: T;
+  days?: T;
+  paths?: T;
   updatedAt?: T;
   createdAt?: T;
 }

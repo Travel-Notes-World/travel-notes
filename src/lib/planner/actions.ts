@@ -7,9 +7,11 @@ import { getPayload } from 'payload'
 
 import { createPlanFromPlanner } from '../community/plans'
 import { str, toState, type ActionState } from '../community/next/forms'
-import { getViewer } from '../community/next/session'
+import { clientIp, getViewer } from '../community/next/session'
+import { isCommunityError } from '../community/errors'
 import { MONTH_NAMES } from '../content/destinationFacts'
-import { planDays, plannerHref, readPlannerInput } from './input'
+import { planDays, plannerHref, readPlannerInput, type PlannerInput } from './input'
+import { attachPreview, writePreview, type Preview } from './preview'
 
 /**
  * "Save to my trips": turn the planner's current draft into a private plan in the member's account.
@@ -43,9 +45,30 @@ export async function savePlannerAction(_: ActionState, form: FormData): Promise
     const joined = placeNames.length > 1 ? `${placeNames.slice(0, -1).join(', ')} and ${placeNames.at(-1)}` : placeNames[0]
     const title = `${joined}${when ? `, ${when}` : ''}`.slice(0, 140)
     id = (await createPlanFromPlanner(member, { title, start: input.start, days, placeIds, party: input.party, pace: input.pace, purpose: input.purpose })).id
+    // A visitor's instant itinerary comes with them into their account.
+    await attachPreview(member, id, await clientIp(), input).catch((error) => console.error('[planner] could not attach the instant itinerary', error instanceof Error ? error.message : error))
   } catch (error) {
     return toState(error)
   }
   revalidatePath('/account/trips')
   redirect(`/account/trips/${id}?planned=1`)
+}
+
+const inputFrom = (query: string): PlannerInput => {
+  const params: Record<string, string[]> = {}
+  for (const [k, v] of new URLSearchParams(query)) (params[k] ??= []).push(v)
+  return readPlannerInput(params).input
+}
+
+export type PreviewState = { status: 'ready'; preview: Preview } | { status: 'limited' } | { status: 'off' } | { status: 'error'; message: string }
+
+/** Write the instant free itinerary for the planner page. No account needed; limited per visitor. */
+export async function writePreviewAction(query: string): Promise<PreviewState> {
+  try {
+    return await writePreview(await clientIp(), inputFrom(query))
+  } catch (error) {
+    if (isCommunityError(error)) return { status: 'error', message: error.message }
+    console.error('[planner] instant itinerary action failed', error)
+    return { status: 'error', message: 'Something went wrong on our side. Please try again in a minute.' }
+  }
 }

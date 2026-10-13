@@ -76,6 +76,10 @@ const sections: PolicySection[] = [
             any time, and they are deleted with the plan or your account. We keep a record of each AI request (the date, the plan,
             the AI model and its cost) to run free allowances and limits. A plan is private unless you create a share link; a
             shared plan never shows your personal details.
+            When you use the Trip Planner without an account, the instant itinerary is written from the places, dates and
+            choices in the planner (no personal details). We keep it, with a one-way code made from your network address
+            (not the address itself), for 7 days so you see the same itinerary again and can save it, and to limit each
+            visitor to one new itinerary a day.
           </li>
           <li>
             <strong>Activity organiser contact:</strong> if you submit an activity, the contact details you give for the organiser

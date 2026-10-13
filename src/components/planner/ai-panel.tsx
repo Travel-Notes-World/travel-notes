@@ -34,7 +34,7 @@ export function PlanTiers({ priceText, revisions, compact = false }: { priceText
       <div className="rounded-md border border-paper-200 p-4">
         <p className="t-ui m-0">Free brief plan <span className="text-ink-600 font-normal">· your first plan</span></p>
         <ul className="t-body-sm mt-2 mb-0 pl-5 grid gap-1">
-          <li>One destination, one plan</li>
+          <li>Your first plan, up to 5 places</li>
           <li>A short outline: 2 suggestions a day</li>
           <li>Budget guidance from your own budget</li>
           <li>The same checked facts, sources and travel updates</li>
@@ -44,8 +44,7 @@ export function PlanTiers({ priceText, revisions, compact = false }: { priceText
       <div className="rounded-md border-2 border-marine-600 p-4">
         <p className="t-ui m-0">Detailed plan <span className="text-ink-600 font-normal">· {priceText} once, including GST</span></p>
         <ul className="t-body-sm mt-2 mb-0 pl-5 grid gap-1">
-          <li>Up to 5 destinations</li>
-          <li>Morning, afternoon and evening, with meal areas and breaks</li>
+                    <li>Morning, afternoon and evening, with meal areas and breaks</li>
           <li>Where to stay each night and how to get around</li>
           <li>Holidays: budget, balanced and premium ways to do the trip</li>
           <li>Nearby day trips and overnight stops, with distances</li>
@@ -79,7 +78,7 @@ export function AiPanel({ id, status }: { id: string; status: AiPanelStatus }) {
     body = (
       <form action={generate} className="mt-4">
         <input type="hidden" name="id" value={id} />
-        <p className="t-body-sm mt-0">Your free plan is a short outline for one destination. Trip details above are optional, but they help the AI fit the plan to you.</p>
+        <p className="t-body-sm mt-0">Your free plan is a short outline with 2 ideas a day. Trip details above are optional, but they help the AI fit the plan to you.</p>
         <SubmitButton pendingText={pending}>Write my free plan</SubmitButton>
       </form>
     );
