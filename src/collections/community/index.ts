@@ -1,3 +1,4 @@
+import { AiRuns } from './AiRuns'
 import { Contributions } from './Contributions'
 import { ListingPayments } from './ListingPayments'
 import { Bookmarks, Follows, Plans, Rsvps, Votes } from './Engagement'
@@ -11,5 +12,5 @@ import { JobRuns, MetricCounters, RateLimits } from './System'
 export const communityCollections = [
   Members, Contributions, Replies, Revisions, Media, Votes, Bookmarks, Follows, Rsvps, Plans,
   Reports, ModerationActions, DestinationSuggestions, Notifications, EmailOutbox, RateLimits, MetricCounters, JobRuns,
-  ListingPayments,
+  ListingPayments, AiRuns,
 ]

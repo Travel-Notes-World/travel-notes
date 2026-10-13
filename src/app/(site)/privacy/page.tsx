@@ -62,9 +62,15 @@ const sections: PolicySection[] = [
             replies to activities and private trip plans. Posts are public once they are published (a new member&apos;s first posts, activities and posts flagged by our spam checks are checked by a moderator first); trip plans are private.
           </li>
           <li>
-            <strong>Paid business listings:</strong> the amount, date, invoice number, your email address and Stripe&apos;s payment
+            <strong>Paid business listings and AI plans:</strong> the amount, date, invoice number, your email address and Stripe&apos;s payment
             reference. We keep these records for as long as Australian tax law requires, even if you delete your account (without your
             email address). We never receive your card number.
+          </li>
+          <li>
+            <strong>AI trip plans:</strong> when you ask the AI helper to fill in a plan, we send the places, dates, number of days,
+            the &ldquo;who is travelling&rdquo; and pace choices, and your plan&apos;s day titles, together with Travel Notes content
+            about those places, to Anthropic to write the suggestions. We do not send your name, email address or your own notes. We
+            keep a record of each request (the date, the plan, the AI model and its cost) to run free allowances and limits.
           </li>
           <li>
             <strong>Activity organiser contact:</strong> if you submit an activity, the contact details you give for the organiser
@@ -135,7 +141,8 @@ const sections: PolicySection[] = [
           <li><strong>Vercel</strong>: website hosting. Its servers may be in the United States and other countries.</li>
           <li><strong>Neon</strong>: our database, hosted in Sydney, Australia.</li>
           <li><strong>Cloudflare R2</strong>: storage for photos.</li>
-          <li><strong>Stripe</strong>: card payments for paid business listings. Stripe collects your card details directly; we receive only the payment result, your email address and the amount. Stripe may store and process this information outside Australia, including in the United States.</li>
+          <li><strong>Stripe</strong>: card payments for paid business listings and AI trip plans. Stripe collects your card details directly; we receive only the payment result, your email address and the amount. Stripe may store and process this information outside Australia, including in the United States.</li>
+          <li><strong>Anthropic</strong>: the AI model that writes AI trip plan suggestions. It receives the trip details described above, not your name or email address. Anthropic is based in the United States.</li>
           <li><strong>Resend</strong>: sending email and holding the newsletter list. It is based in the United States.</li>
           <li><strong>Zoho Mail</strong>: our mailbox for messages to {"hello@travelnotesworld.com"}, in Zoho&apos;s Australian data centre.</li>
         </ul>

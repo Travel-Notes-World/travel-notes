@@ -98,5 +98,29 @@ export const CommunitySettings: GlobalConfig = {
         { name: 'autoApproveTrustedReplies', type: 'checkbox', defaultValue: false, admin: { description: 'OFF (recommended at launch): every reply is reviewed. ON: replies from members a moderator marked as trusted are published straight away and logged. Members are never marked trusted automatically.' } },
       ],
     },
+    {
+      name: 'planner',
+      type: 'group',
+      label: 'AI Trip Planner',
+      admin: {
+        description:
+          'AI fills in the days of a saved plan, using Travel Notes content first. It only works when the ANTHROPIC_API_KEY setting is added in Vercel and the switch below is ON. Each member gets a number of free AI plans; after that, each AI plan is paid through Stripe (the seller details in "Paid business listings" are used on the invoice). Printing a plan is unlocked by paying for that plan.',
+      },
+      fields: [
+        { name: 'aiEnabled', type: 'checkbox', defaultValue: false, label: 'Turn on AI plans' },
+        {
+          name: 'model',
+          type: 'select',
+          defaultValue: 'claude-sonnet-5-5',
+          options: [
+            { value: 'claude-sonnet-5-5', label: 'Claude Sonnet 5.5 (better plans)' },
+            { value: 'claude-haiku-5-5', label: 'Claude Haiku 5.5 (cheapest)' },
+          ],
+        },
+        { name: 'dailyBudgetUsd', type: 'number', defaultValue: 5, min: 0.5, max: 500, label: 'Daily AI spending limit (US dollars)', admin: { description: 'When the estimated AI cost for the day (Sydney time) reaches this, AI plans pause until midnight. The normal planner keeps working.' } },
+        { name: 'freePlans', type: 'number', defaultValue: 1, min: 0, max: 20, label: 'Free AI plans per member' },
+        { name: 'priceAud', type: 'number', defaultValue: 4.99, min: 0, max: 500, label: 'Price per AI plan (AUD, including GST)', admin: { description: 'One payment covers one plan: the AI days for that plan and printing it.' } },
+      ],
+    },
   ],
 }

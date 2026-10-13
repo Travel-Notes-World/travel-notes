@@ -10,7 +10,7 @@ import { hiddenUnlessModerator, moderatorReadOnly } from '../../access/community
  */
 export const ListingPayments: CollectionConfig = {
   slug: 'listing-payments',
-  labels: { singular: 'Listing payment', plural: 'Listing payments' },
+  labels: { singular: 'Payment', plural: 'Payments' },
   admin: {
     group: 'Community (read-only, moderate at /moderation)',
     defaultColumns: ['invoiceNumber', 'status', 'amountMinor', 'contribution', 'createdAt'],
@@ -21,6 +21,18 @@ export const ListingPayments: CollectionConfig = {
   indexes: [{ fields: ['contribution', 'status'] }],
   fields: [
     { name: 'invoiceNumber', type: 'text', required: true, unique: true, index: true },
+    {
+      name: 'purpose',
+      type: 'select',
+      required: true,
+      defaultValue: 'listing',
+      options: [
+        { value: 'listing', label: 'Business listing' },
+        { value: 'ai_plan', label: 'AI trip plan' },
+      ],
+    },
+    // AI trip plans: the plan this payment unlocks. Kept empty if the plan is later deleted.
+    { name: 'plan', type: 'relationship', relationTo: 'plans', index: true },
     // Not required: a payment record is kept for tax purposes even if the listing or the account is later deleted.
     { name: 'contribution', type: 'relationship', relationTo: 'contributions', index: true },
     { name: 'member', type: 'relationship', relationTo: 'members', index: true },

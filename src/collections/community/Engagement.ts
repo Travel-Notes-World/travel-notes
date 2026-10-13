@@ -97,6 +97,17 @@ export const Plans: CollectionConfig = {
       ],
     },
     {
+      name: 'ai',
+      type: 'group',
+      admin: { description: 'AI Trip Planner: when the days were filled in, and whether this plan is paid for (paid plans can be printed).' },
+      fields: [
+        { name: 'generatedAt', type: 'date' },
+        { name: 'model', type: 'text' },
+        { name: 'summary', type: 'textarea' },
+        { name: 'unlocked', type: 'checkbox', defaultValue: false },
+      ],
+    },
+    {
       name: 'days',
       type: 'array',
       fields: [
@@ -110,6 +121,18 @@ export const Plans: CollectionConfig = {
             { name: 'place', type: 'text', maxLength: 200 },
             { name: 'notes', type: 'textarea' },
             { name: 'savedContribution', type: 'relationship', relationTo: 'contributions' },
+            // Where a stop came from: the member, a Travel Notes page, or an unchecked AI idea.
+            {
+              name: 'origin',
+              type: 'select',
+              defaultValue: 'own',
+              options: [
+                { value: 'own', label: 'Added by the member' },
+                { value: 'travel_notes', label: 'From a Travel Notes page' },
+                { value: 'ai_idea', label: 'AI idea (not checked)' },
+              ],
+            },
+            { name: 'sourcePath', type: 'text', maxLength: 300 },
           ],
         },
       ],

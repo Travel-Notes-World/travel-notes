@@ -19,7 +19,8 @@ import type { MemberActor } from './types'
  * exist. There is no public sharing in this release, so there is no share button.
  */
 
-export type PlanStop = { title: string; place: string; notes: string; saved: { title: string; path: string } | null }
+export type StopOrigin = 'own' | 'travel_notes' | 'ai_idea'
+export type PlanStop = { title: string; place: string; notes: string; saved: { title: string; path: string } | null; origin: StopOrigin; sourcePath: string | null }
 export type PlanDay = { title: string; date: string | null; stops: PlanStop[] }
 export type PlanView = {
   id: string; title: string; startDate: string | null; endDate: string | null; notes: string; days: PlanDay[]; updatedAt: string
@@ -27,7 +28,13 @@ export type PlanView = {
   source: { title: string; authorName: string; path: string | null; copiedAt: string | null } | null
   /** Set when the plan was started in the Trip Planner, so its ideas can be opened again. */
   planner: { placeIds: string[]; party: string | null; pace: string | null } | null
+  ai: { generatedAt: string | null; model: string | null; summary: string; unlocked: boolean }
 }
+
+const ORIGINS: StopOrigin[] = ['own', 'travel_notes', 'ai_idea']
+const toOrigin = (v: unknown): StopOrigin => (ORIGINS.includes(v as StopOrigin) ? (v as StopOrigin) : 'own')
+/** A same-site Travel Notes path, or null. */
+const cleanSourcePath = (v: unknown): string | null => (typeof v === 'string' && /^\/[a-z0-9/_-]{1,290}$/i.test(v) && !v.startsWith('//') ? v : null)
 
 type Raw = Record<string, unknown>
 const list = (v: unknown): unknown[] => (Array.isArray(v) ? v : [])
@@ -58,6 +65,8 @@ function parsePlan(input: Raw): { data: Pick<Plan, 'title' | 'startDate' | 'endD
         place: cleanLine(s.place, 200),
         notes: cleanText(s.notes, 2000),
         savedContribution: isUuid(s.savedContribution) ? s.savedContribution : null,
+        origin: toOrigin(s.origin),
+        sourcePath: cleanSourcePath(s.sourcePath),
       })),
     }
   })
@@ -81,7 +90,8 @@ async function toView(plan: Plan): Promise<PlanView> {
   const sourceId = relId(plan.source?.contribution)
   return {
     id: plan.id, title: plan.title, startDate: plan.startDate ?? null, endDate: plan.endDate ?? null, notes: plan.notes ?? '', updatedAt: plan.updatedAt,
-    days: (plan.days ?? []).map((d) => ({ title: d.title ?? '', date: d.date ?? null, stops: (d.stops ?? []).map((s) => ({ title: s.title, place: s.place ?? '', notes: s.notes ?? '', saved: links.get(relId(s.savedContribution) ?? '') ?? null })) })),
+    days: (plan.days ?? []).map((d) => ({ title: d.title ?? '', date: d.date ?? null, stops: (d.stops ?? []).map((s) => ({ title: s.title, place: s.place ?? '', notes: s.notes ?? '', saved: links.get(relId(s.savedContribution) ?? '') ?? null, origin: toOrigin(s.origin), sourcePath: cleanSourcePath(s.sourcePath) })) })),
+    ai: { generatedAt: plan.ai?.generatedAt ?? null, model: plan.ai?.model ?? null, summary: plan.ai?.summary ?? '', unlocked: Boolean(plan.ai?.unlocked) },
     planner: (plan.destinations ?? []).length ? { placeIds: (plan.destinations ?? []).map(relId).filter(isUuid), party: plan.party ?? null, pace: plan.pace ?? null } : null,
     source: plan.source?.title ? { title: plan.source.title, authorName: plan.source.authorName ?? 'a member', path: (sourceId && links.get(sourceId)?.path) || null, copiedAt: plan.source.copiedAt ?? null } : null,
   }
@@ -97,13 +107,23 @@ export async function listPlans(actor: MemberActor): Promise<{ id: string; title
 export const getPlan = async (actor: MemberActor, id: unknown): Promise<PlanView> => toView(await ownPlan(actor, id))
 
 /** The raw stored days of a plan, including saved-post ids, for the editor. Owner only. */
-export async function getPlanForEdit(actor: MemberActor, id: unknown): Promise<{ view: PlanView; days: { title: string; date: string | null; stops: { title: string; place: string; notes: string; savedContribution: string | null }[] }[] }> {
+export type StoredStop = { title: string; place: string; notes: string; savedContribution: string | null; origin: StopOrigin; sourcePath: string | null }
+export type StoredDay = { title: string; date: string | null; stops: StoredStop[] }
+
+export const storedDays = (plan: Plan): StoredDay[] =>
+  (plan.days ?? []).map((d) => ({
+    title: d.title ?? '',
+    date: d.date ?? null,
+    stops: (d.stops ?? []).map((s) => ({ title: s.title, place: s.place ?? '', notes: s.notes ?? '', savedContribution: relId(s.savedContribution), origin: toOrigin(s.origin), sourcePath: cleanSourcePath(s.sourcePath) })),
+  }))
+
+export async function getPlanForEdit(actor: MemberActor, id: unknown): Promise<{ view: PlanView; days: StoredDay[] }> {
   const plan = await ownPlan(actor, id)
-  return {
-    view: await toView(plan),
-    days: (plan.days ?? []).map((d) => ({ title: d.title ?? '', date: d.date ?? null, stops: (d.stops ?? []).map((s) => ({ title: s.title, place: s.place ?? '', notes: s.notes ?? '', savedContribution: relId(s.savedContribution) })) })),
-  }
+  return { view: await toView(plan), days: storedDays(plan) }
 }
+
+/** The member's own plan document, for the AI planner. Another member's plan is "not found". */
+export const ownPlanDoc = ownPlan
 
 async function assertRoom(actor: MemberActor): Promise<void> {
   const payload = await cms()
@@ -204,12 +224,12 @@ export async function addPostToPlan(actor: MemberActor, input: { planId: unknown
   const payload = await cms()
   const post = await payload.findByID({ collection: 'contributions', id: input.contributionId as string, depth: 0, disableErrors: true })
   if (!post || post.state !== 'published') return fail('not_found', 'That post could not be found.')
-  const days = (plan.days ?? []).map((d) => ({ title: d.title ?? '', date: d.date ?? null, stops: (d.stops ?? []).map((s) => ({ title: s.title, place: s.place ?? '', notes: s.notes ?? '', savedContribution: relId(s.savedContribution) })) }))
+  const days = storedDays(plan)
   if (!days.length) days.push({ title: 'Saved ideas', date: null, stops: [] })
   const last = days[days.length - 1]
   if (last.stops.some((s) => s.savedContribution === post.id)) return { id: plan.id }
   if (last.stops.length >= LIMITS.maxStopsPerDay) fail('conflict', 'The last day of that plan is full. Add a new day first.')
-  last.stops.push({ title: cleanLine(post.title, 140), place: post.type === 'activity' ? post.activity?.venueName ?? '' : '', notes: '', savedContribution: post.id })
+  last.stops.push({ title: cleanLine(post.title, 140), place: post.type === 'activity' ? post.activity?.venueName ?? '' : '', notes: '', savedContribution: post.id, origin: 'own', sourcePath: null })
   await payload.update({ collection: 'plans', id: plan.id, data: { days } })
   return { id: plan.id }
 }
