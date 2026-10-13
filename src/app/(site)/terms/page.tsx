@@ -149,6 +149,28 @@ const sections: PolicySection[] = [
     ),
   },
   {
+    id: "ai-plans",
+    title: "Trip Planner and AI plans",
+    body: (
+      <>
+        <p>
+          The Trip Planner is free to use. Members can also ask the AI helper to fill in the days of a saved plan. The AI uses Travel
+          Notes content first; any stop it suggests on its own is labelled &ldquo;AI idea&rdquo; because we have not checked it.
+          AI suggestions can be wrong or out of date. Check opening times, prices, bookings and entry rules with the official source
+          before you rely on them.
+        </p>
+        <ul>
+          <li>Each member gets a number of free AI plans, shown in your account. After that, an AI plan has a price, shown before you pay, including GST where GST applies.</li>
+          <li>One payment covers one plan: AI suggestions for that plan and printing or saving it as a PDF.</li>
+          <li>You pay by card on Stripe&apos;s secure checkout page. We do not see or store your card number.</li>
+          <li>If the AI cannot finish your plan, nothing is used from your free allowance or your payment, and you can try again.</li>
+          <li>Payments are not refunded once the AI has written the plan, except where the Australian Consumer Law gives you a right to a refund.</li>
+          <li>AI plans may pause for a while when demand is high. A tax invoice or receipt is available in your account straight after you pay.</li>
+        </ul>
+      </>
+    ),
+  },
+  {
     id: "links",
     title: "Links and other businesses",
     body: (

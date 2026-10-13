@@ -30,7 +30,7 @@ const sections: PolicySection[] = [
     title: "Who runs it",
     body: (
       <p>
-        Travel Notes is run by Jeeva Palasundram, from Australia, who writes as <Link href="/authors/jeeva-p">Jeeva P</Link>. Every
+        Travel Notes is run by <Link href="/authors/jeeva-p">Jeeva Palasundram</Link>, from Australia. Every
         article names its author, and author pages explain their relevant experience.
       </p>
     ),

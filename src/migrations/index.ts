@@ -19,6 +19,7 @@ import * as migration_20261012_062418_paid_listings from './20261012_062418_paid
 import * as migration_20261012_233814_reply_likes from './20261012_233814_reply_likes';
 import * as migration_20261013_000421_reply_love from './20261013_000421_reply_love';
 import * as migration_20261013_015441_trip_planner from './20261013_015441_trip_planner';
+import * as migration_20261013_023017_ai_trip_planner from './20261013_023017_ai_trip_planner';
 
 export const migrations = [
   {
@@ -124,6 +125,11 @@ export const migrations = [
   {
     up: migration_20261013_015441_trip_planner.up,
     down: migration_20261013_015441_trip_planner.down,
-    name: '20261013_015441_trip_planner'
+    name: '20261013_015441_trip_planner',
+  },
+  {
+    up: migration_20261013_023017_ai_trip_planner.up,
+    down: migration_20261013_023017_ai_trip_planner.down,
+    name: '20261013_023017_ai_trip_planner'
   },
 ];

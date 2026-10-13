@@ -12,7 +12,9 @@ import { ShareButtons } from "@/components/ShareButtons";
 import { UpdateItem } from "@/components/UpdateItem";
 import { breadcrumbJsonLd } from "@/lib/community/seo";
 import { getViewer } from "@/lib/community/next/session";
-import { canViewCommunity } from "@/lib/community/settings";
+import { formatAud } from "@/lib/community/listings";
+import { canViewCommunity, getSettings } from "@/lib/community/settings";
+import { aiConfigured } from "@/lib/planner/ai";
 import { MONTH_NAMES, type MonthRating } from "@/lib/content/destinationFacts";
 import { getDestinationPage, getDestinationsWithContent } from "@/lib/content/destinations";
 import { PACES, PARTIES, planDays, plannerHref, readPlannerInput, tripMonths } from "@/lib/planner/input";
@@ -61,6 +63,9 @@ export default async function TripPlannerPage({ searchParams }: Props) {
   const { member, staff } = await getViewer();
   const community = await canViewCommunity(staff);
   const months = tripMonths(input);
+  const settings = await getSettings();
+  const aiOn = settings.planner.aiEnabled && aiConfigured();
+  const aiPrice = formatAud(settings.planner.priceMinor);
 
   const result = input.placeIds.length ? await loadPlanner(payload, input, { pageFor: (doc) => getDestinationPage(doc), months, community }) : null;
   const places = result?.places ?? [];
@@ -76,6 +81,7 @@ export default async function TripPlannerPage({ searchParams }: Props) {
         <header className="mt-2 mb-8 max-w-measure">
           <p className="t-meta text-ochre-700 m-0">Trip Planner</p>
           <h1 className="t-heading-1 mt-2 m-0">Plan your trip, day by day</h1>
+          <p className="t-body-sm text-ink-600 mt-2 mb-0">Created by <Link href="/about#who" className="text-marine-600 underline">Jeeva Palasundram</Link>, founder of Travel Notes</p>
           <p className="t-deck mt-3 mb-0">Choose where and when you are going. The planner sets out your days and brings together what Travel Notes has checked for those places: the best months to go, entry and health facts with their official sources, current travel updates, guides and trip reports from travellers.</p>
         </header>
         {noPlaces && <div className="mb-6 max-w-measure"><Notice tone="error" title="Choose a destination">{result?.missing ? "That destination is no longer available. Choose another one." : "Add at least one place you are going to, then press Plan my trip."}</Notice></div>}
@@ -87,6 +93,7 @@ export default async function TripPlannerPage({ searchParams }: Props) {
             <li>It uses only information Travel Notes has published. When we have not checked something for a place yet, the planner says so instead of guessing.</li>
             <li>Entry rules, government advice and health facts are shown with their official source and the date our editors last checked them.</li>
             <li>You do not need an account. Your plan is saved in the page address, so you can bookmark it or share the link. Sign in to keep it in your trips and add your own stops and notes.</li>
+            {aiOn && <li>Save your plan and the AI helper can fill in your days, using Travel Notes guides and trip reports first. Your first AI plan is free; after that it is {aiPrice} a plan.</li>}
             <li>It does not book anything. Always confirm prices, opening hours and entry rules with the official source before you travel.</li>
           </ul>
         </section>
@@ -147,6 +154,7 @@ export default async function TripPlannerPage({ searchParams }: Props) {
         {params.signedin && member && <Notice tone="success" title="You are signed in">Press “Save to my trips” to keep this plan.</Notice>}
       </div>
 
+      {aiOn && <p className="t-body-sm mb-3 max-w-measure">Save this plan to let the AI helper fill in your days. Your first AI plan is free.</p>}
       <div className="flex flex-wrap items-start gap-4 mb-10">
         <SavePlanForm query={query} signedIn={Boolean(member)} />
         <details className="w-full sm:w-auto">
@@ -300,7 +308,7 @@ export default async function TripPlannerPage({ searchParams }: Props) {
 
       <aside className="mt-12 max-w-measure border-t border-paper-200 pt-6">
         <h2 className="t-heading-3 m-0">About this plan</h2>
-        <p className="t-body-sm text-ink-600 mt-2 mb-0">The Trip Planner arranges your days and gathers Travel Notes content for the places you chose. It does not book anything, and it has not been tested as a complete itinerary. Prices, opening hours and entry rules change: check them with the official source before you travel. Read our <Link href="/editorial-policy" className="text-marine-600 underline">editorial policy</Link>.</p>
+        <p className="t-body-sm text-ink-600 mt-2 mb-0">The Trip Planner, created by Jeeva Palasundram, arranges your days and gathers Travel Notes content for the places you chose. It does not book anything, and it has not been tested as a complete itinerary. Prices, opening hours and entry rules change: check them with the official source before you travel. Read our <Link href="/editorial-policy" className="text-marine-600 underline">editorial policy</Link>.</p>
       </aside>
     </PageShell>
   );

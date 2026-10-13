@@ -104,6 +104,7 @@ export async function startListingCheckout(actor: MemberActor, contributionId: u
     collection: 'listing-payments',
     data: {
       invoiceNumber: invoiceNumber(),
+      purpose: 'listing',
       contribution: doc.id,
       member: member.id,
       status: 'created',
@@ -143,13 +144,26 @@ export async function startListingCheckout(actor: MemberActor, contributionId: u
  * Record a finished checkout and send the listing for review. Safe to call more than once for
  * the same checkout: the browser's return and Stripe's webhook both call it.
  */
-export async function confirmListingPayment(sessionId: string): Promise<{ status: 'paid' | 'unpaid' | 'unknown'; contributionId?: string }> {
+export async function confirmListingPayment(sessionId: string): Promise<{ status: 'paid' | 'unpaid' | 'unknown'; contributionId?: string; planId?: string }> {
   if (!/^cs_[A-Za-z0-9_]+$/.test(sessionId)) return { status: 'unknown' }
   const session = await gateway().getCheckout(sessionId)
   const payload = await cms()
   const found = await payload.find({ collection: 'listing-payments', where: { stripeSessionId: { equals: session.id } }, limit: 1, depth: 0 })
   const payment = found.docs[0]
   if (!payment || session.metadata.paymentId !== payment.id) return { status: 'unknown' }
+  if (payment.purpose === 'ai_plan') {
+    const planId = relId(payment.plan)
+    if (session.paymentStatus !== 'paid') return { status: 'unpaid', planId: planId ?? undefined }
+    if (payment.status === 'created' || payment.status === 'expired') {
+      await payload.update({ collection: 'listing-payments', id: payment.id, data: { status: 'paid', paidAt: new Date().toISOString(), stripePaymentIntentId: session.paymentIntentId ?? undefined, buyerEmail: session.customerEmail ?? payment.buyerEmail } })
+    }
+    // A paid plan can be printed.
+    if (planId && payment.status !== 'refunded') {
+      const plan = await payload.findByID({ collection: 'plans', id: planId, depth: 0, disableErrors: true })
+      if (plan && !plan.ai?.unlocked) await payload.update({ collection: 'plans', id: planId, data: { ai: { ...(plan.ai ?? {}), unlocked: true } } })
+    }
+    return { status: 'paid', planId: planId ?? undefined }
+  }
   const contributionId = relId(payment.contribution)
   if (!contributionId) return { status: 'unknown' }
   if (session.paymentStatus !== 'paid') return { status: 'unpaid', contributionId }
@@ -213,7 +227,7 @@ export async function refundListingIfPaid(contributionId: string, reason: string
   return { refunded }
 }
 
-export type InvoiceView = Pick<ListingPayment, 'id' | 'invoiceNumber' | 'status' | 'description' | 'amountMinor' | 'gstMinor' | 'currency' | 'sellerName' | 'sellerAbn' | 'buyerEmail' | 'paidAt' | 'refundedAt'> & { contributionId: string | null }
+export type InvoiceView = Pick<ListingPayment, 'id' | 'invoiceNumber' | 'status' | 'description' | 'amountMinor' | 'gstMinor' | 'currency' | 'sellerName' | 'sellerAbn' | 'buyerEmail' | 'paidAt' | 'refundedAt'> & { contributionId: string | null; planId: string | null }
 
 /** A paid listing's invoice, for the member who paid or a moderator. */
 export async function getInvoice(viewer: { member: MemberActor | null; staff: StaffActor | null }, paymentId: unknown): Promise<InvoiceView> {
@@ -224,7 +238,7 @@ export async function getInvoice(viewer: { member: MemberActor | null; staff: St
   if (!p || (!mine && !viewer.staff?.canModerate) || !['paid', 'refunded'].includes(p.status)) return fail('not_found', 'That invoice could not be found.')
   return {
     id: p.id, invoiceNumber: p.invoiceNumber, status: p.status, description: p.description, amountMinor: p.amountMinor, gstMinor: p.gstMinor ?? 0, currency: p.currency,
-    sellerName: p.sellerName, sellerAbn: p.sellerAbn, buyerEmail: p.buyerEmail, paidAt: p.paidAt, refundedAt: p.refundedAt, contributionId: relId(p.contribution) ?? null,
+    sellerName: p.sellerName, sellerAbn: p.sellerAbn, buyerEmail: p.buyerEmail, paidAt: p.paidAt, refundedAt: p.refundedAt, contributionId: relId(p.contribution) ?? null, planId: relId(p.plan) ?? null,
   }
 }
 

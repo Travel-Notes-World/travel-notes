@@ -97,6 +97,7 @@ export interface Config {
     'metric-counters': MetricCounter;
     'job-runs': JobRun;
     'listing-payments': ListingPayment;
+    'ai-runs': AiRun;
     'totp-attempts': TotpAttempt;
     'payload-kv': PayloadKv;
     'payload-locked-documents': PayloadLockedDocument;
@@ -134,6 +135,7 @@ export interface Config {
     'metric-counters': MetricCountersSelect<false> | MetricCountersSelect<true>;
     'job-runs': JobRunsSelect<false> | JobRunsSelect<true>;
     'listing-payments': ListingPaymentsSelect<false> | ListingPaymentsSelect<true>;
+    'ai-runs': AiRunsSelect<false> | AiRunsSelect<true>;
     'totp-attempts': TotpAttemptsSelect<false> | TotpAttemptsSelect<true>;
     'payload-kv': PayloadKvSelect<false> | PayloadKvSelect<true>;
     'payload-locked-documents': PayloadLockedDocumentsSelect<false> | PayloadLockedDocumentsSelect<true>;
@@ -1416,6 +1418,15 @@ export interface Plan {
   destinations?: (string | Destination)[] | null;
   party?: ('solo' | 'couple' | 'family' | 'friends') | null;
   pace?: ('relaxed' | 'balanced' | 'full') | null;
+  /**
+   * AI Trip Planner: when the days were filled in, and whether this plan is paid for (paid plans can be printed).
+   */
+  ai?: {
+    generatedAt?: string | null;
+    model?: string | null;
+    summary?: string | null;
+    unlocked?: boolean | null;
+  };
   days?:
     | {
         title?: string | null;
@@ -1426,6 +1437,8 @@ export interface Plan {
               place?: string | null;
               notes?: string | null;
               savedContribution?: (string | null) | Contribution;
+              origin?: ('own' | 'travel_notes' | 'ai_idea') | null;
+              sourcePath?: string | null;
               id?: string | null;
             }[]
           | null;
@@ -1666,6 +1679,8 @@ export interface JobRun {
 export interface ListingPayment {
   id: string;
   invoiceNumber: string;
+  purpose: 'listing' | 'ai_plan';
+  plan?: (string | null) | Plan;
   contribution?: (string | null) | Contribution;
   member?: (string | null) | Member;
   status: 'created' | 'paid' | 'refunded' | 'expired';
@@ -1687,6 +1702,34 @@ export interface ListingPayment {
   paidAt?: string | null;
   refundedAt?: string | null;
   refundReason?: string | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "ai-runs".
+ */
+export interface AiRun {
+  id: string;
+  member?: (string | null) | Member;
+  plan?: (string | null) | Plan;
+  status: 'started' | 'ok' | 'failed';
+  model: string;
+  /**
+   * Used the member’s free allowance.
+   */
+  free?: boolean | null;
+  /**
+   * The paid plan this request used, if any.
+   */
+  payment?: (string | null) | ListingPayment;
+  inputTokens?: number | null;
+  outputTokens?: number | null;
+  /**
+   * Estimated cost in millionths of a US dollar, from the published token prices.
+   */
+  costMicroUsd?: number | null;
+  error?: string | null;
   updatedAt: string;
   createdAt: string;
 }
@@ -1838,6 +1881,10 @@ export interface PayloadLockedDocument {
     | ({
         relationTo: 'listing-payments';
         value: string | ListingPayment;
+      } | null)
+    | ({
+        relationTo: 'ai-runs';
+        value: string | AiRun;
       } | null);
   globalSlug?: string | null;
   user:
@@ -2583,6 +2630,14 @@ export interface PlansSelect<T extends boolean = true> {
   destinations?: T;
   party?: T;
   pace?: T;
+  ai?:
+    | T
+    | {
+        generatedAt?: T;
+        model?: T;
+        summary?: T;
+        unlocked?: T;
+      };
   days?:
     | T
     | {
@@ -2595,6 +2650,8 @@ export interface PlansSelect<T extends boolean = true> {
               place?: T;
               notes?: T;
               savedContribution?: T;
+              origin?: T;
+              sourcePath?: T;
               id?: T;
             };
         id?: T;
@@ -2732,6 +2789,8 @@ export interface JobRunsSelect<T extends boolean = true> {
  */
 export interface ListingPaymentsSelect<T extends boolean = true> {
   invoiceNumber?: T;
+  purpose?: T;
+  plan?: T;
   contribution?: T;
   member?: T;
   status?: T;
@@ -2747,6 +2806,24 @@ export interface ListingPaymentsSelect<T extends boolean = true> {
   paidAt?: T;
   refundedAt?: T;
   refundReason?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "ai-runs_select".
+ */
+export interface AiRunsSelect<T extends boolean = true> {
+  member?: T;
+  plan?: T;
+  status?: T;
+  model?: T;
+  free?: T;
+  payment?: T;
+  inputTokens?: T;
+  outputTokens?: T;
+  costMicroUsd?: T;
+  error?: T;
   updatedAt?: T;
   createdAt?: T;
 }
@@ -2880,6 +2957,22 @@ export interface CommunitySetting {
      */
     autoApproveTrustedReplies?: boolean | null;
   };
+  /**
+   * AI fills in the days of a saved plan, using Travel Notes content first. It only works when the ANTHROPIC_API_KEY setting is added in Vercel and the switch below is ON. Each member gets a number of free AI plans; after that, each AI plan is paid through Stripe (the seller details in "Paid business listings" are used on the invoice). Printing a plan is unlocked by paying for that plan.
+   */
+  planner?: {
+    aiEnabled?: boolean | null;
+    model?: ('claude-sonnet-5-5' | 'claude-haiku-5-5') | null;
+    /**
+     * When the estimated AI cost for the day (Sydney time) reaches this, AI plans pause until midnight. The normal planner keeps working.
+     */
+    dailyBudgetUsd?: number | null;
+    freePlans?: number | null;
+    /**
+     * One payment covers one plan: the AI days for that plan and printing it.
+     */
+    priceAud?: number | null;
+  };
   updatedAt?: string | null;
   createdAt?: string | null;
 }
@@ -2917,6 +3010,15 @@ export interface CommunitySettingsSelect<T extends boolean = true> {
         smartPublishMinApproved?: T;
         autoHideReports?: T;
         autoApproveTrustedReplies?: T;
+      };
+  planner?:
+    | T
+    | {
+        aiEnabled?: T;
+        model?: T;
+        dailyBudgetUsd?: T;
+        freePlans?: T;
+        priceAud?: T;
       };
   updatedAt?: T;
   createdAt?: T;

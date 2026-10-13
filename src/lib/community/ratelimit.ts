@@ -28,6 +28,7 @@ const RULES = {
   contact_all: { limit: 300, seconds: 86_400, message: 'The contact form is very busy right now. Please try again tomorrow, or email us directly.' },
   newsletter_ip: { limit: 10, seconds: 3600, message: 'Too many sign-up attempts. Please try again in an hour.' },
   newsletter_email: { limit: 3, seconds: 86_400, message: 'We have already sent a confirmation email to this address today. Please check your inbox and spam folder.' },
+  ai_plan: { limit: 6, seconds: 3600, message: 'You have asked for several AI plans in a short time. Please wait an hour.' },
   export: { limit: 5, seconds: 86_400, message: 'You can download your data a few times a day. Please try again tomorrow.' },
 } as const
 

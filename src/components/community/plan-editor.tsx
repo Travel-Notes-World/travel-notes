@@ -10,7 +10,7 @@ import { initialState } from "@/lib/community/next/state";
 import { FormMessage, SubmitButton } from "./client";
 import { describedBy, Field, FieldError, inputClass } from "./ui";
 
-export type EditorStop = { title: string; place: string; notes: string; savedContribution: string | null; saved: { title: string; path: string } | null };
+export type EditorStop = { title: string; place: string; notes: string; savedContribution: string | null; saved: { title: string; path: string } | null; origin?: "own" | "travel_notes" | "ai_idea"; sourcePath?: string | null };
 export type EditorDay = { title: string; date: string | null; stops: EditorStop[] };
 
 type Stop = EditorStop & { key: number };
@@ -84,7 +84,7 @@ export function PlanEditor({ id, title, startDate, endDate, notes, days: initial
     <form ref={formRef} action={action} noValidate onInput={() => setDirty(true)} className="max-w-[860px]">
       <FormMessage state={state} successTitle="Saved" />
       <input type="hidden" name="id" value={id} />
-      <input type="hidden" name="daysJson" value={JSON.stringify(days.map((d) => ({ title: d.title, date: d.date || null, stops: d.stops.map((s) => ({ title: s.title, place: s.place, notes: s.notes, savedContribution: s.savedContribution })) })))} />
+      <input type="hidden" name="daysJson" value={JSON.stringify(days.map((d) => ({ title: d.title, date: d.date || null, stops: d.stops.map((s) => ({ title: s.title, place: s.place, notes: s.notes, savedContribution: s.savedContribution, origin: s.origin ?? "own", sourcePath: s.sourcePath ?? null })) })))} />
 
       <Field id="title" label="Name of the plan" error={f.title} required>
         <input {...describedBy("title", null, f.title)} name="title" maxLength={140} required defaultValue={v("title", title)} className={inputClass} />
@@ -137,6 +137,12 @@ export function PlanEditor({ id, title, startDate, endDate, notes, days: initial
                           <legend className="t-ui p-0">Stop {s + 1} of day {d + 1}</legend>
                           {stop.saved && (
                             <p className="t-body-sm m-0 mt-1">From the community: <Link href={stop.saved.path} className="text-marine-600 underline">{stop.saved.title}</Link></p>
+                          )}
+                          {stop.origin === "ai_idea" && (
+                            <p className="t-body-sm m-0 mt-1"><span className="inline-block rounded-sm bg-ochre-100 text-ochre-700 px-2 py-0.5 t-meta">AI idea</span> Not checked by Travel Notes. Check opening times, prices and bookings before you go.</p>
+                          )}
+                          {stop.origin === "travel_notes" && (
+                            <p className="t-body-sm m-0 mt-1"><span className="inline-block rounded-sm bg-marine-100 text-navy-900 px-2 py-0.5 t-meta">From Travel Notes</span>{stop.sourcePath && <> <Link href={stop.sourcePath} className="text-marine-600 underline">Read the page this came from</Link></>}</p>
                           )}
                           {!stop.saved && stop.savedContribution && <p className="t-body-sm text-ink-600 m-0 mt-1">The post this came from is no longer public.</p>}
                           <div className="grid gap-x-6 sm:grid-cols-2">

@@ -16,6 +16,7 @@ export type Settings = {
   smartPublishMinApproved: number
   autoHideReports: number
   listings: { enabled: boolean; feeMinor: number; priceLabel: string; gstRegistered: boolean; sellerName: string; sellerAbn: string }
+  planner: { aiEnabled: boolean; model: 'claude-sonnet-5-5' | 'claude-haiku-5-5'; dailyBudgetUsd: number; freePlans: number; priceMinor: number }
 }
 
 /** Current community switches. Read fresh on every call: a switch must take effect straight away. */
@@ -42,6 +43,13 @@ export async function getSettings(): Promise<Settings> {
       gstRegistered: s.listings?.gstRegistered !== false,
       sellerName: (s.listings?.sellerName ?? '').trim(),
       sellerAbn: (s.listings?.sellerAbn ?? '').replace(/\s/g, ''),
+    },
+    planner: {
+      aiEnabled: Boolean(s.planner?.aiEnabled),
+      model: s.planner?.model === 'claude-haiku-5-5' ? 'claude-haiku-5-5' : 'claude-sonnet-5-5',
+      dailyBudgetUsd: Math.max(0, s.planner?.dailyBudgetUsd ?? 5),
+      freePlans: Math.max(0, Math.floor(s.planner?.freePlans ?? 1)),
+      priceMinor: Math.max(0, Math.round((s.planner?.priceAud ?? 4.99) * 100)),
     },
   }
 }

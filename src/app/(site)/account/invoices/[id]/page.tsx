@@ -16,7 +16,7 @@ const date = (iso: string | null | undefined) =>
 const abn = (value: string) => value.replace(/^(\d{2})(\d{3})(\d{3})(\d{3})$/, "$1 $2 $3 $4");
 
 /**
- * A tax invoice (or a receipt when the seller is not registered for GST) for a paid listing.
+ * A tax invoice (or a receipt when the seller is not registered for GST) for a paid listing or AI trip plan.
  * Every detail comes from the payment record as it was when paid, never from today's settings.
  */
 export default async function InvoicePage({ params }: { params: Promise<{ id: string }> }) {
@@ -96,6 +96,7 @@ export default async function InvoicePage({ params }: { params: Promise<{ id: st
       <div className="mt-6 flex flex-wrap gap-3 print:hidden">
         <PrintButton />
         {viewer.member && invoice.contributionId && <Link href={`/account/posts/${invoice.contributionId}`} className="t-ui text-marine-600 underline min-h-11 inline-flex items-center">Back to your listing</Link>}
+        {viewer.member && invoice.planId && <Link href={`/account/trips/${invoice.planId}`} className="t-ui text-marine-600 underline min-h-11 inline-flex items-center">Back to your plan</Link>}
       </div>
     </PageShell>
   );
