@@ -1413,6 +1413,9 @@ export interface Plan {
   startDate?: string | null;
   endDate?: string | null;
   notes?: string | null;
+  destinations?: (string | Destination)[] | null;
+  party?: ('solo' | 'couple' | 'family' | 'friends') | null;
+  pace?: ('relaxed' | 'balanced' | 'full') | null;
   days?:
     | {
         title?: string | null;
@@ -2577,6 +2580,9 @@ export interface PlansSelect<T extends boolean = true> {
   startDate?: T;
   endDate?: T;
   notes?: T;
+  destinations?: T;
+  party?: T;
+  pace?: T;
   days?:
     | T
     | {

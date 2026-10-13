@@ -18,6 +18,7 @@ import * as migration_20261012_045421_report_sexual_content from './20261012_045
 import * as migration_20261012_062418_paid_listings from './20261012_062418_paid_listings';
 import * as migration_20261012_233814_reply_likes from './20261012_233814_reply_likes';
 import * as migration_20261013_000421_reply_love from './20261013_000421_reply_love';
+import * as migration_20261013_015441_trip_planner from './20261013_015441_trip_planner';
 
 export const migrations = [
   {
@@ -118,6 +119,11 @@ export const migrations = [
   {
     up: migration_20261013_000421_reply_love.up,
     down: migration_20261013_000421_reply_love.down,
-    name: '20261013_000421_reply_love'
+    name: '20261013_000421_reply_love',
+  },
+  {
+    up: migration_20261013_015441_trip_planner.up,
+    down: migration_20261013_015441_trip_planner.down,
+    name: '20261013_015441_trip_planner'
   },
 ];

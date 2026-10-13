@@ -25,6 +25,8 @@ export type PlanView = {
   id: string; title: string; startDate: string | null; endDate: string | null; notes: string; days: PlanDay[]; updatedAt: string
   /** Where the itinerary was copied from, with credit to its author. */
   source: { title: string; authorName: string; path: string | null; copiedAt: string | null } | null
+  /** Set when the plan was started in the Trip Planner, so its ideas can be opened again. */
+  planner: { placeIds: string[]; party: string | null; pace: string | null } | null
 }
 
 type Raw = Record<string, unknown>
@@ -80,6 +82,7 @@ async function toView(plan: Plan): Promise<PlanView> {
   return {
     id: plan.id, title: plan.title, startDate: plan.startDate ?? null, endDate: plan.endDate ?? null, notes: plan.notes ?? '', updatedAt: plan.updatedAt,
     days: (plan.days ?? []).map((d) => ({ title: d.title ?? '', date: d.date ?? null, stops: (d.stops ?? []).map((s) => ({ title: s.title, place: s.place ?? '', notes: s.notes ?? '', saved: links.get(relId(s.savedContribution) ?? '') ?? null })) })),
+    planner: (plan.destinations ?? []).length ? { placeIds: (plan.destinations ?? []).map(relId).filter(isUuid), party: plan.party ?? null, pace: plan.pace ?? null } : null,
     source: plan.source?.title ? { title: plan.source.title, authorName: plan.source.authorName ?? 'a member', path: (sourceId && links.get(sourceId)?.path) || null, copiedAt: plan.source.copiedAt ?? null } : null,
   }
 }
@@ -135,6 +138,30 @@ export async function deletePlan(actor: MemberActor, id: unknown): Promise<{ ok:
   const payload = await cms()
   await payload.delete({ collection: 'plans', id: plan.id })
   return { ok: true }
+}
+
+/**
+ * Save a Trip Planner draft as a new private plan: one day per trip day, each named after its place,
+ * with the dates when the trip has them. The chosen places and preferences are kept so the plan can
+ * open its ideas in the planner again.
+ */
+export async function createPlanFromPlanner(
+  actor: MemberActor,
+  input: { title: string; start: string | null; days: { title: string; date: string | null }[]; placeIds: string[]; party: string | null; pace: string | null },
+): Promise<{ id: string }> {
+  if (!actor || actor.kind !== 'member') fail('auth', 'Please sign in to continue.')
+  await limit('engagement', actor.id)
+  const endDate = input.days.at(-1)?.date ?? null
+  const { data, errors } = parsePlan({ title: input.title, startDate: input.start, endDate, days: input.days.map((d) => ({ ...d, stops: [] })) })
+  if (Object.keys(errors).length) invalid(errors)
+  await assertRoom(actor)
+  const payload = await cms()
+  const destinations = input.placeIds.filter(isUuid).slice(0, 5)
+  const party = ['solo', 'couple', 'family', 'friends'].includes(input.party ?? '') ? (input.party as Plan['party']) : null
+  const pace = ['relaxed', 'balanced', 'full'].includes(input.pace ?? '') ? (input.pace as Plan['pace']) : null
+  const plan = await payload.create({ collection: 'plans', data: { ...data, owner: actor.id, destinations, party, pace } })
+  await track('plan_created')
+  return { id: plan.id }
 }
 
 /**

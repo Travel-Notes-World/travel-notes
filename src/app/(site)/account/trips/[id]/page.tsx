@@ -11,6 +11,7 @@ import { isCommunityError } from "@/lib/community/errors";
 import { requireMemberPage } from "@/lib/community/next/session";
 import { unreadCount } from "@/lib/community/notifications";
 import { getPlanForEdit } from "@/lib/community/plans";
+import { plannerHref } from "@/lib/planner/input";
 
 export const dynamic = "force-dynamic";
 // Generic title: a private plan's name is not put into page metadata.
@@ -45,6 +46,7 @@ export default async function PlanPage({ params, searchParams }: { params: Promi
 
       <div className="grid gap-4 mb-6 max-w-measure">
         {query.created && <Notice tone="success" title="Plan created">Add days and stops below, then press Save plan.</Notice>}
+        {query.planned && <Notice tone="success" title="Saved to your trips">Your days are set out below. Add stops, times and notes to each day, then press Save plan.</Notice>}
         {query.copied && <Notice tone="success" title="Itinerary copied">This is your own copy. Changing it does not change the original trip report.</Notice>}
         {view.source && (
           <p className="t-body-sm m-0 bg-paper-100 rounded-sm p-3">
@@ -53,6 +55,18 @@ export default async function PlanPage({ params, searchParams }: { params: Promi
           </p>
         )}
       </div>
+
+      {view.planner && (
+        <p className="t-body-sm mb-6 max-w-measure">
+          <Link
+            href={plannerHref({ placeIds: view.planner.placeIds, start: view.startDate, days: Math.max(1, days.length), party: (view.planner.party as never) ?? null, pace: (view.planner.pace as never) ?? undefined })}
+            className="text-marine-600 underline"
+          >
+            Open the Trip Planner ideas for this trip
+          </Link>{" "}
+          (guides, trip reports, when to go and what to check before you go).
+        </p>
+      )}
 
       <PlanEditor id={view.id} title={view.title} startDate={view.startDate} endDate={view.endDate} notes={view.notes} days={days} />
 
