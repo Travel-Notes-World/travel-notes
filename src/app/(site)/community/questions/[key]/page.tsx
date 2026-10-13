@@ -3,7 +3,7 @@ import Link from "next/link";
 
 import { Breadcrumbs } from "@/components/Breadcrumbs";
 import { ResolvedToggle } from "@/components/community/post-actions";
-import { PostMeta, PostToolbar, RelatedGuides, RepliesSection } from "@/components/community/post-parts";
+import { PostMeta, PostShare, PostToolbar, RelatedGuides, RepliesSection } from "@/components/community/post-parts";
 import { CommunityClosed, CommunityLabel, JsonLd, Notice, PageShell, UserText, styleLabel } from "@/components/community/ui";
 import { labelOf, PARTY_TYPES } from "@/lib/community/constants";
 import { formatMoney } from "@/lib/community/money";
@@ -54,6 +54,7 @@ export default async function QuestionPage({ params, searchParams }: Props) {
         <PostToolbar page={page} />
         {state?.isAuthor && !q.acceptedAnswerId && <div className="mt-3"><ResolvedToggle contributionId={post.id} resolved={Boolean(post.question?.resolved)} returnTo={page.returnTo} /></div>}
       </article>
+      <PostShare page={page} />
       <RepliesSection page={page} answersPage={answersPage} kind="answer" />
       <RelatedGuides guides={guides} />
     </PageShell>

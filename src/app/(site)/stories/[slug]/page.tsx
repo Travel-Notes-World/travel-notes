@@ -9,6 +9,7 @@ import { AdSlot } from "@/components/AdSlot";
 import { ArticleCard } from "@/components/ArticleCard";
 import { Photo, PhotoCredit } from "@/components/destination/Photo";
 import { AuthorAvatar, AuthorBox, SourcesAndCorrections } from "@/components/guide/GuideParts";
+import { ShareButtons } from "@/components/ShareButtons";
 import { RichBody } from "@/components/RichBody";
 import { getRelatedStories, getStory } from "@/lib/content/stories";
 import { siteUrl } from "@/lib/site";
@@ -144,6 +145,7 @@ export default async function StoryPage({ params }: { params: Promise<{ slug: st
             </div>
           )}
 
+          <ShareButtons url={`${siteUrl}/stories/${a.slug}`} title={a.title} heading="Share this guide" />
           <div className="mt-12 max-w-measure"><AuthorBox author={a.author} /></div>
           <div className="mt-10"><SourcesAndCorrections story={a} /></div>
         </div>
