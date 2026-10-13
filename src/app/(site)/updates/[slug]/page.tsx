@@ -5,6 +5,7 @@ import { notFound } from "next/navigation";
 import { Breadcrumbs } from "@/components/Breadcrumbs";
 import { JsonLd } from "@/components/community/ui";
 import { RichBody } from "@/components/RichBody";
+import { ShareButtons } from "@/components/ShareButtons";
 import { AustraliaBadge, formatDay, formatPublished, UpdateItem } from "@/components/UpdateItem";
 import { breadcrumbJsonLd } from "@/lib/community/seo";
 import { hasEnded } from "@/lib/content/updateRules";
@@ -139,6 +140,8 @@ export default async function UpdatePage({ params }: Props) {
           <RichBody data={u.body as Parameters<typeof RichBody>[0]["data"]} />
         </div>
       )}
+
+      <ShareButtons url={`${siteUrl}${u.path}`} title={u.title} />
 
       <section className="mt-12 max-w-measure border-t border-paper-200 pt-6" aria-labelledby="sources-heading">
         <h2 id="sources-heading" className="t-meta text-ink-400 m-0">Sources and corrections</h2>
