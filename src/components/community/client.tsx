@@ -123,8 +123,8 @@ export type PickedPlace = { id: string; label: string };
  * Choose destinations by typing a name. The member always chooses: nothing is selected for them,
  * and their location is never guessed. Each choice is sent as a hidden field with the record id.
  */
-export function DestinationPicker({ name = "destinations", label = "Destinations", hint, initial, max = 5, error, required = false, onTimeZone }: {
-  name?: string; label?: string; hint?: string; initial: PickedPlace[]; max?: number; error?: string; required?: boolean; onTimeZone?: (zone: string | null) => void;
+export function DestinationPicker({ name = "destinations", label = "Destinations", hint, initial, max = 5, error, required = false, onTimeZone, suggestLink = true }: {
+  name?: string; label?: string; hint?: string; initial: PickedPlace[]; max?: number; error?: string; required?: boolean; onTimeZone?: (zone: string | null) => void; suggestLink?: boolean;
 }) {
   const id = useId();
   const [picked, setPicked] = useState<PickedPlace[]>(initial);
@@ -194,7 +194,7 @@ export function DestinationPicker({ name = "destinations", label = "Destinations
         </ul>
       )}
       <FieldError id={`${id}-error`} message={error} />
-      <p className="t-body-sm text-ink-600 mt-2 mb-0">Not in the list? <Link href="/account/suggest-destination" className="text-marine-600 underline" target="_blank">Suggest a destination</Link> (opens in a new tab). A moderator adds it; you can save your draft meanwhile.</p>
+      {suggestLink && <p className="t-body-sm text-ink-600 mt-2 mb-0">Not in the list? <Link href="/account/suggest-destination" className="text-marine-600 underline" target="_blank">Suggest a destination</Link> (opens in a new tab). A moderator adds it; you can save your draft meanwhile.</p>}
     </fieldset>
   );
 }

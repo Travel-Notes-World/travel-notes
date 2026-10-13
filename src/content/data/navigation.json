@@ -7,7 +7,7 @@
       { "label": "Community", "href": "/community" },
       { "label": "Activities", "href": "/activities" },
       { "label": "Travel Updates", "href": "/updates" },
-      { "label": "Trip Planner", "href": null }
+      { "label": "Trip Planner", "href": "/trip-planner" }
     ],
     "businessLink": { "label": "For Businesses", "href": "/advertise" },
     "subscribe": { "label": "Subscribe", "href": "/newsletter" },
@@ -15,7 +15,7 @@
     "menuLabel": "Menu"
   },
   "footer": {
-    "tagline": "The travel knowledge platform. Expert guides, real traveller insight and, soon, AI trip planning.",
+    "tagline": "The travel knowledge platform. Expert guides, real traveller insight and a day-by-day trip planner.",
     "groups": [
       {
         "title": "Explore",
@@ -23,6 +23,7 @@
           { "label": "Destinations", "href": "/destinations" },
           { "label": "Travel Guides", "href": "/guides" },
           { "label": "Travel Updates", "href": "/updates" },
+          { "label": "Trip Planner", "href": "/trip-planner" },
           { "label": "Itineraries", "href": "/topics/itineraries" },
           { "label": "Practical tips", "href": "/topics/tips" },
           { "label": "Photography", "href": null },

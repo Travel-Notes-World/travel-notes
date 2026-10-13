@@ -75,6 +75,27 @@ export const Plans: CollectionConfig = {
     { name: 'startDate', type: 'text', maxLength: 10 },
     { name: 'endDate', type: 'text', maxLength: 10 },
     { name: 'notes', type: 'textarea' },
+    // Set by the Trip Planner (/trip-planner), so a saved plan can open its ideas again.
+    { name: 'destinations', type: 'relationship', relationTo: 'destinations', hasMany: true, maxRows: 5 },
+    {
+      name: 'party',
+      type: 'select',
+      options: [
+        { value: 'solo', label: 'Solo' },
+        { value: 'couple', label: 'Couple' },
+        { value: 'family', label: 'Family with children' },
+        { value: 'friends', label: 'Friends or group' },
+      ],
+    },
+    {
+      name: 'pace',
+      type: 'select',
+      options: [
+        { value: 'relaxed', label: 'Relaxed' },
+        { value: 'balanced', label: 'Balanced' },
+        { value: 'full', label: 'Full days' },
+      ],
+    },
     {
       name: 'days',
       type: 'array',
