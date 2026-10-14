@@ -41,3 +41,23 @@ export const AiRuns: CollectionConfig = {
     { name: 'error', type: 'text' },
   ],
 }
+
+/**
+ * Instant free itineraries written for visitors on the Trip Planner page, before they have an
+ * account. Kept for 7 days so a refresh or "Save to my trips" shows the same plan without paying
+ * for it twice. Holds only a one-way code of the network address, the planner address (places,
+ * dates, preferences) and the AI's answer: no name or email.
+ */
+export const AiPreviews: CollectionConfig = {
+  slug: 'ai-previews',
+  admin: { group: 'Community (read-only, moderate at /moderation)', hidden: true },
+  access: { read: () => false, create: () => false, update: () => false, delete: () => false },
+  fields: [
+    { name: 'key', type: 'text', required: true, unique: true, index: true },
+    { name: 'visitor', type: 'text', required: true, index: true },
+    { name: 'query', type: 'text', required: true },
+    { name: 'summary', type: 'textarea' },
+    { name: 'days', type: 'json' },
+    { name: 'paths', type: 'json' },
+  ],
+}

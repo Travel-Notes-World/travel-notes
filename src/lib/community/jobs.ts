@@ -31,6 +31,8 @@ export const JOBS = {
     if (r.failed.length) throw new Error(`published ${r.published.length}; could not publish ${r.failed.join(', ')} (reason shown on each document)`)
     return r.published.length ? `published ${r.published.join(', ')}` : NOTHING_DUE
   },
+  // Instant Trip Planner itineraries for visitors are kept for 7 days.
+  previews: async () => { const r = await run(await cms(), sql`DELETE FROM "ai_previews" WHERE "created_at" < now() - interval '7 days'`); return `removed ${r.rowCount ?? 0} old instant itineraries` },
   contact: async () => { const r = await deliverPendingContactMessages(); return `contact messages: attempted ${r.attempted}, emailed ${r.sent}, still waiting ${r.waiting}` },
 } as const
 export type JobName = keyof typeof JOBS
@@ -64,7 +66,7 @@ export async function runJob(job: JobName): Promise<JobResult> {
 /** Everything that should happen once a day. One failing job does not stop the others. */
 export async function runDaily(): Promise<JobResult[]> {
   const results: JobResult[] = []
-  for (const job of ['publish', 'outbox', 'events', 'photos', 'rate-limits', 'digest', 'contact', 'newsletter'] as JobName[]) results.push(await runJob(job))
+  for (const job of ['publish', 'outbox', 'events', 'photos', 'rate-limits', 'digest', 'contact', 'newsletter', 'previews'] as JobName[]) results.push(await runJob(job))
   // Keep three months of run history.
   const payload = await cms()
   await run(payload, sql`DELETE FROM "job_runs" WHERE "created_at" < now() - interval '90 days'`).catch(() => undefined)
