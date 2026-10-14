@@ -25,6 +25,7 @@ import * as migration_20261013_122958_visa_visit_purpose from './20261013_122958
 import * as migration_20261013_135853_ai_previews from './20261013_135853_ai_previews';
 import * as migration_20261014_015907_trip_costs from './20261014_015907_trip_costs';
 import * as migration_20261014_040934_trip_choices from './20261014_040934_trip_choices';
+import * as migration_20261014_045738_price_research from './20261014_045738_price_research';
 
 export const migrations = [
   {
@@ -160,6 +161,11 @@ export const migrations = [
   {
     up: migration_20261014_040934_trip_choices.up,
     down: migration_20261014_040934_trip_choices.down,
-    name: '20261014_040934_trip_choices'
+    name: '20261014_040934_trip_choices',
+  },
+  {
+    up: migration_20261014_045738_price_research.up,
+    down: migration_20261014_045738_price_research.down,
+    name: '20261014_045738_price_research'
   },
 ];

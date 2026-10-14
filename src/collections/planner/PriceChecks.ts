@@ -77,6 +77,14 @@ export const PriceChecks: CollectionConfig = {
     { name: 'excludes', type: 'text', maxLength: 300, admin: { description: 'What it does not include, for example “Booking fee of 1.5% on cards”.' } },
     { name: 'bookingUrl', type: 'text', validate: httpsLink, admin: { description: 'Optional. The official booking page.' } },
     {
+      name: 'method',
+      type: 'select',
+      defaultValue: 'editor',
+      options: [{ value: 'editor', label: 'Checked by an editor' }, { value: 'ai_research', label: 'Found by AI web research' }],
+      admin: { position: 'sidebar', description: 'AI research saves a typical range with the page it came from. Edit or retire it if it looks wrong.' },
+    },
+    { name: 'quote', type: 'textarea', maxLength: 600, admin: { description: 'AI research: what the source page says about the price.', condition: (_, s) => s?.method === 'ai_research' } },
+    {
       name: 'status',
       type: 'select',
       required: true,

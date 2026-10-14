@@ -38,6 +38,12 @@ export type PriceCheck = {
   includes: string
   excludes: string
   bookingUrl: string | null
+  /** 'ai_research' when AI web research found it (always with the page it came from). */
+  method: 'editor' | 'ai_research'
+  /** What the source says, for AI research. */
+  quote: string
+  /** Set when the price was converted to A$: the original currency and amounts, and the sourced rate used. */
+  fx: { currency: string; perAud: number; lowMinor: number; highMinor: number; sourceName: string; sourceUrl: string; checkedAt: string } | null
 }
 
 /** Finds the best saved price for an item at a trip place (the loader falls back to parent places). */
@@ -164,7 +170,7 @@ export function computeBudget(input: {
   const missing = (base: Omit<BudgetLine, 'status' | 'paid' | 'old' | 'price' | 'lowCents' | 'highCents' | 'quantity' | 'note'>, quantity: string, note: string): BudgetLine => ({
     ...base, status: 'unavailable', paid: false, price: null, lowCents: 0, highCents: 0, quantity, note, old: false,
   })
-  const noPriceNote = (p: PriceCheck | null) => (p && p.currency !== 'AUD' ? `We only have a price in ${p.currency}. Currency conversion is not available yet.` : 'Travel Notes has no checked price for this yet.')
+  const noPriceNote = (p: PriceCheck | null) => (p && p.currency !== 'AUD' ? `We only have a price in ${p.currency}. Currency conversion is not available yet.` : 'No price found yet. Travel Notes looks up prices online automatically: check back in a minute.')
 
   // Flights: only the traveller's own booking. Live flight prices are not connected yet.
   if (setup.flights.status === 'booked' && setup.flights.amountCents !== null) {
@@ -233,7 +239,7 @@ export function computeBudget(input: {
   for (const a of input.activities ?? []) {
     const base = { id: `activity-${a.id}`, category: 'activities' as const, label: a.label, day: a.day }
     const p = a.price
-    if (!usable(p)) { lines.push(missing(base, plural(party, 'person', 'people'), p ? noPriceNote(p) : 'Entry price not checked by Travel Notes. Check the official website.')); continue }
+    if (!usable(p)) { lines.push(missing(base, plural(party, 'person', 'people'), p ? noPriceNote(p) : 'No entry price found yet. Check the official website.')); continue }
     lines.push(priced(base, p, p.basis === 'group' ? { low: p.lowCents, high: p.highCents, quantity: `1 booking for the group × ${unit(p.lowCents, p.highCents)}` } : personCost(setup, p)))
   }
 

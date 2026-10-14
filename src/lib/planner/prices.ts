@@ -32,6 +32,9 @@ export function toPriceCheck(doc: PriceCheckDoc, placeName: string): PriceCheck 
     includes: doc.includes ?? '',
     excludes: doc.excludes ?? '',
     bookingUrl: doc.bookingUrl ?? null,
+    method: doc.method === 'ai_research' ? 'ai_research' : 'editor',
+    quote: doc.quote ?? '',
+    fx: null,
   }
 }
 
@@ -71,7 +74,8 @@ export async function loadPriceFinder(payload: Payload, placeIds: string[]): Pro
   const { chain, names } = await chains(payload, placeIds)
   const all = [...new Set([...chain.values()].flat())]
   const found = await payload.find({ collection: 'price-checks', where: { and: [{ destination: { in: all } }, { status: { equals: 'active' } }] }, limit: 2000, pagination: false, depth: 0, sort: '-checkedAt' })
-  const checks = found.docs.map((d) => toPriceCheck(d, names.get(rel(d.destination) ?? '') ?? ''))
+  const rates = await freshRates(payload)
+  const checks = found.docs.map((d) => toAud(toPriceCheck(d, names.get(rel(d.destination) ?? '') ?? ''), rates))
   const find: PriceFinder = (item, placeId, match) => {
     for (const id of chain.get(placeId) ?? [placeId]) {
       const hit = checks.find((c) => c.item === item && c.placeId === id
@@ -82,4 +86,35 @@ export async function loadPriceFinder(payload: Payload, placeIds: string[]): Pro
     return null
   }
   return { find, count: checks.length, checks, byId: (id) => checks.find((c) => c.id === id) ?? null }
+}
+
+/** Exchange rates older than this are not used. */
+export const RATE_MAX_AGE_DAYS = 30
+
+export type Rate = { currency: string; perAud: number; sourceName: string; sourceUrl: string; checkedAt: string }
+
+export async function freshRates(payload: Payload, now = new Date()): Promise<Map<string, Rate>> {
+  const since = new Date(now.getTime() - RATE_MAX_AGE_DAYS * 24 * 3600 * 1000).toISOString()
+  const found = await payload.find({ collection: 'exchange-rates', where: { checkedAt: { greater_than_equal: since } }, limit: 200, pagination: false, depth: 0 })
+  return new Map(found.docs.map((r) => [r.currency, { currency: r.currency, perAud: r.perAud, sourceName: r.sourceName, sourceUrl: r.sourceUrl, checkedAt: r.checkedAt }]))
+}
+
+/**
+ * Show a price in another currency in A$, at a sourced rate. Without a fresh rate the price stays in
+ * its own currency, and the budget shows it as "price unavailable" rather than guessing.
+ */
+export function toAud(p: PriceCheck, rates: Map<string, Rate>): PriceCheck {
+  if (p.currency === 'AUD') return p
+  const rate = rates.get(p.currency)
+  if (!rate || !(rate.perAud > 0)) return p
+  const conv = (minor: number | null) => (minor === null ? null : Math.round(minor / rate.perAud))
+  return {
+    ...p,
+    currency: 'AUD',
+    lowCents: conv(p.lowCents)!,
+    highCents: conv(p.highCents)!,
+    childLowCents: conv(p.childLowCents),
+    childHighCents: conv(p.childHighCents),
+    fx: { currency: p.currency, perAud: rate.perAud, lowMinor: p.lowCents, highMinor: p.highCents, sourceName: rate.sourceName, sourceUrl: rate.sourceUrl, checkedAt: rate.checkedAt },
+  }
 }

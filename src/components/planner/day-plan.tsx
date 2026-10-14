@@ -16,14 +16,15 @@ const linesTotal = (lines: BudgetLine[]): Range | null => {
 };
 
 function OptionPrice({ option, price }: { option: ChoiceOption; price: PriceCheck | null }) {
-  if (!option.priceId || !price) return <span className="text-ochre-700">Entry price not checked</span>;
+  if (!option.priceId || !price) return <span className="text-ochre-700">{option.researched ? "Entry price not found online" : "Looking up the entry price…"}</span>;
   const range = price.lowCents === price.highCents ? audRange({ lowCents: price.lowCents, highCents: price.lowCents }) : audRange(price);
   return (
     <span>
       {range} {price.basis === "group" ? "per group" : "per adult"}
       {price.childLowCents !== null ? `, child ${audRange({ lowCents: price.childLowCents, highCents: price.childHighCents ?? price.childLowCents })}` : ""}
       {price.freeUnderAge !== null ? `, under ${price.freeUnderAge} free` : ""}
-      {" · "}<a href={price.sourceUrl} className="text-marine-600 underline" rel="nofollow noopener noreferrer" target="_blank">{price.sourceName}</a>, checked {fmtDate(price.checkedAt)}
+      {price.lowCents === 0 && price.highCents === 0 ? " (free entry)" : ""}
+      {" · "}{price.method === "ai_research" ? "Estimate from online research: " : ""}<a href={price.sourceUrl} className="text-marine-600 underline" rel="nofollow noopener noreferrer" target="_blank">{price.sourceName}</a>, checked {fmtDate(price.checkedAt)}{price.fx ? `, converted from ${price.fx.currency}` : ""}
     </span>
   );
 }

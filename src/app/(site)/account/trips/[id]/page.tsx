@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { after } from "next/server";
 import { getPayload } from "payload";
 import config from "@payload-config";
 
@@ -34,6 +35,7 @@ import { nearbyPlaces, placeLegs, reportedCosts } from "@/lib/planner/extras";
 import { plannerHref } from "@/lib/planner/input";
 import { aiPlanPaymentsFor, aiPlanPrice } from "@/lib/planner/payments";
 import { loadPriceFinder } from "@/lib/planner/prices";
+import { researchForPlan, researchState } from "@/lib/planner/research";
 import { dayTimeline } from "@/lib/planner/timeline";
 import { paceOf, planBudget } from "@/lib/planner/trip-budget";
 import { siteUrl } from "@/lib/site";
@@ -89,6 +91,14 @@ export default async function PlanPage({ params, searchParams }: { params: Promi
   const aiUsable = ai.available || ai.generated;
   const shareUrl = view.share.enabled && view.share.token ? `${siteUrl}/trip-planner/shared/${view.share.token}` : null;
   const placeName = (pid: string) => tripBudget?.places.find((p) => p.id === pid)?.name ?? "";
+
+  // Prices still to look up online: everyday costs for a place, or entry prices for activity options.
+  const research = settings.planner.aiEnabled && placeIds.length ? await researchState(payload, placeIds) : { running: false, needed: false };
+  const pendingActivities = view.choices.days.some((d) => d.slots.some((s) => s.options.some((o) => !o.priceId && !o.researched)));
+  const researching = research.running || research.needed || (settings.planner.aiEnabled && pendingActivities);
+  if (!research.running && (research.needed || (settings.planner.aiEnabled && pendingActivities))) {
+    after(async () => { await researchForPlan(payload, view.id).catch((e) => console.error("[planner] research on view", e)); });
+  }
 
   // Sections of the plan. Days only appear once there is a budget to show them with.
   const dayCount = view.days.length;
@@ -162,6 +172,9 @@ export default async function PlanPage({ params, searchParams }: { params: Promi
         )}
       </div>
 
+      {researching && (
+        <div className="mb-6 max-w-measure"><Notice tone="info" title="Looking up current prices online">Travel Notes is researching typical prices for your trip. Refresh this page in a minute or two to see them in your budget.</Notice></div>
+      )}
       <TravelAdvice advice={advice} />
       <PlanTabs id={view.id} tabs={tabs} current={current} />
 
