@@ -10,6 +10,8 @@ import { generateAiPlan } from './ai'
 import { removePersonalDetails, updateTripDetails } from './details'
 import { startAiPlanCheckout } from './payments'
 import { setSharing } from './share'
+import { setDayTrip, updateChoice } from './choose'
+import { isCommunityError } from '../community/errors'
 
 const MESSAGES = {
   brief: 'Your free plan is ready below. Stops marked “AI idea” are not checked by Travel Notes: check them before you go.',
@@ -106,4 +108,28 @@ export async function setSharingAction(_: ActionState, form: FormData): Promise<
   } catch (error) {
     return toState(error)
   }
+}
+
+/** Choose, remove, lock or unlock the activity for one part of a day. The page recalculates after. */
+export async function updateChoiceAction(form: FormData): Promise<void> {
+  const id = str(form, 'id')
+  const { member } = await getViewer()
+  if (member) {
+    await updateChoice(member, id, { day: str(form, 'day'), time: str(form, 'time'), action: str(form, 'action'), option: str(form, 'option') }).catch((error) => {
+      if (!isCommunityError(error)) throw error
+    })
+  }
+  revalidatePath(`/account/trips/${id}`)
+}
+
+/** Use a day for a day trip to a nearby place, or clear it. */
+export async function setDayTripAction(form: FormData): Promise<void> {
+  const id = str(form, 'id')
+  const { member } = await getViewer()
+  if (member) {
+    await setDayTrip(member, id, { day: str(form, 'day'), place: str(form, 'place') || null }).catch((error) => {
+      if (!isCommunityError(error)) throw error
+    })
+  }
+  revalidatePath(`/account/trips/${id}`)
 }

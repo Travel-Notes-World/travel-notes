@@ -51,7 +51,7 @@ export function distanceKm(a: { latitude: number; longitude: number }, b: { lati
 /** Our rule of thumb from straight-line distance. Shown as a rule of thumb, not as a travel time. */
 export const tripType = (km: number): 'day' | 'overnight' => (km <= 150 ? 'day' : 'overnight')
 
-export type Nearby = { name: string; path: string; km: number; type: 'day' | 'overnight' }
+export type Nearby = { id: string; name: string; path: string; km: number; type: 'day' | 'overnight'; fromId: string; fromName: string }
 export type PlaceLeg = { from: string; to: string; km: number }
 
 type Located = { id: string; name: string; path: string; latitude: number; longitude: number }
@@ -108,7 +108,7 @@ export async function nearbyPlaces(payload: Payload, placeIds: string[], max = 6
       const km = distanceKm(p, { latitude: d.latitude, longitude: d.longitude })
       if (km < 5 || km > 400) continue
       seen.add(d.id)
-      out.push({ name: d.name, path: d.path ?? d.slug, km: Math.round(km), type: tripType(km) })
+      out.push({ id: d.id, name: d.name, path: d.path ?? d.slug, km: Math.round(km), type: tripType(km), fromId: p.id, fromName: p.name })
     }
   }
   return out.sort((a, b) => a.km - b.km).slice(0, max)

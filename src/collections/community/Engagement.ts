@@ -128,6 +128,13 @@ export const Plans: CollectionConfig = {
       admin: { description: 'Trip set-up for the budget: adults, children’s ages, rooms, stay, and booked amounts. Private to the member.' },
     },
     {
+      // Activity choices for each part of each day: the options, the one chosen, locks, and day trips.
+      // Read with readChoices (src/lib/planner/choices.ts); never trusted as stored.
+      name: 'choices',
+      type: 'json',
+      admin: { description: 'Activity choices per day (morning, afternoon, evening), which one is chosen, and locks. Private to the member.' },
+    },
+    {
       name: 'visa',
       type: 'group',
       admin: { description: 'Only for a visa-purpose itinerary. Entered by the member; never checked by Travel Notes. No passport or booking numbers are collected.' },

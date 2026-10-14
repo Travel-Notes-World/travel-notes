@@ -142,6 +142,10 @@ export function computeBudget(input: {
   find: PriceFinder
   departFrom?: string
   budget?: { amountCents: number; currency: string } | null
+  /** The activities the traveller chose, each with its checked ticket price when there is one. */
+  activities?: { id: string; day: number; label: string; price: PriceCheck | null }[]
+  /** Days used for a day trip to a nearby place. */
+  dayTrips?: { day: number; from: string; to: string; toName: string }[]
   now?: Date
 }): Budget {
   const { setup, days, find } = input
@@ -223,6 +227,28 @@ export function computeBudget(input: {
     const base = { id: `intercity-${d}`, category: 'transport' as const, label: `${nameOf(from)} to ${nameOf(to)}`, day: null }
     if (!usable(p)) { lines.push(missing(base, `${plural(party, 'person', 'people')}, one way`, noPriceNote(p))); continue }
     lines.push(priced(base, p, p.basis === 'group' ? { low: p.lowCents, high: p.highCents, quantity: `1 journey for the group × ${unit(p.lowCents, p.highCents)}` } : personCost(setup, p)))
+  }
+
+  // Chosen activities: only the chosen option of each part of the day is counted.
+  for (const a of input.activities ?? []) {
+    const base = { id: `activity-${a.id}`, category: 'activities' as const, label: a.label, day: a.day }
+    const p = a.price
+    if (!usable(p)) { lines.push(missing(base, plural(party, 'person', 'people'), p ? noPriceNote(p) : 'Entry price not checked by Travel Notes. Check the official website.')); continue }
+    lines.push(priced(base, p, p.basis === 'group' ? { low: p.lowCents, high: p.highCents, quantity: `1 booking for the group × ${unit(p.lowCents, p.highCents)}` } : personCost(setup, p)))
+  }
+
+  // Day trips: there and back on the same day.
+  for (const t of input.dayTrips ?? []) {
+    const there = find('intercity', t.from, { toPlaceId: t.to })
+    const back = find('intercity', t.to, { toPlaceId: t.from })
+    const legs = [{ id: `daytrip-${t.day}-out`, label: `Day trip: ${nameOf(t.from)} to ${t.toName}`, p: there }, { id: `daytrip-${t.day}-back`, label: `Day trip: ${t.toName} back to ${nameOf(t.from)}`, p: back ?? there }]
+    for (const leg of legs) {
+      const base = { id: leg.id, category: 'transport' as const, label: leg.label, day: t.day }
+      if (!usable(leg.p)) { lines.push(missing(base, `${plural(party, 'person', 'people')}, one way`, noPriceNote(leg.p))); continue }
+      const cost = leg.p.basis === 'group' ? { low: leg.p.lowCents, high: leg.p.highCents, quantity: `1 journey for the group × ${unit(leg.p.lowCents, leg.p.highCents)}`, note: null as string | null } : personCost(setup, leg.p)
+      if (!back && leg.id.endsWith('-back')) cost.note = [cost.note, 'We only have the price for the outward journey; the return is assumed to cost the same.'].filter(Boolean).join(' ')
+      lines.push(priced(base, leg.p, cost))
+    }
   }
 
   if (setup.mobileData && n > 0) {

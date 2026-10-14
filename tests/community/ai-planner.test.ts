@@ -174,8 +174,9 @@ describe('the paid detailed plan', () => {
     assert.match(requests[0].system, /DETAILED plan/)
     let view = await P.getPlan(member, id)
     assert.equal(view.ai.tier, 'detailed')
-    assert.equal(view.days[0].stops.length, 5, 'up to five stops a day')
-    assert.deepEqual(view.days[0].stops.slice(0, 2).map((s: Any) => s.timeOfDay), ['morning', 'afternoon'])
+    assert.equal(view.days[0].stops.length, 3, 'one chosen activity for each part of the day')
+    assert.deepEqual(view.days[0].stops.map((s: Any) => s.timeOfDay), ['morning', 'afternoon', 'evening'])
+    assert.equal(view.choices.days[0].slots.length, 3)
     assert.equal(view.days[0].overnight, 'Kyoto')
     assert.match(view.days[0].transport, /buses/)
     assert.deepEqual(view.ai.options.map((o: Any) => o.style), ['budget', 'balanced', 'premium'])
@@ -197,6 +198,50 @@ describe('the paid detailed plan', () => {
     assert.equal((await AI.freePlansUsed(payload, member.id)), 0, 'the paid plan did not touch the free allowance')
     view = await P.getPlan(member, id)
     assert.equal(view.ai.unlocked, true)
+  })
+
+  it('gives choices for each part of the day, keeps only checked price ids, and keeps locked choices on revision', async () => {
+    const member = await newMember('Chooser')
+    const id = await newPlan(member)
+    await upgrade(member, id)
+    const ticket = await payload.create({ collection: 'price-checks', data: { destination: places.kyoto.id, item: 'attraction', name: 'Temple garden entry', amount: 10, basis: 'person', currency: 'AUD', kind: 'published', sourceName: 'Temple (official)', sourceUrl: 'https://example.test/temple', checkedAt: '2026-10-01T00:00:00.000Z' } as Any })
+    const alt = (title: string, priceId = '') => ({ title, place: 'Kyoto', notes: 'Fits.', source: '', priceId, minutes: 90 })
+    const withChoices = () => answer({
+      days: [1, 2, 3].map((day) => ({
+        day, title: `Day ${day}`, overnight: 'Kyoto', transport: 'Walk.',
+        stops: [
+          { ...stop('Temple garden', '/destinations/japan/kyoto'), priceId: ticket.id, minutes: 120, alternatives: [alt('Free riverside walk'), alt('Made-up price', '00000000-0000-4000-8000-000000000000'), alt('Fourth is cut')] },
+          { ...stop('Market', '', 'afternoon'), priceId: '', minutes: 60, alternatives: [] },
+          { ...stop('Second morning is ignored'), priceId: '', minutes: 60, alternatives: [] },
+        ],
+      })),
+    })
+    next = () => ({ text: JSON.stringify(withChoices()), inputTokens: 4000, outputTokens: 1000, stopReason: 'end_turn' })
+    requests.length = 0
+    await AI.generateAiPlan(member, id)
+    assert.match(requests[0].prompt, /Temple garden entry/, 'checked tickets are offered to the AI by id')
+    let view = await P.getPlan(member, id)
+    const morning = view.choices.days[1].slots[0]
+    assert.equal(morning.time, 'morning')
+    assert.deepEqual(morning.options.map((o: Any) => o.title), ['Temple garden', 'Free riverside walk', 'Made-up price'])
+    assert.equal(morning.options[0].priceId, ticket.id)
+    assert.equal(morning.options[2].priceId, null, 'a price id that was not offered is dropped')
+    assert.equal(view.choices.days[1].slots.length, 2)
+
+    const CH = await import('../../src/lib/planner/choose')
+    await CH.updateChoice(member, id, { day: 1, time: 'morning', action: 'choose', option: morning.options[1].id })
+    view = await P.getPlan(member, id)
+    assert.equal(view.days[1].stops[0].title, 'Free riverside walk', 'the chosen option becomes the stop')
+    await CH.updateChoice(member, id, { day: 1, time: 'morning', action: 'lock' })
+    await rejects(CH.updateChoice(member, id, { day: 1, time: 'morning', action: 'remove' }), 'validation')
+    next = () => ({ text: JSON.stringify(withChoices()), inputTokens: 4000, outputTokens: 1000, stopReason: 'end_turn' })
+    requests.length = 0
+    await AI.generateAiPlan(member, id, { instruction: 'Change everything' })
+    assert.match(requests[0].prompt, /lockedByTraveller":\["morning"\]/)
+    view = await P.getPlan(member, id)
+    assert.equal(view.days[1].stops[0].title, 'Free riverside walk', 'a locked choice survives a revision')
+    assert.equal(view.choices.days[1].slots[0].locked, true)
+    next = () => ({ text: JSON.stringify(answer()), inputTokens: 4000, outputTokens: 1000, stopReason: 'end_turn' })
   })
 
   it('keeps a night the traveller booked', async () => {

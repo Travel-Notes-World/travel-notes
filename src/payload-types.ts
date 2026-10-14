@@ -1548,6 +1548,18 @@ export interface Plan {
     | boolean
     | null;
   /**
+   * Activity choices per day (morning, afternoon, evening), which one is chosen, and locks. Private to the member.
+   */
+  choices?:
+    | {
+        [k: string]: unknown;
+      }
+    | unknown[]
+    | string
+    | number
+    | boolean
+    | null;
+  /**
    * Only for a visa-purpose itinerary. Entered by the member; never checked by Travel Notes. No passport or booking numbers are collected.
    */
   visa?: {
@@ -2898,6 +2910,7 @@ export interface PlansSelect<T extends boolean = true> {
         accessibility?: T;
       };
   trip?: T;
+  choices?: T;
   visa?:
     | T
     | {
