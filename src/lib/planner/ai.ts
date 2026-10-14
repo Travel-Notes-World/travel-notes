@@ -65,7 +65,21 @@ export const costMicroUsd = (model: AiModel, inputTokens: number, outputTokens: 
 
 export type AiRequest = { model: AiModel; system: string; prompt: string; schema: Record<string, unknown>; maxTokens: number }
 export type AiResponse = { text: string; inputTokens: number; outputTokens: number; stopReason: string }
-export type AiGateway = { generate(request: AiRequest): Promise<AiResponse> }
+/** A request that lets the model search the web (Anthropic's web search tool) before it answers. */
+export type ResearchRequest = { model: AiModel; system: string; prompt: string; maxTokens: number; maxSearches: number }
+export type ResearchResponse = {
+  text: string
+  /** Every page the searches returned. A price may only cite one of these. */
+  sources: { url: string; title: string; pageAge: string | null }[]
+  inputTokens: number
+  outputTokens: number
+  searches: number
+  stopReason: string
+}
+export type AiGateway = { generate(request: AiRequest): Promise<AiResponse>; research?(request: ResearchRequest): Promise<ResearchResponse> }
+
+/** Web search is billed per search: US$10 per 1,000 (checked 14 October 2026). */
+export const SEARCH_MICRO_USD = 10_000
 
 let override: AiGateway | null = null
 /** Tests only: use a fake model. Pass null to go back to the real one. */
@@ -102,7 +116,51 @@ const anthropic: AiGateway = {
     }
   },
 }
+
+type Block = { type: string; text?: string; content?: unknown }
+anthropic.research = async (request) => {
+  const key = process.env.ANTHROPIC_API_KEY
+  if (!key) throw new Error('ANTHROPIC_API_KEY is not set.')
+  const messages: { role: 'user' | 'assistant'; content: unknown }[] = [{ role: 'user', content: request.prompt }]
+  const out: ResearchResponse = { text: '', sources: [], inputTokens: 0, outputTokens: 0, searches: 0, stopReason: '' }
+  // A long search turn can pause; it is continued by sending the paused answer back unchanged.
+  for (let round = 0; round < 3; round++) {
+    const response = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json', 'x-api-key': key, 'anthropic-version': '2023-06-01' },
+      body: JSON.stringify({
+        model: request.model,
+        max_tokens: request.maxTokens,
+        system: request.system,
+        messages,
+        tools: [{ type: 'web_search_20250305', name: 'web_search', max_uses: request.maxSearches }],
+      }),
+      signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
+    })
+    const body = (await response.json().catch(() => null)) as {
+      content?: Block[]; usage?: { input_tokens?: number; output_tokens?: number; server_tool_use?: { web_search_requests?: number } }; stop_reason?: string; error?: { message?: string }
+    } | null
+    if (!response.ok || !body) throw new Error(`Anthropic API error ${response.status}: ${body?.error?.message ?? 'no details'}`)
+    out.inputTokens += body.usage?.input_tokens ?? 0
+    out.outputTokens += body.usage?.output_tokens ?? 0
+    out.searches += body.usage?.server_tool_use?.web_search_requests ?? 0
+    out.stopReason = body.stop_reason ?? ''
+    for (const block of body.content ?? []) {
+      if (block.type === 'web_search_tool_result' && Array.isArray(block.content)) {
+        for (const r of block.content as { type: string; url?: string; title?: string; page_age?: string }[]) {
+          if (r.type === 'web_search_result' && r.url) out.sources.push({ url: r.url, title: r.title ?? '', pageAge: r.page_age ?? null })
+        }
+      }
+    }
+    out.text = (body.content ?? []).filter((b) => b.type === 'text').map((b) => b.text ?? '').join('')
+    if (out.stopReason !== 'pause_turn') break
+    messages.push({ role: 'assistant', content: body.content })
+  }
+  return out
+}
+
 const gateway = (): AiGateway => override ?? anthropic
+export const aiGateway = gateway
 
 // ---------------------------------------------------------------------------------------------
 // Allowance, spending and status.

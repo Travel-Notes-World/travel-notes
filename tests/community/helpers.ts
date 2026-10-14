@@ -36,7 +36,7 @@ export const staff: { admin: Any; moderator: Any; editor: Any } = { admin: null,
 export const places: { thailand: Any; bangkok: Any; japan: Any; kyoto: Any } = { thailand: null, bangkok: null, japan: null, kyoto: null }
 
 const COMMUNITY_TABLES = [
-  'price-checks', 'travel-advisories', 'ai-previews', 'ai-runs', 'listing-payments', 'votes', 'bookmarks', 'follows', 'rsvps', 'plans', 'reports', 'moderation-actions', 'destination-suggestions', 'notifications',
+  'price-checks', 'travel-advisories', 'exchange-rates', 'ai-previews', 'ai-runs', 'listing-payments', 'votes', 'bookmarks', 'follows', 'rsvps', 'plans', 'reports', 'moderation-actions', 'destination-suggestions', 'notifications',
   'email-outbox', 'rate-limits', 'metric-counters', 'job-runs', 'revisions', 'replies', 'media', 'contributions', 'members',
 ] as const
 

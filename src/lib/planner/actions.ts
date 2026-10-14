@@ -3,6 +3,7 @@
 import config from '@payload-config'
 import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
+import { after } from 'next/server'
 import { getPayload } from 'payload'
 
 import { createPlanFromPlanner } from '../community/plans'
@@ -12,6 +13,7 @@ import { isCommunityError } from '../community/errors'
 import { MONTH_NAMES } from '../content/destinationFacts'
 import { planDays, plannerHref, readPlannerInput, type PlannerInput } from './input'
 import { attachPreview, writePreview, type Preview } from './preview'
+import { researchForPlan, researchPlace } from './research'
 
 /**
  * "Save to my trips": turn the planner's current draft into a private plan in the member's account.
@@ -50,6 +52,7 @@ export async function savePlannerAction(_: ActionState, form: FormData): Promise
   } catch (error) {
     return toState(error)
   }
+  after(async () => { await researchForPlan(await getPayload({ config }), id).catch((e) => console.error('[planner] research after save', e)) })
   revalidatePath('/account/trips')
   redirect(`/account/trips/${id}?planned=1`)
 }
@@ -65,7 +68,16 @@ export type PreviewState = { status: 'ready'; preview: Preview } | { status: 'li
 /** Write the instant free itinerary for the planner page. No account needed; limited per visitor. */
 export async function writePreviewAction(query: string): Promise<PreviewState> {
   try {
-    return await writePreview(await clientIp(), inputFrom(query))
+    const input = inputFrom(query)
+    const state = await writePreview(await clientIp(), input)
+    // While the visitor reads, look up current prices for the places, ready for their budget.
+    if (state.status === 'ready') {
+      after(async () => {
+        const payload = await getPayload({ config })
+        for (const id of input.placeIds.slice(0, 3)) await researchPlace(payload, id).catch((e) => console.error('[planner] research after preview', e))
+      })
+    }
+    return state
   } catch (error) {
     if (isCommunityError(error)) return { status: 'error', message: error.message }
     console.error('[planner] instant itinerary action failed', error)

@@ -92,7 +92,7 @@ describe('choosing activities', () => {
 
     const museum = b.lines.find((l: Any) => l.id === 'activity-d1-afternoon')
     assert.equal(museum.status, 'unavailable', 'an activity without a checked price is listed, not added')
-    assert.match(museum.note, /not checked/)
+    assert.match(museum.note, /No entry price found/)
     // Reconciliation still holds.
     assert.equal(b.byDay.reduce((a: number, d: Any) => a + d.lowCents, 0) + b.oneTime.lowCents, b.subtotal.lowCents)
 

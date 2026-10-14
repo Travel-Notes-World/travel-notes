@@ -2,6 +2,7 @@
 
 import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
+import { after } from 'next/server'
 
 import { getViewer } from '../community/next/session'
 import { formValues, str, strings, toState, type ActionState } from '../community/next/forms'
@@ -10,6 +11,8 @@ import { generateAiPlan } from './ai'
 import { removePersonalDetails, updateTripDetails } from './details'
 import { startAiPlanCheckout } from './payments'
 import { setSharing } from './share'
+import { cms } from '../community/db'
+import { researchForPlan } from './research'
 import { setDayTrip, updateChoice } from './choose'
 import { isCommunityError } from '../community/errors'
 
@@ -25,6 +28,8 @@ export async function generateAiPlanAction(_: ActionState, form: FormData): Prom
   try {
     const { member } = await getViewer()
     const result = await generateAiPlan(member!, id, { instruction: str(form, 'instruction') })
+    // Look up current prices for the new activities after the answer is sent.
+    after(async () => { await researchForPlan(await cms(), id).catch((e) => console.error('[planner] research after plan', e)) })
     revalidatePath(`/account/trips/${id}`)
     return { ok: true, message: MESSAGES[result.kind] }
   } catch (error) {

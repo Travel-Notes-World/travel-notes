@@ -28,6 +28,8 @@ export type ChoiceOption = {
   priceId: string | null
   /** The AI's suggested time to spend there, in minutes. An estimate, shown as one. */
   minutes: number | null
+  /** AI price research has looked for this activity's entry price (found or not). */
+  researched: boolean
 }
 
 export type Slot = { id: string; time: SlotTime; options: ChoiceOption[]; selected: string | null; locked: boolean }
@@ -58,6 +60,7 @@ function readOption(v: unknown, i: number): ChoiceOption | null {
     sourcePath: o.origin === 'travel_notes' ? sourcePath : null,
     priceId: typeof o.priceId === 'string' && UUID.test(o.priceId) ? o.priceId : null,
     minutes,
+    researched: o.researched === true,
   }
 }
 

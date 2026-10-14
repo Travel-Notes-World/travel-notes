@@ -12,9 +12,10 @@ export function PriceSource({ line }: { line: BudgetLine }) {
   const p = line.price!;
   return (
     <span className="text-ink-600">
-      {KIND_LABEL[p.kind]}{p.kind === "estimate" ? " (typical local range)" : ""} ·{" "}
+      {p.method === "ai_research" ? "Estimate from online research" : `${KIND_LABEL[p.kind]}${p.kind === "estimate" ? " (typical local range)" : ""}`} ·{" "}
       <a href={p.sourceUrl} className="text-marine-600 underline" rel="nofollow noopener noreferrer" target="_blank">{p.sourceName}</a>, checked {fmtDate(p.checkedAt)}
       {p.placeName ? ` · price for ${p.placeName}` : ""}
+      {p.fx ? <> · converted from {p.fx.currency} {(p.fx.lowMinor / 100).toLocaleString("en-AU")}{p.fx.highMinor !== p.fx.lowMinor ? `–${(p.fx.highMinor / 100).toLocaleString("en-AU")}` : ""} at A$1 = {p.fx.currency} {p.fx.perAud.toLocaleString("en-AU")} (<a href={p.fx.sourceUrl} className="text-marine-600 underline" rel="nofollow noopener noreferrer" target="_blank">{p.fx.sourceName}</a>, {fmtDate(p.fx.checkedAt)})</> : null}
       {p.includes ? ` · Includes: ${p.includes}` : ""}{p.excludes ? ` · Not included: ${p.excludes}` : ""}
       {line.old ? <strong className="text-ochre-700"> · Checked more than a year ago</strong> : null}
       {line.note ? ` · ${line.note}` : ""}

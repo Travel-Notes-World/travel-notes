@@ -80,6 +80,7 @@ export interface Config {
     'newsletter-subscribers': NewsletterSubscriber;
     'price-checks': PriceCheck;
     'travel-advisories': TravelAdvisory;
+    'exchange-rates': ExchangeRate;
     members: Member;
     contributions: Contribution;
     replies: Reply;
@@ -121,6 +122,7 @@ export interface Config {
     'newsletter-subscribers': NewsletterSubscribersSelect<false> | NewsletterSubscribersSelect<true>;
     'price-checks': PriceChecksSelect<false> | PriceChecksSelect<true>;
     'travel-advisories': TravelAdvisoriesSelect<false> | TravelAdvisoriesSelect<true>;
+    'exchange-rates': ExchangeRatesSelect<false> | ExchangeRatesSelect<true>;
     members: MembersSelect<false> | MembersSelect<true>;
     contributions: ContributionsSelect<false> | ContributionsSelect<true>;
     replies: RepliesSelect<false> | RepliesSelect<true>;
@@ -997,6 +999,14 @@ export interface PriceCheck {
    * Optional. The official booking page.
    */
   bookingUrl?: string | null;
+  /**
+   * AI research saves a typical range with the page it came from. Edit or retire it if it looks wrong.
+   */
+  method?: ('editor' | 'ai_research') | null;
+  /**
+   * AI research: what the source page says about the price.
+   */
+  quote?: string | null;
   status: 'active' | 'review' | 'retired';
   updatedAt: string;
   createdAt: string;
@@ -1018,6 +1028,26 @@ export interface TravelAdvisory {
   note?: string | null;
   url: string;
   checkedAt: string;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * How much of each currency one Australian dollar buys. Used to show prices in A$.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "exchange-rates".
+ */
+export interface ExchangeRate {
+  id: string;
+  currency: string;
+  /**
+   * For example 98.5 means A$1 = ¥98.5.
+   */
+  perAud: number;
+  sourceName: string;
+  sourceUrl: string;
+  checkedAt: string;
+  method?: ('editor' | 'ai_research') | null;
   updatedAt: string;
   createdAt: string;
 }
@@ -1897,7 +1927,15 @@ export interface AiRun {
   plan?: (string | null) | Plan;
   status: 'started' | 'ok' | 'failed';
   model: string;
-  kind?: ('brief' | 'detailed' | 'revision') | null;
+  kind?: ('brief' | 'detailed' | 'revision' | 'research') | null;
+  /**
+   * Price research: the place researched.
+   */
+  place?: (string | null) | Destination;
+  /**
+   * Web searches used (price research).
+   */
+  searches?: number | null;
   /**
    * Used the member’s free allowance.
    */
@@ -2027,6 +2065,10 @@ export interface PayloadLockedDocument {
     | ({
         relationTo: 'travel-advisories';
         value: string | TravelAdvisory;
+      } | null)
+    | ({
+        relationTo: 'exchange-rates';
+        value: string | ExchangeRate;
       } | null)
     | ({
         relationTo: 'members';
@@ -2555,6 +2597,8 @@ export interface PriceChecksSelect<T extends boolean = true> {
   includes?: T;
   excludes?: T;
   bookingUrl?: T;
+  method?: T;
+  quote?: T;
   status?: T;
   updatedAt?: T;
   createdAt?: T;
@@ -2570,6 +2614,20 @@ export interface TravelAdvisoriesSelect<T extends boolean = true> {
   note?: T;
   url?: T;
   checkedAt?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "exchange-rates_select".
+ */
+export interface ExchangeRatesSelect<T extends boolean = true> {
+  currency?: T;
+  perAud?: T;
+  sourceName?: T;
+  sourceUrl?: T;
+  checkedAt?: T;
+  method?: T;
   updatedAt?: T;
   createdAt?: T;
 }
@@ -3133,6 +3191,8 @@ export interface AiRunsSelect<T extends boolean = true> {
   status?: T;
   model?: T;
   kind?: T;
+  place?: T;
+  searches?: T;
   free?: T;
   payment?: T;
   inputTokens?: T;
