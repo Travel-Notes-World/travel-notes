@@ -36,6 +36,7 @@ export function DocumentPreview({ doc }: { doc: DocModel }) {
         </>
       ) : (
         <>
+          {doc.advice.length > 0 && <><h3 className="t-heading-3 mt-6 mb-2">Australian Government travel advice (Smartraveller)</h3><ul className="t-body-sm m-0 pl-5">{doc.advice.map((c) => <li key={c} className="break-words">{c}</li>)}</ul></>}
           {doc.summary.map((t, i) => <p key={i} className="t-body-sm mt-5 mb-0">{t}</p>)}
           {doc.checks.length > 0 && <><h3 className="t-heading-3 mt-6 mb-2">Check before you go</h3><ul className="t-body-sm m-0 pl-5">{doc.checks.map((c) => <li key={c}>{c}</li>)}</ul></>}
           {doc.legs.length > 0 && <><h3 className="t-heading-3 mt-6 mb-2">Distances between places</h3><ul className="t-body-sm m-0 pl-5">{doc.legs.map((c) => <li key={c}>{c}</li>)}</ul></>}
@@ -62,6 +63,7 @@ export function DocumentPreview({ doc }: { doc: DocModel }) {
             </>
           )}
           {doc.budget.length > 0 && <><h3 className="t-heading-3 mt-6 mb-2">Budget</h3>{doc.budget.map((t) => <p key={t} className="t-body-sm m-0">{t}</p>)}</>}
+          {doc.sources.length > 0 && <><h3 className="t-heading-3 mt-6 mb-2">Where the prices come from</h3><ul className="t-body-sm m-0 pl-5">{doc.sources.map((c) => <li key={c} className="break-words">{c}</li>)}</ul></>}
         </>
       )}
       <p className="t-body-sm text-ink-600 mt-6 mb-0 border border-paper-200 rounded-sm p-3">{doc.disclaimer}</p>

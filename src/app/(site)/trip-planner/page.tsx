@@ -8,6 +8,8 @@ import { Breadcrumbs } from "@/components/Breadcrumbs";
 import { CardList } from "@/components/community/cards";
 import { JsonLd, Notice, PageShell } from "@/components/community/ui";
 import { InstantPlan } from "@/components/planner/instant-plan";
+import { TravelAdvice } from "@/components/planner/travel-advice";
+import { adviceFor } from "@/lib/planner/advice";
 import { PlannerWizard, SavePlanForm } from "@/components/planner/planner-forms";
 import { ShareButtons } from "@/components/ShareButtons";
 import { UpdateItem } from "@/components/UpdateItem";
@@ -143,6 +145,7 @@ export default async function TripPlannerPage({ searchParams }: Props) {
   const keyInput = readPlannerInput(Object.fromEntries([...new URLSearchParams(query)].reduce((m, [k, v]) => m.set(k, [...(m.get(k) ?? []), v]), new Map<string, string[]>()))).input;
   const instant = await previewsOpen(keyInput);
   const ready = instant ? await findPreview(await clientIp(), keyInput) : null;
+  const advice = await adviceFor(await getPayload({ config }), result!.countries.map((c) => ({ id: c.id, name: c.name, isoCode: c.isoCode })));
   const ranges = new Map<string, { from: number; to: number }>();
   for (const d of days) {
     const id = places[d.placeIndex].id;
@@ -170,6 +173,8 @@ export default async function TripPlannerPage({ searchParams }: Props) {
         {errors.to && <Notice tone="info" title="Too many places">{errors.to}</Notice>}
         {params.signedin && member && <Notice tone="success" title="You are signed in">Press “Save to my trips” to keep this plan.</Notice>}
       </div>
+
+      <TravelAdvice advice={advice} />
 
       {instant && (
         <section aria-labelledby="itinerary-heading" className="mb-10 max-w-[860px]">

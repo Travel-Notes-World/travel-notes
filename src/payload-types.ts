@@ -78,6 +78,8 @@ export interface Config {
     staff: Staff;
     'contact-messages': ContactMessage;
     'newsletter-subscribers': NewsletterSubscriber;
+    'price-checks': PriceCheck;
+    'travel-advisories': TravelAdvisory;
     members: Member;
     contributions: Contribution;
     replies: Reply;
@@ -117,6 +119,8 @@ export interface Config {
     staff: StaffSelect<false> | StaffSelect<true>;
     'contact-messages': ContactMessagesSelect<false> | ContactMessagesSelect<true>;
     'newsletter-subscribers': NewsletterSubscribersSelect<false> | NewsletterSubscribersSelect<true>;
+    'price-checks': PriceChecksSelect<false> | PriceChecksSelect<true>;
+    'travel-advisories': TravelAdvisoriesSelect<false> | TravelAdvisoriesSelect<true>;
     members: MembersSelect<false> | MembersSelect<true>;
     contributions: ContributionsSelect<false> | ContributionsSelect<true>;
     replies: RepliesSelect<false> | RepliesSelect<true>;
@@ -715,6 +719,7 @@ export interface Staff {
    */
   communityModerator?: boolean | null;
   totpSecret?: string | null;
+  hasTotp?: boolean | null;
   updatedAt: string;
   createdAt: string;
   email: string;
@@ -914,6 +919,105 @@ export interface NewsletterSubscriber {
   syncStatus: 'not-needed' | 'pending' | 'synced' | 'failed';
   syncAttempts: number;
   syncError?: string | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * Checked prices the Trip Planner adds up. Always give the source link and the date you checked it. Use Australian dollars: other currencies are not converted yet.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "price-checks".
+ */
+export interface PriceCheck {
+  id: string;
+  /**
+   * The city, region or country this price applies to. A country price is used anywhere in that country without its own price.
+   */
+  destination: string | Destination;
+  item:
+    | 'breakfast'
+    | 'lunch'
+    | 'dinner'
+    | 'coffee'
+    | 'snacks'
+    | 'water'
+    | 'local_transport'
+    | 'airport_transfer'
+    | 'intercity'
+    | 'stay_budget'
+    | 'stay_mid'
+    | 'stay_premium'
+    | 'attraction'
+    | 'tour'
+    | 'mobile_data';
+  /**
+   * For tickets, tours and journeys: the exact product, for example “Taronga Zoo general entry” or “Sydney to Canberra coach”.
+   */
+  name?: string | null;
+  /**
+   * Where the journey ends.
+   */
+  toDestination?: (string | null) | Destination;
+  /**
+   * Adult or standard price, in dollars, for example 4.50.
+   */
+  amount: number;
+  /**
+   * Only for a range. Leave empty for one price.
+   */
+  amountHigh?: number | null;
+  currency: string;
+  basis: 'person' | 'room_night' | 'item' | 'journey' | 'group';
+  childAmount?: number | null;
+  childAmountHigh?: number | null;
+  /**
+   * Including this age.
+   */
+  childMaxAge?: number | null;
+  /**
+   * For example 4 means children aged 0 to 3 are free.
+   */
+  freeUnderAge?: number | null;
+  kind: 'published' | 'quote' | 'estimate';
+  /**
+   * For example “Taronga Zoo (official site)”.
+   */
+  sourceName: string;
+  sourceUrl: string;
+  checkedAt: string;
+  /**
+   * What the price includes, for example “Entry and the keeper talks”.
+   */
+  includes?: string | null;
+  /**
+   * What it does not include, for example “Booking fee of 1.5% on cards”.
+   */
+  excludes?: string | null;
+  /**
+   * Optional. The official booking page.
+   */
+  bookingUrl?: string | null;
+  status: 'active' | 'review' | 'retired';
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * Copy the overall level from the country’s Smartraveller page, and check it again whenever Smartraveller changes it. Plans warn travellers when the check is more than 30 days old.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "travel-advisories".
+ */
+export interface TravelAdvisory {
+  id: string;
+  country: string | Destination;
+  countryName?: string | null;
+  level: '1' | '2' | '3' | '4';
+  /**
+   * Optional, short. For example “Higher levels apply in some border areas.” Do not copy Smartraveller’s full text.
+   */
+  note?: string | null;
+  url: string;
+  checkedAt: string;
   updatedAt: string;
   createdAt: string;
 }
@@ -1432,6 +1536,18 @@ export interface Plan {
     accessibility?: string | null;
   };
   /**
+   * Trip set-up for the budget: adults, children’s ages, rooms, stay, and booked amounts. Private to the member.
+   */
+  trip?:
+    | {
+        [k: string]: unknown;
+      }
+    | unknown[]
+    | string
+    | number
+    | boolean
+    | null;
+  /**
    * Only for a visa-purpose itinerary. Entered by the member; never checked by Travel Notes. No passport or booking numbers are collected.
    */
   visa?: {
@@ -1893,6 +2009,14 @@ export interface PayloadLockedDocument {
         value: string | NewsletterSubscriber;
       } | null)
     | ({
+        relationTo: 'price-checks';
+        value: string | PriceCheck;
+      } | null)
+    | ({
+        relationTo: 'travel-advisories';
+        value: string | TravelAdvisory;
+      } | null)
+    | ({
         relationTo: 'members';
         value: string | Member;
       } | null)
@@ -2339,6 +2463,7 @@ export interface StaffSelect<T extends boolean = true> {
   active?: T;
   communityModerator?: T;
   totpSecret?: T;
+  hasTotp?: T;
   updatedAt?: T;
   createdAt?: T;
   email?: T;
@@ -2391,6 +2516,48 @@ export interface NewsletterSubscribersSelect<T extends boolean = true> {
   syncStatus?: T;
   syncAttempts?: T;
   syncError?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "price-checks_select".
+ */
+export interface PriceChecksSelect<T extends boolean = true> {
+  destination?: T;
+  item?: T;
+  name?: T;
+  toDestination?: T;
+  amount?: T;
+  amountHigh?: T;
+  currency?: T;
+  basis?: T;
+  childAmount?: T;
+  childAmountHigh?: T;
+  childMaxAge?: T;
+  freeUnderAge?: T;
+  kind?: T;
+  sourceName?: T;
+  sourceUrl?: T;
+  checkedAt?: T;
+  includes?: T;
+  excludes?: T;
+  bookingUrl?: T;
+  status?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "travel-advisories_select".
+ */
+export interface TravelAdvisoriesSelect<T extends boolean = true> {
+  country?: T;
+  countryName?: T;
+  level?: T;
+  note?: T;
+  url?: T;
+  checkedAt?: T;
   updatedAt?: T;
   createdAt?: T;
 }
@@ -2730,6 +2897,7 @@ export interface PlansSelect<T extends boolean = true> {
         interests?: T;
         accessibility?: T;
       };
+  trip?: T;
   visa?:
     | T
     | {

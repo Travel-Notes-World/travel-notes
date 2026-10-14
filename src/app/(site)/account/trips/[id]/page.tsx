@@ -23,7 +23,11 @@ import { formatYearMonth } from "@/lib/community/time";
 import { removePersonalDetailsAction } from "@/lib/planner/ai-actions";
 import { AI_MAX_DAYS, aiStatus } from "@/lib/planner/ai";
 import { CURRENCIES, FUNDING, INTERESTS } from "@/lib/planner/details";
-import { budgetGuide, nearbyPlaces, placeLegs, reportedCosts } from "@/lib/planner/extras";
+import { nearbyPlaces, placeLegs, reportedCosts } from "@/lib/planner/extras";
+import { tripAdvice } from "@/lib/planner/advice";
+import { planBudget } from "@/lib/planner/trip-budget";
+import { BudgetView } from "@/components/planner/budget-view";
+import { TravelAdvice } from "@/components/planner/travel-advice";
 import { plannerHref } from "@/lib/planner/input";
 import { aiPlanPaymentsFor, aiPlanPrice } from "@/lib/planner/payments";
 import { siteUrl } from "@/lib/site";
@@ -35,7 +39,6 @@ export const metadata: Metadata = { title: "Trip plan", robots: { index: false, 
 export const maxDuration = 120;
 
 const OPTION_LABEL = { budget: "Budget-friendly", balanced: "Balanced", premium: "Premium" } as const;
-const money = (n: number, c: string) => `${c} ${n.toLocaleString("en-AU", { maximumFractionDigits: 0 })}`;
 
 export default async function PlanPage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<Record<string, string | undefined>> }) {
   const { id } = await params;
@@ -63,18 +66,19 @@ export default async function PlanPage({ params, searchParams }: { params: Promi
   const placeIds = view.planner?.placeIds ?? [];
   const unlocked = view.ai.unlocked;
   const community = await canViewCommunity(null);
-  const [unread, ai, invoices, legs, nearby, costs] = await Promise.all([
+  const [unread, ai, invoices, legs, nearby, costs, advice, tripBudget] = await Promise.all([
     unreadCount(member.id),
     aiStatus(member, id, { settings, canPay: price.charge }),
     aiPlanPaymentsFor(id),
     placeLegs(payload, placeIds),
     unlocked ? nearbyPlaces(payload, placeIds) : Promise.resolve([]),
     unlocked ? reportedCosts(placeIds, community) : Promise.resolve([]),
+    tripAdvice(payload, placeIds),
+    planBudget(payload, view),
   ]);
-  const budget = budgetGuide(view.details, view.days.length);
   // The stored days carry the saved-post ids; the view carries the links that are public right now.
   const days: EditorDay[] = plan.days.map((d, i) => ({ ...d, stops: d.stops.map((s, j) => ({ ...s, saved: view.days[i]?.stops[j]?.saved ?? null })) }));
-  const detailsFilled = Boolean(view.details.travellers || view.details.departFrom || view.details.interests.length || view.details.budgetAmount || view.details.accessibility || (view.purpose === "visa" && view.visa.arrivalDate));
+  const detailsFilled = Boolean(view.details.travellers || view.trip.flights.status !== "not_booked" || view.details.departFrom || view.details.interests.length || view.details.budgetAmount || view.details.accessibility || (view.purpose === "visa" && view.visa.arrivalDate));
   const hasStops = view.days.some((d) => d.stops.length > 0);
   const aiUsable = ai.available || ai.generated;
   const shareUrl = view.share.enabled && view.share.token ? `${siteUrl}/trip-planner/shared/${view.share.token}` : null;
@@ -100,6 +104,8 @@ export default async function PlanPage({ params, searchParams }: { params: Promi
           </p>
         )}
       </div>
+
+      <TravelAdvice advice={advice} />
 
       {view.planner && (
         <PlanSteps
@@ -127,7 +133,7 @@ export default async function PlanPage({ params, searchParams }: { params: Promi
           <summary className="t-heading-3 cursor-pointer min-h-11 inline-flex items-center">1. Trip details{detailsFilled ? <span className="t-body-sm text-ink-600 font-normal ml-2">(saved, open to change)</span> : null}</summary>
           <TripDetailsForm
             id={view.id}
-            initial={{ purpose: view.purpose, ...view.details, ...view.visa }}
+            initial={{ purpose: view.purpose, ...view.details, ...view.visa, trip: view.trip }}
             interests={INTERESTS}
             funding={FUNDING}
             currencies={[...CURRENCIES]}
@@ -163,13 +169,11 @@ export default async function PlanPage({ params, searchParams }: { params: Promi
         )}
       </section>
 
-      {budget && (
-        <section aria-labelledby="budget-heading" className="mb-8 max-w-measure">
-          <h2 id="budget-heading" className="t-heading-3 m-0">Budget guidance</h2>
-          <p className="t-body-sm mt-2 mb-0">
-            Your budget of {money(budget.total, budget.currency)} over {budget.days} days is about <strong>{money(budget.perDay, budget.currency)} a day</strong>
-            {budget.perPersonPerDay !== null ? <> or <strong>{money(budget.perPersonPerDay, budget.currency)} per person a day</strong></> : null}, before flights if they are included. This is your own budget divided up, not a price check.
-          </p>
+      {tripBudget && (
+        <section id="budget" aria-labelledby="budget-heading" className="mb-10 max-w-[960px] scroll-mt-28">
+          <h2 id="budget-heading" className="t-heading-2 m-0">Trip budget</h2>
+          <p className="t-body-sm text-ink-600 mt-1 mb-4">Worked out from your trip details and prices Travel Notes has checked. Change who is going, the kind of stay or your bookings in the trip details above, and the budget updates.</p>
+          <BudgetView budget={tripBudget.budget} priceCount={tripBudget.prices} placeName={(pid) => tripBudget.places.find((p) => p.id === pid)?.name ?? ""} />
         </section>
       )}
 

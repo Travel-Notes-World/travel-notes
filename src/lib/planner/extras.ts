@@ -6,27 +6,10 @@ import { getPublished, listPublished } from '../community/queries'
 /**
  * Extra planning help that is worked out from real data, never guessed:
  *
- * - Budget guidance divides the traveller's OWN budget by days and people. It is arithmetic, not
- *   a price.
  * - Reported costs are what members wrote in published trip reports, with the month they travelled.
  * - Distances are straight lines between the coordinates of places. Real road or rail journeys are
  *   longer, and travel times are not given because Travel Notes has no checked timetable data.
  */
-
-export type BudgetGuide = { currency: string; total: number; perDay: number; perPersonPerDay: number | null; days: number; travellers: number | null }
-
-export function budgetGuide(details: { budgetAmount: number | null; budgetCurrency: string; travellers: number | null }, days: number): BudgetGuide | null {
-  if (!details.budgetAmount || !details.budgetCurrency || days < 1) return null
-  const perDay = details.budgetAmount / days
-  return {
-    currency: details.budgetCurrency,
-    total: details.budgetAmount,
-    perDay,
-    perPersonPerDay: details.travellers ? perDay / details.travellers : null,
-    days,
-    travellers: details.travellers,
-  }
-}
 
 export type ReportedCost = { title: string; path: string; travelMonth: string | null; nights: number | null; partySize: number | null; costScope: string | null; flightsIncluded: boolean; totals: CurrencyTotal[]; hasEstimates: boolean }
 

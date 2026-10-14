@@ -23,6 +23,8 @@ import { CommunitySettings } from './globals/CommunitySettings'
 import { LIMITS } from './lib/community/constants'
 import { s3Config } from './lib/community/storage'
 import { payloadEmailAdapter } from './lib/community/email/payload-adapter'
+import { PriceChecks } from './collections/planner/PriceChecks'
+import { TravelAdvisories } from './collections/planner/TravelAdvisories'
 
 const filename = fileURLToPath(import.meta.url)
 const dirname = path.dirname(filename)
@@ -40,7 +42,7 @@ export default buildConfig({
     importMap: { baseDir: path.resolve(dirname) },
     components: { beforeDashboard: ['/components/admin/CommunityModerationLink'] },
   },
-  collections: [Articles, TravelUpdates, Destinations, Images, Topics, Redirects, Authors, Staff, ContactMessages, NewsletterSubscribers, ...communityCollections],
+  collections: [Articles, TravelUpdates, Destinations, Images, Topics, Redirects, Authors, Staff, ContactMessages, NewsletterSubscribers, PriceChecks, TravelAdvisories, ...communityCollections],
   globals: [CommunitySettings],
   // Uploads over the limit are refused, not silently cut short.
   upload: { limits: { fileSize: LIMITS.uploadMaxBytes }, abortOnLimit: true },

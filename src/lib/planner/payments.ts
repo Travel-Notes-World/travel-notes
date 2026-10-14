@@ -1,6 +1,6 @@
 import { randomBytes } from 'node:crypto'
 
-import { cms } from '../community/db'
+import { cms, relIds } from '../community/db'
 import { fail } from '../community/errors'
 import { formatAud, gstIncluded, validAbn } from '../community/listings'
 import { requireActive } from '../community/members'
@@ -8,6 +8,7 @@ import { ownPlanDoc } from '../community/plans'
 import { gateway, stripeConfigured } from '../community/payments/stripe'
 import { getSettings, type Settings } from '../community/settings'
 import type { MemberActor } from '../community/types'
+import { DO_NOT_TRAVEL_MESSAGE, highestLevel, tripAdvice } from './advice'
 
 /**
  * Paying for one AI trip plan. One payment covers one plan: the AI days for that plan and printing
@@ -38,6 +39,8 @@ export async function startAiPlanCheckout(actor: MemberActor, planId: unknown, u
   const price = aiPlanPrice(settings)
   if (!price.charge) fail('closed', 'Payments are not available at the moment. Please try again later.')
   const payload = await cms()
+  // No paid planning for a trip to a country the Australian Government says not to travel to.
+  if (highestLevel(await tripAdvice(payload, relIds(plan.destinations))) >= 4) fail('closed', DO_NOT_TRAVEL_MESSAGE)
   const memberDoc = await payload.findByID({ collection: 'members', id: member.id, depth: 0 })
   const description = `AI trip plan: ${plan.title}`.slice(0, 200)
   const payment = await payload.create({

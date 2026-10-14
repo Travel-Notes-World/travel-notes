@@ -15,6 +15,8 @@ import { MONTH_NAMES } from '../content/destinationFacts'
 import { loadDestinationPage } from '../content/destinations'
 import { evenSplit, tripMonths, type PlannerInput } from './input'
 import { loadPlanner, type PlannerResult } from './load'
+import { DO_NOT_TRAVEL_MESSAGE, highestLevel, tripAdvice } from './advice'
+import { readTripSetup } from './costs'
 
 /**
  * The AI Trip Planner: Claude fills in the days of a member's saved plan.
@@ -180,7 +182,8 @@ export async function aiStatus(actor: MemberActor, planId: unknown, options: { s
   const payload = await cms()
   const settings = options.settings ?? (await getSettings())
   const placeIds = relIds(plan.destinations)
-  const [freeUsed, spent, done] = await Promise.all([freePlansUsed(payload, member.id), spentTodayMicroUsd(payload, options.now), detailedDone(payload, plan.id)])
+  const [freeUsed, spent, done, advice] = await Promise.all([freePlansUsed(payload, member.id), spentTodayMicroUsd(payload, options.now), detailedDone(payload, plan.id), tripAdvice(payload, placeIds, options.now)])
+  const doNotTravel = highestLevel(advice) >= 4
   const overBudget = spent >= settings.planner.dailyBudgetUsd * 1_000_000
   const reason = !settings.planner.aiEnabled || !aiConfigured()
     ? 'AI plans are not switched on yet.'
@@ -198,9 +201,9 @@ export async function aiStatus(actor: MemberActor, planId: unknown, options: { s
     else if (revisionsLeft > 0) next = 'revision'
     else blocked = 'You have used all the revisions included with this plan.'
   } else if (plan.ai?.tier === 'brief') {
-    blocked = 'Upgrade this plan for the detailed version.'
+    blocked = doNotTravel ? DO_NOT_TRAVEL_MESSAGE : 'Upgrade this plan for the detailed version.'
   } else if (freeLeft <= 0) {
-    blocked = 'You have used your free plan. Upgrade this plan to have the AI write it.'
+    blocked = doNotTravel ? DO_NOT_TRAVEL_MESSAGE : 'You have used your free plan. Upgrade this plan to have the AI write it.'
   } else {
     next = 'brief'
   }
@@ -214,7 +217,7 @@ export async function aiStatus(actor: MemberActor, planId: unknown, options: { s
     revisionsLeft,
     revisionsIncluded: settings.planner.revisions,
     priceMinor: settings.planner.priceMinor,
-    canPay: Boolean(options.canPay),
+    canPay: Boolean(options.canPay) && !doNotTravel,
     generated: Boolean(plan.ai?.generatedAt),
     tooLong: (plan.days?.length ?? 0) > AI_MAX_DAYS,
     hasPlaces: placeIds.length > 0,
@@ -307,7 +310,7 @@ type Context = Record<string, unknown>
 type TripReportSummary = { path: string; title: string; days: { title: string; stops: string[] }[] }
 
 /** The fields of a plan the AI context uses; a visitor's draft from the planner page has the same shape. */
-export type PlanLike = Pick<Plan, 'purpose' | 'startDate' | 'party' | 'pace' | 'details' | 'visa'>
+export type PlanLike = Pick<Plan, 'purpose' | 'startDate' | 'party' | 'pace' | 'details' | 'visa'> & { trip?: Plan['trip'] }
 
 function buildContext(result: PlannerResult, days: StoredDay[], plan: PlanLike, trips: Map<string, TripReportSummary[]>): { context: Context; paths: Set<string> } {
   const paths = new Set<string>()
@@ -323,6 +326,7 @@ function buildContext(result: PlannerResult, days: StoredDay[], plan: PlanLike, 
       party: plan.party ?? null,
       pace: plan.pace ?? 'balanced',
       travellers: d.travellers ?? null,
+      ...(plan.trip ? (() => { const t = readTripSetup(plan.trip, { travellers: d.travellers ?? null, party: plan.party ?? null }); return { adults: t.adults, childrenAges: t.childAges } })() : {}),
       departingFrom: d.departFrom || null,
       interests: d.interests ?? [],
       accessibilityNeeds: d.accessibility || null,
