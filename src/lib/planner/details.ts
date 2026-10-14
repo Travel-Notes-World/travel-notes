@@ -6,6 +6,8 @@ import { limit } from '../community/ratelimit'
 import { cleanLine, cleanText } from '../community/text'
 import { isLocalDate } from '../community/time'
 import type { MemberActor } from '../community/types'
+import { parseAmount } from '../community/money'
+import { ARRIVALS, BOOKING_STATUS, CONTINGENCY_CHOICES, MAX_ADULTS, MAX_CHILDREN, parseChildAges, readTripSetup, STAYS, type Booking, type TripSetup } from './costs'
 
 /**
  * The trip details a member gives before the AI writes their plan. All of it is optional except
@@ -49,9 +51,44 @@ export async function updateTripDetails(actor: MemberActor, planId: unknown, inp
   const errors: FieldErrors = {}
   const purpose = toPurpose(input.purpose ?? plan.purpose)
 
-  const travellersRaw = str(input.travellers).trim()
-  const travellers = travellersRaw ? Number(travellersRaw) : null
-  if (travellers !== null && !(Number.isInteger(travellers) && travellers >= 1 && travellers <= 20)) errors.travellers = 'Enter a number of travellers from 1 to 20.'
+  // Who is going: adults and each child's age. The number of travellers follows from them.
+  const current = readTripSetup(plan.trip, { travellers: plan.details?.travellers ?? null, party: plan.party ?? null })
+  const adultsRaw = str(input.adults).trim()
+  const adults = adultsRaw ? Number(adultsRaw) : current.adults
+  if (!(Number.isInteger(adults) && adults >= 1 && adults <= MAX_ADULTS)) errors.adults = `Enter a number of adults from 1 to ${MAX_ADULTS}.`
+  const childAges = parseChildAges(str(input.childAges))
+  if (childAges === null) errors.childAges = 'Enter each child’s age as a number from 0 to 17, separated by commas. For example: 4, 9'
+  else if (childAges.length > MAX_CHILDREN) errors.childAges = `A plan can include up to ${MAX_CHILDREN} children.`
+  const roomsRaw = str(input.rooms).trim()
+  const rooms = roomsRaw ? Number(roomsRaw) : current.rooms
+  if (!(Number.isInteger(rooms) && rooms >= 1 && rooms <= 10)) errors.rooms = 'Enter a number of rooms from 1 to 10.'
+  const booking = (prefix: 'flights' | 'stay'): Booking => {
+    const status = BOOKING_STATUS.some((b) => b.value === input[`${prefix}Status`]) ? (input[`${prefix}Status`] as Booking['status']) : 'not_booked'
+    const raw = str(input[`${prefix}Amount`]).trim()
+    let amountCents: number | null = null
+    if (status === 'booked' && raw) {
+      amountCents = parseAmount(raw, 'AUD')
+      if (amountCents === null) errors[`${prefix}Amount`] = 'Enter the amount in Australian dollars, for example 1450 or 1450.50.'
+    }
+    return { status, amountCents, paid: status === 'booked' && input[`${prefix}Paid`] === 'yes' }
+  }
+  const pickOne = <T extends string>(v: unknown, values: readonly { value: T }[], fallback: T): T => (values.some((x) => x.value === v) ? (v as T) : fallback)
+  const contingency = Number(str(input.contingency))
+  const trip: TripSetup = {
+    adults: Number.isInteger(adults) ? adults : current.adults,
+    childAges: childAges ?? [],
+    rooms: Number.isInteger(rooms) ? rooms : current.rooms,
+    stay: pickOne(input.stay, STAYS, current.stay),
+    breakfastIncluded: input.breakfastIncluded === 'yes',
+    coffees: [0, 1, 2, 3].includes(Number(str(input.coffees))) && str(input.coffees) !== '' ? Number(str(input.coffees)) : current.coffees,
+    arrival: pickOne(input.arrival, ARRIVALS, current.arrival),
+    departure: pickOne(input.departure, ARRIVALS, current.departure),
+    flights: booking('flights'),
+    accommodation: booking('stay'),
+    mobileData: input.mobileData === 'yes',
+    contingency: CONTINGENCY_CHOICES.includes(contingency as never) && str(input.contingency) !== '' ? contingency : current.contingency,
+  }
+  const travellers = trip.adults + trip.childAges.length
   const budgetRaw = str(input.budgetAmount).replace(/[,\s]/g, '').replace(/^[^\d.]+/, '')
   const budgetAmount = budgetRaw ? Number(budgetRaw) : null
   if (budgetAmount !== null && !(Number.isFinite(budgetAmount) && budgetAmount >= 0 && budgetAmount <= 10_000_000)) errors.budgetAmount = 'Enter the budget as a number, for example 3000.'
@@ -81,6 +118,7 @@ export async function updateTripDetails(actor: MemberActor, planId: unknown, inp
     id: plan.id,
     data: {
       purpose,
+      trip,
       details: {
         departFrom: cleanLine(input.departFrom, 120),
         travellers,

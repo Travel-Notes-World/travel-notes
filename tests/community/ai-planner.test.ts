@@ -110,7 +110,7 @@ describe('the free brief plan', () => {
   it('writes a short outline for one destination, without personal details in the request', async () => {
     const member = await newMember('Free Planner')
     const id = await newPlan(member)
-    await DET.updateTripDetails(member, id, { purpose: 'holiday', travellers: '2', budgetAmount: '3000', budgetCurrency: 'AUD', interests: ['food', 'bogus'], accessibility: 'Step-free access please', departFrom: 'Sydney' })
+    await DET.updateTripDetails(member, id, { purpose: 'holiday', adults: '2', budgetAmount: '3000', budgetCurrency: 'AUD', interests: ['food', 'bogus'], accessibility: 'Step-free access please', departFrom: 'Sydney' })
     requests.length = 0
     const result = await AI.generateAiPlan(member, id)
     assert.equal(result.kind, 'brief')
@@ -279,19 +279,20 @@ describe('sharing, documents and personal details', () => {
   it('builds the holiday PDF with labels, budget arithmetic and distances', async () => {
     const member = await newMember('Printer')
     const id = await newPlan(member)
-    await DET.updateTripDetails(member, id, { purpose: 'holiday', travellers: '2', budgetAmount: '3000', budgetCurrency: 'AUD' })
+    await DET.updateTripDetails(member, id, { purpose: 'holiday', adults: '2', budgetAmount: '3000', budgetCurrency: 'AUD' })
     await upgrade(member, id)
     await AI.generateAiPlan(member, id)
     const view = await P.getPlan(member, id)
-    const budget = EX.budgetGuide(view.details, view.days.length)
-    assert.equal(budget.perDay, 1000)
-    assert.equal(budget.perPersonPerDay, 500)
-    const doc = DOC.documentModel(view, { budget, legs: [{ from: 'Kyoto', to: 'Osaka', km: 43 }], site: 'https://travelnotes.test' })
+    const doc = DOC.documentModel(view, { budget: null, legs: [{ from: 'Kyoto', to: 'Osaka', km: 43 }], site: 'https://travelnotes.test' })
     assert.equal(doc.layout, 'holiday')
     assert.ok(doc.days[0].stops.some((s: Any) => s.label.startsWith('AI suggestion')))
     assert.ok(doc.days[0].stops.some((s: Any) => s.link === 'https://travelnotes.test/destinations/japan/kyoto'))
-    assert.match(doc.budget[1], /not a quote/)
-    assert.equal((await PDF.renderPlanPdf(doc)).subarray(0, 4).toString(), '%PDF')
+    assert.match(doc.legs[0], /43 km/)
+    // The real document carries the itemised budget (nothing priced here, so all of it is "unavailable").
+    const full = await (await import('../../src/lib/planner/document-data')).planDocument(member, id)
+    assert.match(full.budget[0], /Estimated total for 2 people: A\$0/)
+    assert.ok(full.budget.some((l: string) => /Not included because there is no checked price: Return flights/.test(l)))
+    assert.equal((await PDF.renderPlanPdf(full)).subarray(0, 4).toString(), '%PDF')
   })
 
   it('removes personal details on request', async () => {

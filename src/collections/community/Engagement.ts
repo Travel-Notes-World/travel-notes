@@ -121,6 +121,13 @@ export const Plans: CollectionConfig = {
       ],
     },
     {
+      // Who is going, rooms, the kind of stay and what is already booked, for the trip budget.
+      // Read with readTripSetup (src/lib/planner/costs.ts); never trusted as stored.
+      name: 'trip',
+      type: 'json',
+      admin: { description: 'Trip set-up for the budget: adults, children’s ages, rooms, stay, and booked amounts. Private to the member.' },
+    },
+    {
       name: 'visa',
       type: 'group',
       admin: { description: 'Only for a visa-purpose itinerary. Entered by the member; never checked by Travel Notes. No passport or booking numbers are collected.' },

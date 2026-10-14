@@ -8,6 +8,7 @@ import { describedBy, Field, inputClass } from "@/components/community/ui";
 import { initialState } from "@/lib/community/next/state";
 import type { ActionState } from "@/lib/community/next/forms";
 import { generateAiPlanAction, payForAiPlanAction, saveTripDetailsAction, setSharingAction } from "@/lib/planner/ai-actions";
+import { ARRIVALS, BOOKING_STATUS, CONTINGENCY_CHOICES, STAYS, type Booking, type TripSetup } from "@/lib/planner/costs";
 
 export type AiPanelStatus = {
   available: boolean;
@@ -36,7 +37,7 @@ export function PlanTiers({ priceText, revisions, compact = false }: { priceText
         <ul className="t-body-sm mt-2 mb-0 pl-5 grid gap-1">
           <li>Your first plan, up to 5 places</li>
           <li>A short outline: 2 suggestions a day</li>
-          <li>Budget guidance from your own budget</li>
+          <li>An itemised trip budget from checked prices</li>
           <li>The same checked facts, sources and travel updates</li>
           <li>View it here in your account</li>
         </ul>
@@ -144,6 +145,7 @@ const val = (state: ActionState, key: string, fallback: string) => (typeof state
 export type DetailsInitial = {
   purpose: AiPanelStatus["purpose"];
   departFrom: string; travellers: number | null; budgetAmount: number | null; budgetCurrency: string; interests: string[]; accessibility: string;
+  trip: TripSetup;
   travellerName: string; visitPurpose: string; arrivalDate: string | null; departureDate: string | null; cities: string; accommodation: string; transport: string; funding: string | null; fundingNote: string;
 };
 
@@ -171,12 +173,20 @@ export function TripDetailsForm({ id, initial, interests, funding, currencies }:
         <Field id="departFrom" label="Travelling from" hint="A city, for example Sydney." optional>
           <input {...describedBy("departFrom", true)} name="departFrom" maxLength={120} defaultValue={val(state, "departFrom", initial.departFrom)} className={inputClass} />
         </Field>
-        <Field id="travellers" label="Number of travellers" error={f.travellers} optional>
-          <input {...describedBy("travellers", null, f.travellers)} name="travellers" type="number" inputMode="numeric" min={1} max={20} defaultValue={val(state, "travellers", initial.travellers ? String(initial.travellers) : "")} className={inputClass} />
+        <Field id="adults" label="Adults" error={f.adults} required>
+          <input {...describedBy("adults", null, f.adults)} name="adults" type="number" inputMode="numeric" min={1} max={12} defaultValue={val(state, "adults", String(initial.trip.adults))} className={inputClass} />
+        </Field>
+      </div>
+      <div className="grid gap-x-6 sm:grid-cols-2">
+        <Field id="childAges" label="Children’s ages" hint="Each child’s age on the trip, for example: 4, 9. Leave empty for no children. Used for child and family prices." error={f.childAges} optional>
+          <input {...describedBy("childAges", true, f.childAges)} name="childAges" inputMode="numeric" maxLength={40} defaultValue={val(state, "childAges", initial.trip.childAges.join(", "))} className={inputClass} />
+        </Field>
+        <Field id="rooms" label="Rooms needed" error={f.rooms} required>
+          <input {...describedBy("rooms", null, f.rooms)} name="rooms" type="number" inputMode="numeric" min={1} max={10} defaultValue={val(state, "rooms", String(initial.trip.rooms))} className={inputClass} />
         </Field>
       </div>
       <div className="grid gap-x-6 sm:grid-cols-[2fr_1fr]">
-        <Field id="budgetAmount" label="Total budget for the trip" hint="Used to shape the suggestions and to work out a daily amount. Optional." error={f.budgetAmount} optional>
+        <Field id="budgetAmount" label="Total budget for the trip" hint="Used to shape the suggestions and to show what is left after the estimated costs." error={f.budgetAmount} optional>
           <input {...describedBy("budgetAmount", true, f.budgetAmount)} name="budgetAmount" inputMode="decimal" defaultValue={val(state, "budgetAmount", initial.budgetAmount !== null ? String(initial.budgetAmount) : "")} className={inputClass} />
         </Field>
         <Field id="budgetCurrency" label="Currency" error={f.budgetCurrency} optional>
@@ -198,6 +208,8 @@ export function TripDetailsForm({ id, initial, interests, funding, currencies }:
       <Field id="accessibility" label="Accessibility needs" hint="For example: no long walks, step-free access, a wheelchair user. Only shared with the AI to shape the plan." optional>
         <textarea {...describedBy("accessibility", true)} name="accessibility" rows={2} maxLength={600} defaultValue={val(state, "accessibility", initial.accessibility)} className={inputClass} />
       </Field>
+
+      <BudgetSetup state={state} trip={initial.trip} errors={f} />
 
       {purpose === "visa" && (
         <fieldset className="mt-6 border border-paper-200 rounded-md p-4 min-w-0">
@@ -256,5 +268,81 @@ export function ShareForm({ id, enabled, url }: { id: string; enabled: boolean; 
       )}
       <SubmitButton variant="secondary" pendingText="Saving…">{enabled ? "Turn off sharing" : "Create a share link"}</SubmitButton>
     </form>
+  );
+}
+
+const amountText = (b: Booking) => (b.amountCents !== null ? (b.amountCents / 100).toFixed(b.amountCents % 100 ? 2 : 0) : "");
+
+/** One booking question: booked or not, and if booked, how much and whether it is paid. */
+function BookingFields({ prefix, label, booking, state, error }: { prefix: "flights" | "stay"; label: string; booking: Booking; state: ActionState; error?: string }) {
+  const [status, setStatus] = useState(val(state, `${prefix}Status`, booking.status));
+  return (
+    <div className="grid gap-x-6 sm:grid-cols-3 items-start">
+      <Field id={`${prefix}Status`} label={label}>
+        <select {...describedBy(`${prefix}Status`)} name={`${prefix}Status`} value={status} onChange={(e) => setStatus(e.target.value)} className={inputClass}>
+          {BOOKING_STATUS.map((b) => <option key={b.value} value={b.value}>{b.label}</option>)}
+        </select>
+      </Field>
+      {status === "booked" && (
+        <>
+          <Field id={`${prefix}Amount`} label="Total amount (A$)" hint="For everyone, all nights or all flights." error={error} optional>
+            <input {...describedBy(`${prefix}Amount`, true, error)} name={`${prefix}Amount`} inputMode="decimal" defaultValue={val(state, `${prefix}Amount`, amountText(booking))} className={inputClass} />
+          </Field>
+          <Field id={`${prefix}Paid`} label="Paid already?">
+            <select {...describedBy(`${prefix}Paid`)} name={`${prefix}Paid`} defaultValue={val(state, `${prefix}Paid`, booking.paid ? "yes" : "no")} className={inputClass}>
+              <option value="no">Not yet</option>
+              <option value="yes">Yes, paid</option>
+            </select>
+          </Field>
+        </>
+      )}
+    </div>
+  );
+}
+
+/** The questions the budget needs: kind of stay, meals, arrival and departure, and what is booked. */
+function BudgetSetup({ state, trip, errors }: { state: ActionState; trip: TripSetup; errors: Record<string, string | undefined> }) {
+  return (
+    <fieldset className="mt-6 border border-paper-200 rounded-md p-4 min-w-0">
+      <legend className="t-ui px-1">For your trip budget</legend>
+      <p className="t-body-sm text-ink-600 mt-0">Amounts are in Australian dollars. Do not enter booking numbers or card details.</p>
+      <div className="grid gap-x-6 sm:grid-cols-2">
+        <Field id="stay" label="Kind of accommodation">
+          <select {...describedBy("stay")} name="stay" defaultValue={val(state, "stay", trip.stay)} className={inputClass}>
+            {STAYS.map((x) => <option key={x.value} value={x.value}>{x.label}</option>)}
+          </select>
+        </Field>
+        <Field id="coffees" label="Coffees or teas a day, each adult">
+          <select {...describedBy("coffees")} name="coffees" defaultValue={val(state, "coffees", String(trip.coffees))} className={inputClass}>
+            {[0, 1, 2, 3].map((n) => <option key={n} value={n}>{n}</option>)}
+          </select>
+        </Field>
+        <Field id="arrival" label="You arrive on day 1 in the">
+          <select {...describedBy("arrival")} name="arrival" defaultValue={val(state, "arrival", trip.arrival)} className={inputClass}>
+            {ARRIVALS.map((x) => <option key={x.value} value={x.value}>{x.label}</option>)}
+          </select>
+        </Field>
+        <Field id="departure" label="You leave on the last day in the">
+          <select {...describedBy("departure")} name="departure" defaultValue={val(state, "departure", trip.departure)} className={inputClass}>
+            {ARRIVALS.map((x) => <option key={x.value} value={x.value}>{x.label}</option>)}
+          </select>
+        </Field>
+      </div>
+      <label className="mt-4 flex items-center gap-2 min-h-11 t-body-sm">
+        <input type="checkbox" name="breakfastIncluded" value="yes" defaultChecked={trip.breakfastIncluded} className="w-4 h-4" /> Breakfast is included with the room
+      </label>
+      <BookingFields prefix="flights" label="Flights" booking={trip.flights} state={state} error={errors.flightsAmount} />
+      <BookingFields prefix="stay" label="Accommodation" booking={trip.accommodation} state={state} error={errors.stayAmount} />
+      <div className="grid gap-x-6 sm:grid-cols-2 items-end">
+        <label className="mt-4 flex items-center gap-2 min-h-11 t-body-sm">
+          <input type="checkbox" name="mobileData" value="yes" defaultChecked={trip.mobileData} className="w-4 h-4" /> Add mobile data (a SIM or eSIM for each adult)
+        </label>
+        <Field id="contingency" label="Safety margin" hint="Extra money for surprises, shown separately.">
+          <select {...describedBy("contingency", true)} name="contingency" defaultValue={val(state, "contingency", String(trip.contingency))} className={inputClass}>
+            {CONTINGENCY_CHOICES.map((n) => <option key={n} value={n}>{n === 0 ? "None" : `${n}%`}</option>)}
+          </select>
+        </Field>
+      </div>
+    </fieldset>
   );
 }

@@ -10,6 +10,7 @@ import { limit } from './ratelimit'
 import { cleanLine, cleanText } from './text'
 import { isLocalDate } from './time'
 import type { MemberActor } from './types'
+import { readTripSetup, type TripSetup } from '../planner/costs'
 
 /**
  * Private saved trip plans.
@@ -35,6 +36,8 @@ export type PlanView = {
   ai: { generatedAt: string | null; model: string | null; summary: string; unlocked: boolean; tier: 'brief' | 'detailed' | null; revisionsUsed: number; options: PlanOption[] }
   purpose: PlanPurpose
   details: { departFrom: string; travellers: number | null; budgetAmount: number | null; budgetCurrency: string; interests: string[]; accessibility: string }
+  /** The traveller's set-up for the budget (who is going, rooms, stay, bookings). */
+  trip: TripSetup
   visa: { travellerName: string; visitPurpose: string; arrivalDate: string | null; departureDate: string | null; cities: string; accommodation: string; transport: string; funding: string | null; fundingNote: string }
   share: { enabled: boolean; token: string | null }
 }
@@ -121,6 +124,7 @@ async function toView(plan: Plan): Promise<PlanView> {
       departFrom: plan.details?.departFrom ?? '', travellers: plan.details?.travellers ?? null, budgetAmount: plan.details?.budgetAmount ?? null,
       budgetCurrency: plan.details?.budgetCurrency ?? '', interests: plan.details?.interests ?? [], accessibility: plan.details?.accessibility ?? '',
     },
+    trip: readTripSetup(plan.trip, { travellers: plan.details?.travellers ?? null, party: plan.party ?? null }),
     visa: {
       travellerName: plan.visa?.travellerName ?? '', visitPurpose: plan.visa?.visitPurpose ?? '', arrivalDate: plan.visa?.arrivalDate ?? null, departureDate: plan.visa?.departureDate ?? null, cities: plan.visa?.cities ?? '',
       accommodation: plan.visa?.accommodation ?? '', transport: plan.visa?.transport ?? '', funding: plan.visa?.funding ?? null, fundingNote: plan.visa?.fundingNote ?? '',

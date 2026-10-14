@@ -129,6 +129,7 @@ export function PlanDocument({ doc }: { doc: DocModel }) {
           </>
         ) : (
           <>
+            {doc.advice.length > 0 && <><Text style={s.h2}>Australian Government travel advice (Smartraveller)</Text><Bullets items={doc.advice} /></>}
             {doc.summary.length > 0 && <><Text style={s.h2}>Overview</Text>{doc.summary.map((t, i) => <Text key={i}>{t}</Text>)}</>}
             {doc.checks.length > 0 && <><Text style={s.h2}>Check before you go</Text><Bullets items={doc.checks} /></>}
             {doc.legs.length > 0 && <><Text style={s.h2}>Distances between places</Text><Bullets items={doc.legs} /></>}
@@ -147,6 +148,7 @@ export function PlanDocument({ doc }: { doc: DocModel }) {
               </View>
             )}
             {doc.budget.length > 0 && <><Text style={s.h2}>Budget</Text>{doc.budget.map((t, i) => <Text key={i} style={i ? s.small : undefined}>{t}</Text>)}</>}
+            {doc.sources.length > 0 && <><Text style={s.h2}>Where the prices come from</Text><Bullets items={doc.sources} /></>}
           </>
         )}
 
