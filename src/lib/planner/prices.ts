@@ -66,8 +66,8 @@ async function chains(payload: Payload, placeIds: string[]): Promise<{ chain: Ma
  * finder that picks the closest one: the place's own price first, then its region, then its country.
  * Among equals, the most recently checked wins.
  */
-export async function loadPriceFinder(payload: Payload, placeIds: string[]): Promise<{ find: PriceFinder; count: number }> {
-  if (!placeIds.length) return { find: () => null, count: 0 }
+export async function loadPriceFinder(payload: Payload, placeIds: string[]): Promise<{ find: PriceFinder; count: number; checks: PriceCheck[]; byId: (id: string) => PriceCheck | null }> {
+  if (!placeIds.length) return { find: () => null, count: 0, checks: [], byId: () => null }
   const { chain, names } = await chains(payload, placeIds)
   const all = [...new Set([...chain.values()].flat())]
   const found = await payload.find({ collection: 'price-checks', where: { and: [{ destination: { in: all } }, { status: { equals: 'active' } }] }, limit: 2000, pagination: false, depth: 0, sort: '-checkedAt' })
@@ -81,5 +81,5 @@ export async function loadPriceFinder(payload: Payload, placeIds: string[]): Pro
     }
     return null
   }
-  return { find, count: checks.length }
+  return { find, count: checks.length, checks, byId: (id) => checks.find((c) => c.id === id) ?? null }
 }
