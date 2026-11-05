@@ -146,9 +146,16 @@ describe('generating a trip', () => {
     assert.equal(trip.plan.days.length, 13)
     assert.ok(trip.plan.days.every((d: Any) => d.items.length === 2), 'every day has its items')
     assert.equal(trip.plan.days[12].items[0].id, 'd13-1')
-    assert.equal(priceCalls, 3, 'flights and stays, food and transport, then activities')
+    assert.equal(priceCalls, 4, 'flights and stays, food and transport in groups of six, then activities')
     const budget = CALC.calculateBudget(trip.form, trip.plan, trip.selection)
     assert.equal(budget.incomplete, false)
+  })
+  it('keeps every finished price from an answer that was cut off part-way', () => {
+    const cut = 'Searching...\n```json\n{"prices": [{"key": "a", "low": 1, "sourceName": "x {y}"}, {"key": "b", "low": 2}, {"key": "c", "lo'
+    const got = S.readPriceAnswer(cut, () => null) as Any
+    assert.deepEqual(got.prices.map((p: Any) => p.key), ['a', 'b'])
+    assert.equal(S.readPriceAnswer('no json here', () => null), null)
+    assert.deepEqual(S.priceGroups(Array.from({ length: 14 }, (_, i) => ({ key: `k${i}`, category: 'food' }))).map((g: Any) => g.length), [6, 6, 2])
   })
   it('when price research fails, costs show as missing and the total is incomplete, never zero', async () => {
     priceMode = 'throw'

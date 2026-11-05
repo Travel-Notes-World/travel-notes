@@ -32,10 +32,12 @@ const ROUTE_TIMEOUT_MS = 100_000
 const DAYS_PER_CHUNK = 2
 const DAYS_MAX_TOKENS = 12_000
 const DAYS_TIMEOUT_MS = 120_000
-const PRICE_MAX_TOKENS = 8000
-const PRICE_MAX_SEARCHES = 6
+const PRICE_MAX_TOKENS = 10_000
+const PRICE_MAX_SEARCHES = 5
+/** Items per price lookup: small groups keep each answer short enough to finish. */
+const PRICES_PER_LOOKUP = 6
 const PRICE_TIMEOUT_MS = 120_000
-const PRICE_CALLS = 3
+const PRICE_CALLS = 8
 /** Total time allowed for one run, leaving room to save before the 300-second function limit. */
 const RUN_BUDGET_MS = 280_000
 /** A run still "generating" after this long is treated as stopped, so it can be retried. */
@@ -171,11 +173,38 @@ export function fitNights(route: { bases?: { nights?: unknown }[] }, days: numbe
   if (diff !== 0 && Math.abs(diff) <= 2 && fixed >= 0) last.nights = fixed
 }
 
-/** Split the price list into groups looked up at the same time: flights and stays, then food and transport. */
-function priceGroups(needs: CostNeed[]): CostNeed[][] {
+/**
+ * Split the price list into small groups looked up at the same time: flights and stays first, then
+ * the rest, at most PRICES_PER_LOOKUP items each.
+ */
+export function priceGroups(needs: CostNeed[], size = PRICES_PER_LOOKUP): CostNeed[][] {
   const first = needs.filter((n) => n.category === 'flights' || n.category === 'accommodation')
   const rest = needs.filter((n) => !first.includes(n))
-  return [first, rest].filter((g) => g.length)
+  const out: CostNeed[][] = []
+  for (const list of [first, rest]) for (let i = 0; i < list.length; i += size) out.push(list.slice(i, i + size))
+  return out
+}
+
+/**
+ * Read the price answer. When an answer was cut off part-way, keep every price object that was
+ * finished, so one long answer does not lose all its prices.
+ */
+export function readPriceAnswer(text: string, parse: (t: string) => unknown): unknown {
+  const whole = parse(text)
+  if (whole) return whole
+  const prices: unknown[] = []
+  const start = text.indexOf('"prices"')
+  if (start < 0) return null
+  let depth = 0, from = -1, inString = false
+  for (let i = text.indexOf('[', start) + 1; i > 0 && i < text.length; i++) {
+    const c = text[i]
+    if (inString) { if (c === '\\') i++; else if (c === '"') inString = false; continue }
+    if (c === '"') inString = true
+    else if (c === '{') { if (depth++ === 0) from = i }
+    else if (c === '}' && --depth === 0 && from >= 0) { try { prices.push(JSON.parse(text.slice(from, i + 1))) } catch { /* skip a broken one */ } from = -1 }
+    else if (c === ']' && depth === 0) break
+  }
+  return prices.length ? { prices, rates: [] } : null
 }
 
 /**
@@ -235,7 +264,7 @@ export async function generateTrip(tripId: string, options: { now?: Date } = {})
     try {
       const response = await gateway.research({ model: PRICE_MODEL, system: PRICES_SYSTEM, prompt: priceRequest(trip.form, group, today), maxTokens: PRICE_MAX_TOKENS, maxSearches: PRICE_MAX_SEARCHES, timeoutMs: Math.min(PRICE_TIMEOUT_MS, left()) })
       const { parseResearch } = await import('../research')
-      const parsed = readPrices(parseResearch(response.text), response.sources, group, now.toISOString())
+      const parsed = readPrices(readPriceAnswer(response.text, parseResearch), response.sources, group, now.toISOString())
       const found = Object.values(parsed.prices).filter((f) => f.type !== 'unavailable').length
       console.log('[trip planner] prices', JSON.stringify({ asked: group.length, found, sources: response.sources.length, searches: response.searches, stopReason: response.stopReason, parsed: Boolean(parseResearch(response.text)), outputTokens: response.outputTokens }))
       await payload.update({ collection: 'ai-runs', id: run.id, data: { status: found ? 'ok' : 'failed', error: found ? null : `no usable prices (stop reason ${response.stopReason}, ${response.sources.length} sources)`, inputTokens: response.inputTokens, outputTokens: response.outputTokens, searches: response.searches, costMicroUsd: costMicroUsd(PRICE_MODEL, response.inputTokens, response.outputTokens) + response.searches * SEARCH_MICRO_USD } })
@@ -298,7 +327,7 @@ export async function generateTrip(tripId: string, options: { now?: Date } = {})
   // 4. Prices for the activities the days added. If any lookup fails, those costs are marked
   //    missing and the total is marked incomplete; nothing becomes zero.
   const activityNeeds = itinerary.costNeeds.filter((n) => !n.key.startsWith('flight:') && !n.key.includes('@'))
-  const results = [...structural, await lookUp(activityNeeds)]
+  const results = [...structural, ...(await Promise.all(priceGroups(activityNeeds).map(lookUp)))]
   const prices: TripPlan['prices'] = Object.assign({}, ...results.map((r) => r.prices))
   const rates: TripPlan['rates'] = Object.assign({}, ...results.map((r) => r.rates))
   const priceError = results.find((r) => r.error)?.error ?? null
