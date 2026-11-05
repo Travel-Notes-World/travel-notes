@@ -26,6 +26,7 @@ import { payloadEmailAdapter } from './lib/community/email/payload-adapter'
 import { PriceChecks } from './collections/planner/PriceChecks'
 import { TravelAdvisories } from './collections/planner/TravelAdvisories'
 import { ExchangeRates } from './collections/planner/ExchangeRates'
+import { Trips } from './collections/planner/Trips'
 
 const filename = fileURLToPath(import.meta.url)
 const dirname = path.dirname(filename)
@@ -43,7 +44,7 @@ export default buildConfig({
     importMap: { baseDir: path.resolve(dirname) },
     components: { beforeDashboard: ['/components/admin/CommunityModerationLink'] },
   },
-  collections: [Articles, TravelUpdates, Destinations, Images, Topics, Redirects, Authors, Staff, ContactMessages, NewsletterSubscribers, PriceChecks, TravelAdvisories, ExchangeRates, ...communityCollections],
+  collections: [Articles, TravelUpdates, Destinations, Images, Topics, Redirects, Authors, Staff, ContactMessages, NewsletterSubscribers, PriceChecks, TravelAdvisories, ExchangeRates, Trips, ...communityCollections],
   globals: [CommunitySettings],
   // Uploads over the limit are refused, not silently cut short.
   upload: { limits: { fileSize: LIMITS.uploadMaxBytes }, abortOnLimit: true },

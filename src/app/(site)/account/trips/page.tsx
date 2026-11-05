@@ -9,6 +9,7 @@ import { LIMITS } from "@/lib/community/constants";
 import { requireMemberPage } from "@/lib/community/next/session";
 import { unreadCount } from "@/lib/community/notifications";
 import { listPlans } from "@/lib/community/plans";
+import { memberTrips } from "@/lib/planner/trip/store";
 
 export const dynamic = "force-dynamic";
 export const metadata: Metadata = { title: "Trip plans", robots: { index: false, follow: false } };
@@ -18,13 +19,27 @@ const summaryClass = "t-ui text-marine-600 cursor-pointer min-h-11 inline-flex i
 export default async function TripsPage({ searchParams }: { searchParams: Promise<Record<string, string | undefined>> }) {
   const params = await searchParams;
   const member = await requireMemberPage("/account/trips");
-  const [plans, unread] = await Promise.all([listPlans(member), unreadCount(member.id)]);
+  const [plans, unread, trips] = await Promise.all([listPlans(member), unreadCount(member.id), memberTrips(member.id)]);
   const full = plans.length >= LIMITS.maxPlans;
   return (
     <PageShell>
       <PageHeader eyebrow="Your account" title="Trip plans" intro="Plan a trip day by day. Plans are private: only you can see them, and there is no sharing in this version." />
       <AccountNav current="trips" unread={unread} />
       {params.deleted && <div className="mb-6"><Notice tone="success" title="Deleted">The plan is deleted.</Notice></div>}
+
+      {trips.length > 0 && (
+        <section aria-labelledby="planned-heading" className="mb-10">
+          <h2 id="planned-heading" className="t-heading-2 m-0">Trips from the Trip Planner</h2>
+          <ul className="list-none m-0 p-0 mt-4 grid gap-3 max-w-[860px]">
+            {trips.map((t) => (
+              <li key={t.token} className="border-t border-paper-200 pt-3">
+                <Link href={`/trip-planner/t/${t.token}`} className="t-card-title text-ink-900 no-underline hover:underline underline-offset-4">{t.title}</Link>
+                <p className="t-body-sm text-ink-600 m-0 mt-1">{[t.arrive ? `Arrives ${formatDay(t.arrive)}` : null, t.unlocked ? "Unlocked: every day and the PDF" : "Free preview", `Made ${formatDay(t.createdAt)}`].filter(Boolean).join(" · ")}</p>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
 
       <section aria-labelledby="list-heading">
         <h2 id="list-heading" className="t-heading-2 m-0">Your plans <span className="text-ink-600 font-normal">({plans.length} of {LIMITS.maxPlans})</span></h2>

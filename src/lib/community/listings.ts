@@ -144,13 +144,26 @@ export async function startListingCheckout(actor: MemberActor, contributionId: u
  * Record a finished checkout and send the listing for review. Safe to call more than once for
  * the same checkout: the browser's return and Stripe's webhook both call it.
  */
-export async function confirmListingPayment(sessionId: string): Promise<{ status: 'paid' | 'unpaid' | 'unknown'; contributionId?: string; planId?: string }> {
+export async function confirmListingPayment(sessionId: string): Promise<{ status: 'paid' | 'unpaid' | 'unknown'; contributionId?: string; planId?: string; tripId?: string }> {
   if (!/^cs_[A-Za-z0-9_]+$/.test(sessionId)) return { status: 'unknown' }
   const session = await gateway().getCheckout(sessionId)
   const payload = await cms()
   const found = await payload.find({ collection: 'listing-payments', where: { stripeSessionId: { equals: session.id } }, limit: 1, depth: 0 })
   const payment = found.docs[0]
   if (!payment || session.metadata.paymentId !== payment.id) return { status: 'unknown' }
+  if (payment.purpose === 'ai_plan' && relId(payment.trip)) {
+    // Single-form Trip Planner fee: unlock the trip only once Stripe says the session is paid.
+    const tripId = relId(payment.trip)!
+    if (session.paymentStatus !== 'paid') return { status: 'unpaid', tripId }
+    if (payment.status === 'created' || payment.status === 'expired') {
+      await payload.update({ collection: 'listing-payments', id: payment.id, data: { status: 'paid', paidAt: new Date().toISOString(), stripePaymentIntentId: session.paymentIntentId ?? undefined, buyerEmail: session.customerEmail ?? payment.buyerEmail } })
+    }
+    if (payment.status !== 'refunded') {
+      const { unlockTripForPayment } = await import('../planner/trip/checkout')
+      await unlockTripForPayment(tripId, payment.id)
+    }
+    return { status: 'paid', tripId }
+  }
   if (payment.purpose === 'ai_plan') {
     const planId = relId(payment.plan)
     if (session.paymentStatus !== 'paid') return { status: 'unpaid', planId: planId ?? undefined }

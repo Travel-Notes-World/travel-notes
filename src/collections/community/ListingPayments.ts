@@ -33,6 +33,8 @@ export const ListingPayments: CollectionConfig = {
     },
     // AI trip plans: the plan this payment unlocks. Kept empty if the plan is later deleted.
     { name: 'plan', type: 'relationship', relationTo: 'plans', index: true },
+    // Single-form Trip Planner: the trip this payment unlocks (the remaining days and the PDF).
+    { name: 'trip', type: 'relationship', relationTo: 'trips', index: true },
     // Not required: a payment record is kept for tax purposes even if the listing or the account is later deleted.
     { name: 'contribution', type: 'relationship', relationTo: 'contributions', index: true },
     { name: 'member', type: 'relationship', relationTo: 'members', index: true },
