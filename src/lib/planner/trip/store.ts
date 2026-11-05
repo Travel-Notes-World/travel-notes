@@ -27,8 +27,8 @@ export const PRICE_MODEL: AiModel = 'claude-haiku-5-5'
  * written in small groups at the same time, with prices looked up alongside. Each request has its
  * own time limit, and the whole run stays inside the page's 300-second limit.
  */
-const ROUTE_MAX_TOKENS = 4000
-const ROUTE_TIMEOUT_MS = 90_000
+const ROUTE_MAX_TOKENS = 8000
+const ROUTE_TIMEOUT_MS = 100_000
 const DAYS_PER_CHUNK = 2
 const DAYS_MAX_TOKENS = 12_000
 const DAYS_TIMEOUT_MS = 120_000
@@ -252,7 +252,11 @@ export async function generateTrip(tripId: string, options: { now?: Date } = {})
   let structural: Awaited<ReturnType<typeof lookUp>>[] = []
   try {
     // 1. The route: bases, nights and what each day is for. Short, so it is quick.
-    const route = await ask('route', `${ROUTE_STEP}\n\n${brief}`, ROUTE_SCHEMA, ROUTE_MAX_TOKENS, ROUTE_TIMEOUT_MS)
+    const routePrompt = `${ROUTE_STEP}\n\n${brief}`
+    const route = await ask('route', routePrompt, ROUTE_SCHEMA, ROUTE_MAX_TOKENS, ROUTE_TIMEOUT_MS).catch((error) => {
+      if (left() < 200_000) throw error
+      return ask('route (retry)', routePrompt, ROUTE_SCHEMA, ROUTE_MAX_TOKENS, ROUTE_TIMEOUT_MS)
+    })
     fitNights(route as { bases?: { nights?: unknown }[] }, trip.form.days)
     const routeCheck = readItinerary(JSON.stringify(route), { arrive: trip.form.arrive, days: trip.form.days })
     const routeText = JSON.stringify({ gateway: route.gateway, bases: route.bases, days: route.days })

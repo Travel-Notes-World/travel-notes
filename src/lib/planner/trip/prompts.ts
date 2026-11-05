@@ -165,7 +165,7 @@ export const PRICES_FORMAT = `JSON format:
 const P = ITINERARY_SCHEMA.properties
 const dayProps = P.days.items.properties
 
-export const ROUTE_STEP = `STEP 1 OF 2: THE ROUTE. Reply with the summary, why, gateway, bases, assumptions and checks, and for every day only its day number, base, overnight, kind and title. Do not write any items, alternatives or costNeeds in this step.`
+export const ROUTE_STEP = `STEP 1 OF 2: THE ROUTE. Reply with the summary, why, gateway, bases, assumptions and checks, and for every day only its day number, base, overnight, kind and title. Do not write any items, alternatives or costNeeds in this step. Keep it brief: summary and why in two or three sentences each, each base's reason in one sentence, each day's title in under ten words, and at most six assumptions and six checks of one sentence each.`
 
 export const ROUTE_SCHEMA = {
   type: 'object',
