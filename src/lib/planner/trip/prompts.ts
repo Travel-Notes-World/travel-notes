@@ -185,21 +185,25 @@ export const ROUTE_SCHEMA = {
   },
 } as const
 
-export const daysStep = (from: number, to: number, route: string) => `STEP 2 OF 2: THE DAYS. The route is already decided (ROUTE below). Write the items for days ${from} to ${to} only, following each day's base and kind exactly, and the alternatives and costNeeds for those days. Reply with exactly one entry per day from ${from} to ${to}.
+export const daysStep = (from: number, to: number, route: string) => `STEP 2 OF 2: THE DAYS. The route is already decided (ROUTE below). Write the items for days ${from} to ${to} only (in "days", under "d<day number>"), following each day's base and kind exactly, and the alternatives and costNeeds for those days only. Keep every text field short. Do not repeat items.
 
 ROUTE:
 ${route}`
 
-export const DAYS_SCHEMA = {
-  type: 'object',
-  additionalProperties: false,
-  required: ['days', 'alternatives', 'costNeeds'],
-  properties: {
-    days: {
-      type: 'array',
-      items: { type: 'object', additionalProperties: false, required: ['day', 'items'], properties: { day: dayProps.day, items: dayProps.items } },
+/**
+ * The days step's answer for days from..to. Each day is its own required field ("d4", "d5"), so the
+ * answer always has exactly those days and cannot run on into others.
+ */
+export function daysSchema(from: number, to: number): Record<string, unknown> {
+  const keys = Array.from({ length: to - from + 1 }, (_, i) => `d${from + i}`)
+  return {
+    type: 'object',
+    additionalProperties: false,
+    required: ['days', 'alternatives', 'costNeeds'],
+    properties: {
+      days: { type: 'object', additionalProperties: false, required: keys, properties: Object.fromEntries(keys.map((k) => [k, dayProps.items])) },
+      alternatives: P.alternatives,
+      costNeeds: P.costNeeds,
     },
-    alternatives: P.alternatives,
-    costNeeds: P.costNeeds,
-  },
-} as const
+  }
+}

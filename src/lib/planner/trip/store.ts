@@ -10,7 +10,7 @@ import { structuralNeeds } from './calc'
 import { partyText, travellers, type TripForm } from './form'
 import { applyChange, tripView, type Change, type TripView } from './gate'
 import { DEFAULT_SELECTION, readItinerary, readPrices, type CostNeed, type Selection, type TripPlan } from './plan'
-import { DAYS_SCHEMA, daysStep, ITINERARY_SYSTEM, PRICES_FORMAT, PRICES_SYSTEM, ROUTE_SCHEMA, ROUTE_STEP } from './prompts'
+import { daysSchema, daysStep, ITINERARY_SYSTEM, PRICES_FORMAT, PRICES_SYSTEM, ROUTE_SCHEMA, ROUTE_STEP } from './prompts'
 
 /**
  * Saved trips for the single-form Trip Planner: creating, generating, reading with access checks,
@@ -29,8 +29,8 @@ export const PRICE_MODEL: AiModel = 'claude-haiku-5-5'
  */
 const ROUTE_MAX_TOKENS = 4000
 const ROUTE_TIMEOUT_MS = 90_000
-const DAYS_PER_CHUNK = 3
-const DAYS_MAX_TOKENS = 8000
+const DAYS_PER_CHUNK = 2
+const DAYS_MAX_TOKENS = 12_000
 const DAYS_TIMEOUT_MS = 120_000
 const PRICE_MAX_TOKENS = 4000
 const PRICE_MAX_SEARCHES = 6
@@ -150,7 +150,7 @@ function priceRequest(f: TripForm, needs: CostNeed[], today: string): string {
   ].join('\n\n')
 }
 
-/** Day groups for the days step: [1,3], [4,6], ... */
+/** Day groups for the days step: [1,2], [3,4], ... */
 export function dayChunks(days: number, size = DAYS_PER_CHUNK): [number, number][] {
   const out: [number, number][] = []
   for (let from = 1; from <= days; from += size) out.push([from, Math.min(days, from + size - 1)])
@@ -257,9 +257,9 @@ export async function generateTrip(tripId: string, options: { now?: Date } = {})
     // 2. The days, in small groups at the same time, while the route's prices are looked up.
     const writeDays = async ([from, to]: [number, number]) => {
       const prompt = `${daysStep(from, to, routeText)}\n\n${brief}`
-      try { return await ask(`days ${from}-${to}`, prompt, DAYS_SCHEMA, DAYS_MAX_TOKENS, DAYS_TIMEOUT_MS) } catch (error) {
+      try { return await ask(`days ${from}-${to}`, prompt, daysSchema(from, to), DAYS_MAX_TOKENS, DAYS_TIMEOUT_MS) } catch (error) {
         if (left() < 60_000) throw error
-        return ask(`days ${from}-${to} (retry)`, prompt, DAYS_SCHEMA, DAYS_MAX_TOKENS, DAYS_TIMEOUT_MS)
+        return ask(`days ${from}-${to} (retry)`, prompt, daysSchema(from, to), DAYS_MAX_TOKENS, DAYS_TIMEOUT_MS)
       }
     }
     const [parts, priced] = await Promise.all([
@@ -270,7 +270,10 @@ export async function generateTrip(tripId: string, options: { now?: Date } = {})
 
     // 3. Put the route and the days together and check the whole trip.
     const items = new Map<number, unknown>()
-    for (const part of parts) for (const d of (Array.isArray(part.days) ? part.days : []) as Record<string, unknown>[]) if (!items.has(Number(d.day))) items.set(Number(d.day), d.items)
+    parts.forEach((part, i) => {
+      const got = (part.days && typeof part.days === 'object' ? part.days : {}) as Record<string, unknown>
+      for (let n = chunks[i][0]; n <= chunks[i][1]; n++) items.set(n, got[`d${n}`])
+    })
     const merged = {
       ...route,
       days: ((route.days ?? []) as Record<string, unknown>[]).map((d) => ({ ...d, items: items.get(Number(d.day)) ?? [] })),
