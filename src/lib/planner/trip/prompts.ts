@@ -150,11 +150,12 @@ RULES
 - Tickets: the standard adult price; add the child price and ages, an under-age free rule, or a family pass when the page gives them. If entry is free, set "free": true.
 - Give prices in the currency the page uses. For every currency other than AUD that you use, also report a current exchange rate in "rates" (how many units of that currency 1 Australian dollar buys) from a reputable page.
 - If you cannot find a reliable price for an item, leave it out. Never guess, never invent a source, availability or a discount.
-- Finish with ONE JSON object in a \`\`\`json code block, and nothing after it.`
+- Do not write notes, commentary or working between or after your searches. When you have searched, reply with ONE JSON object in a \`\`\`json code block and nothing else.`
 
-export const PRICES_FORMAT = `JSON format:
-{"prices": [{"key": "<the item key exactly as given>", "type": "quote|published|estimate", "currency": "AUD", "low": 0, "high": 0, "working": 0, "unit": "per_person|per_adult|per_room_night|per_group|per_vehicle|per_item", "childLow": null, "childHigh": null, "childMaxAge": null, "freeUnderAge": null, "familyPass": null, "vehicleSeats": null, "free": false, "sampleSize": 1, "searchDates": "", "method": "", "route": "", "inclusions": "", "assumptions": "", "sourceUrl": "", "sourceName": ""}],
- "rates": [{"currency": "USD", "perAud": 0, "sourceUrl": "", "sourceName": ""}]}`
+export const PRICES_FORMAT = `JSON format (one line per price; leave out any optional field that does not apply):
+{"prices": [{"key": "<the item key exactly as given>", "type": "quote|published|estimate", "currency": "AUD", "low": 0, "high": 0, "working": 0, "unit": "per_person|per_adult|per_room_night|per_group|per_vehicle|per_item", "sampleSize": 1, "sourceUrl": "", "sourceName": ""}],
+ "rates": [{"currency": "USD", "perAud": 0, "sourceUrl": "", "sourceName": ""}]}
+Optional fields, only when they apply: "childLow", "childHigh", "childMaxAge", "freeUnderAge", "familyPass" ({"amount", "adults", "children"}), "vehicleSeats", "free", "searchDates", "method", "inclusions", "assumptions" (each text under 15 words).`
 
 // ---------------------------------------------------------------------------------------------
 // The itinerary is written in two steps so no single request runs too long:
