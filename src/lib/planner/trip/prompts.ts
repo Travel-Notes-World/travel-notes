@@ -155,3 +155,51 @@ RULES
 export const PRICES_FORMAT = `JSON format:
 {"prices": [{"key": "<the item key exactly as given>", "type": "quote|published|estimate", "currency": "AUD", "low": 0, "high": 0, "working": 0, "unit": "per_person|per_adult|per_room_night|per_group|per_vehicle|per_item", "childLow": null, "childHigh": null, "childMaxAge": null, "freeUnderAge": null, "familyPass": null, "vehicleSeats": null, "free": false, "sampleSize": 1, "searchDates": "", "method": "", "route": "", "inclusions": "", "assumptions": "", "sourceUrl": "", "sourceName": ""}],
  "rates": [{"currency": "USD", "perAud": 0, "sourceUrl": "", "sourceName": ""}]}`
+
+// ---------------------------------------------------------------------------------------------
+// The itinerary is written in two steps so no single request runs too long:
+// 1. ROUTE: the bases, nights and a one-line outline of every day (a short answer).
+// 2. DAYS: the items and alternatives for a few days at a time, in parallel, following that route.
+// The answers are joined into one itinerary and checked by readItinerary as before.
+
+const P = ITINERARY_SCHEMA.properties
+const dayProps = P.days.items.properties
+
+export const ROUTE_STEP = `STEP 1 OF 2: THE ROUTE. Reply with the summary, why, gateway, bases, assumptions and checks, and for every day only its day number, base, overnight, kind and title. Do not write any items, alternatives or costNeeds in this step.`
+
+export const ROUTE_SCHEMA = {
+  type: 'object',
+  additionalProperties: false,
+  required: ['summary', 'why', 'gateway', 'bases', 'days', 'assumptions', 'checks'],
+  properties: {
+    summary: P.summary,
+    why: P.why,
+    gateway: P.gateway,
+    bases: P.bases,
+    days: {
+      type: 'array',
+      items: { type: 'object', additionalProperties: false, required: ['day', 'base', 'overnight', 'kind', 'title'], properties: { day: dayProps.day, base: dayProps.base, overnight: dayProps.overnight, kind: dayProps.kind, title: dayProps.title } },
+    },
+    assumptions: P.assumptions,
+    checks: P.checks,
+  },
+} as const
+
+export const daysStep = (from: number, to: number, route: string) => `STEP 2 OF 2: THE DAYS. The route is already decided (ROUTE below). Write the items for days ${from} to ${to} only, following each day's base and kind exactly, and the alternatives and costNeeds for those days. Reply with exactly one entry per day from ${from} to ${to}.
+
+ROUTE:
+${route}`
+
+export const DAYS_SCHEMA = {
+  type: 'object',
+  additionalProperties: false,
+  required: ['days', 'alternatives', 'costNeeds'],
+  properties: {
+    days: {
+      type: 'array',
+      items: { type: 'object', additionalProperties: false, required: ['day', 'items'], properties: { day: dayProps.day, items: dayProps.items } },
+    },
+    alternatives: P.alternatives,
+    costNeeds: P.costNeeds,
+  },
+} as const

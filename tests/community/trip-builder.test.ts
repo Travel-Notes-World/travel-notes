@@ -32,6 +32,9 @@ const fakeStripe = {
 const SOURCE = 'https://www.example.test/prices'
 let itineraryMode: 'ok' | 'bad' | 'throw' = 'ok'
 let priceMode: 'ok' | 'none' | 'throw' = 'ok'
+let routeCalls = 0
+let dayCalls: [number, number][] = []
+let priceCalls = 0
 const fakeAi = {
   async generate(request: Any) {
     if (itineraryMode === 'throw') throw new Error('model down')
@@ -49,9 +52,22 @@ const fakeAi = {
       costNeeds: [{ key: 'ticket-opera-tour', label: 'Opera House tour', category: 'activities', unit: 'per_person', detail: 'Standard guided tour' }],
       assumptions: ['Economy flights with one checked bag.'], checks: ['Check tour times.'],
     }
-    return { text: JSON.stringify(answer), inputTokens: 2000, outputTokens: 3000, stopReason: 'end_turn' }
+    // The planner asks for the route first, then the days in groups.
+    let reply: Any = answer
+    if (request.prompt.includes('STEP 1 OF 2')) {
+      routeCalls++
+      reply = { ...answer, days: answer.days.map((d: Any) => ({ day: d.day, base: d.base, overnight: d.overnight, kind: d.kind, title: d.title })) }
+      delete reply.alternatives
+      delete reply.costNeeds
+    } else if (request.prompt.includes('STEP 2 OF 2')) {
+      const [, from, to] = /days (\d+) to (\d+) only/.exec(request.prompt)!.map(Number)
+      dayCalls.push([from, to])
+      reply = { days: answer.days.filter((d: Any) => d.day >= from && d.day <= to).map((d: Any) => ({ day: d.day, items: d.items })), alternatives: answer.alternatives.filter((a: Any) => a.day >= from && a.day <= to), costNeeds: from === 1 ? answer.costNeeds : [] }
+    }
+    return { text: JSON.stringify(reply), inputTokens: 2000, outputTokens: 3000, stopReason: 'end_turn' }
   },
   async research(request: Any) {
+    priceCalls++
     if (priceMode === 'throw') throw new Error('search down')
     const keys = [...request.prompt.matchAll(/^- ([a-z0-9:@_-]+):/gm)].map((m: Any) => m[1])
     const prices = priceMode === 'none' ? [] : keys.map((key: string) => ({ key, type: 'estimate', currency: 'AUD', low: key.startsWith('flight') ? 400 : 20, high: key.startsWith('flight') ? 600 : 30, working: key.startsWith('flight') ? 500 : 25, unit: key.startsWith('stay') ? 'per_room_night' : key.startsWith('coffee') ? 'per_item' : 'per_person', sampleSize: 4, sourceUrl: SOURCE, sourceName: 'Example' }))
@@ -120,6 +136,19 @@ describe('generating a trip', () => {
     assert.equal((await S.findTrip(t.token)).status, 'ready')
     // ...and now the allowance is used.
     await assert.rejects(S.createTrip({ form: formFor(4), ip, memberId: null }), /free trip/)
+  })
+  it('a long trip is written as a route and then small groups of days, so no single request runs long', async () => {
+    routeCalls = 0; dayCalls = []; priceCalls = 0
+    const trip = await makeTrip(13)
+    assert.equal(trip.status, 'ready', trip.error ?? '')
+    assert.equal(routeCalls, 1)
+    assert.deepEqual(dayCalls.sort((a, b) => a[0] - b[0]), [[1, 3], [4, 6], [7, 9], [10, 12], [13, 13]])
+    assert.equal(trip.plan.days.length, 13)
+    assert.ok(trip.plan.days.every((d: Any) => d.items.length === 2), 'every day has its items')
+    assert.equal(trip.plan.days[12].items[0].id, 'd13-1')
+    assert.equal(priceCalls, 3, 'flights and stays, food and transport, then activities')
+    const budget = CALC.calculateBudget(trip.form, trip.plan, trip.selection)
+    assert.equal(budget.incomplete, false)
   })
   it('when price research fails, costs show as missing and the total is incomplete, never zero', async () => {
     priceMode = 'throw'

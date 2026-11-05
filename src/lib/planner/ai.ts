@@ -63,10 +63,10 @@ export const costMicroUsd = (model: AiModel, inputTokens: number, outputTokens: 
 // ---------------------------------------------------------------------------------------------
 // The model call, behind a small interface so tests can replace it.
 
-export type AiRequest = { model: AiModel; system: string; prompt: string; schema: Record<string, unknown>; maxTokens: number }
+export type AiRequest = { model: AiModel; system: string; prompt: string; schema: Record<string, unknown>; maxTokens: number; timeoutMs?: number }
 export type AiResponse = { text: string; inputTokens: number; outputTokens: number; stopReason: string }
 /** A request that lets the model search the web (Anthropic's web search tool) before it answers. */
-export type ResearchRequest = { model: AiModel; system: string; prompt: string; maxTokens: number; maxSearches: number }
+export type ResearchRequest = { model: AiModel; system: string; prompt: string; maxTokens: number; maxSearches: number; timeoutMs?: number }
 export type ResearchResponse = {
   text: string
   /** Every page the searches returned. A price may only cite one of these. */
@@ -102,7 +102,7 @@ const anthropic: AiGateway = {
         messages: [{ role: 'user', content: request.prompt }],
         output_config: { format: { type: 'json_schema', schema: request.schema } },
       }),
-      signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
+      signal: AbortSignal.timeout(request.timeoutMs ?? REQUEST_TIMEOUT_MS),
     })
     const body = (await response.json().catch(() => null)) as {
       content?: { type: string; text?: string }[]; usage?: { input_tokens?: number; output_tokens?: number }; stop_reason?: string; error?: { message?: string }
@@ -135,7 +135,7 @@ anthropic.research = async (request) => {
         messages,
         tools: [{ type: 'web_search_20250305', name: 'web_search', max_uses: request.maxSearches }],
       }),
-      signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
+      signal: AbortSignal.timeout(request.timeoutMs ?? REQUEST_TIMEOUT_MS),
     })
     const body = (await response.json().catch(() => null)) as {
       content?: Block[]; usage?: { input_tokens?: number; output_tokens?: number; server_tool_use?: { web_search_requests?: number } }; stop_reason?: string; error?: { message?: string }
