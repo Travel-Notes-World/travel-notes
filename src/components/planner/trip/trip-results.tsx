@@ -32,7 +32,8 @@ const smallButton = "inline-flex items-center justify-center min-h-11 px-3 round
 export function TripHeader({ form, view, token, canEdit }: { form: TripForm; view: TripView; token: string; canEdit: boolean }) {
   const b = view.budget;
   // Left over or over budget, from the amounts as displayed, so the three cards always agree.
-  const remaining = b.budget !== null ? displayRound(b.budget, b.currency) - displayRound(b.total.working, b.currency) : null;
+  const priced = b.lines.some((l) => l.status === "priced");
+  const remaining = b.budget !== null && priced ? displayRound(b.budget, b.currency) - displayRound(b.total.working, b.currency) : null;
   return (
     <header className="mt-2 mb-6">
       <p className="t-meta text-ochre-700 m-0">Your trip</p>
@@ -41,8 +42,8 @@ export function TripHeader({ form, view, token, canEdit }: { form: TripForm; vie
       <div className="mt-5 grid gap-4 sm:grid-cols-3 max-w-[960px]">
         <div className="rounded-md border-2 border-marine-600 p-4">
           <p className="t-meta text-ink-600 m-0">Estimated total, whole party</p>
-          <p className="t-heading-2 m-0 mt-1">{money(b.total.working, b.currency)}</p>
-          <p className="t-body-sm text-ink-600 m-0">Range {range(b.total, b.currency)}{b.incomplete ? " · incomplete" : ""}</p>
+          <p className="t-heading-2 m-0 mt-1">{priced ? money(b.total.working, b.currency) : "Not priced yet"}</p>
+          <p className="t-body-sm text-ink-600 m-0">{priced ? <>Range {range(b.total, b.currency)}{b.incomplete ? " · incomplete" : ""}</> : "No prices could be found this time."}</p>
         </div>
         <div className="rounded-md border border-paper-200 p-4">
           <p className="t-meta text-ink-600 m-0">Your budget</p>
@@ -51,7 +52,7 @@ export function TripHeader({ form, view, token, canEdit }: { form: TripForm; vie
         </div>
         <div className="rounded-md border border-paper-200 p-4">
           <p className="t-meta text-ink-600 m-0">Average per person</p>
-          <p className="t-heading-2 m-0 mt-1">{money(b.perPerson, b.currency)}</p>
+          <p className="t-heading-2 m-0 mt-1">{priced ? money(b.perPerson, b.currency) : "—"}</p>
           <p className="t-body-sm text-ink-600 m-0">An average across {b.travellers} {b.travellers === 1 ? "traveller" : "travellers"}</p>
         </div>
       </div>

@@ -32,7 +32,7 @@ const ROUTE_TIMEOUT_MS = 90_000
 const DAYS_PER_CHUNK = 2
 const DAYS_MAX_TOKENS = 12_000
 const DAYS_TIMEOUT_MS = 120_000
-const PRICE_MAX_TOKENS = 4000
+const PRICE_MAX_TOKENS = 8000
 const PRICE_MAX_SEARCHES = 6
 const PRICE_TIMEOUT_MS = 120_000
 const PRICE_CALLS = 3
@@ -236,10 +236,13 @@ export async function generateTrip(tripId: string, options: { now?: Date } = {})
       const response = await gateway.research({ model: PRICE_MODEL, system: PRICES_SYSTEM, prompt: priceRequest(trip.form, group, today), maxTokens: PRICE_MAX_TOKENS, maxSearches: PRICE_MAX_SEARCHES, timeoutMs: Math.min(PRICE_TIMEOUT_MS, left()) })
       const { parseResearch } = await import('../research')
       const parsed = readPrices(parseResearch(response.text), response.sources, group, now.toISOString())
-      await payload.update({ collection: 'ai-runs', id: run.id, data: { status: 'ok', inputTokens: response.inputTokens, outputTokens: response.outputTokens, searches: response.searches, costMicroUsd: costMicroUsd(PRICE_MODEL, response.inputTokens, response.outputTokens) + response.searches * SEARCH_MICRO_USD } })
+      const found = Object.values(parsed.prices).filter((f) => f.type !== 'unavailable').length
+      console.log('[trip planner] prices', JSON.stringify({ asked: group.length, found, sources: response.sources.length, searches: response.searches, stopReason: response.stopReason, parsed: Boolean(parseResearch(response.text)), outputTokens: response.outputTokens }))
+      await payload.update({ collection: 'ai-runs', id: run.id, data: { status: found ? 'ok' : 'failed', error: found ? null : `no usable prices (stop reason ${response.stopReason}, ${response.sources.length} sources)`, inputTokens: response.inputTokens, outputTokens: response.outputTokens, searches: response.searches, costMicroUsd: costMicroUsd(PRICE_MODEL, response.inputTokens, response.outputTokens) + response.searches * SEARCH_MICRO_USD } })
       return { prices: parsed.prices, rates: parsed.rates, error: null }
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error)
+      console.error('[trip planner] price lookup failed', message)
       await payload.update({ collection: 'ai-runs', id: run.id, data: { status: 'failed', error: message.slice(0, 500) } }).catch(() => {})
       return { ...missing(), error: message }
     }
