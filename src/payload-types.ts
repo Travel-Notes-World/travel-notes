@@ -81,6 +81,7 @@ export interface Config {
     'price-checks': PriceCheck;
     'travel-advisories': TravelAdvisory;
     'exchange-rates': ExchangeRate;
+    trips: Trip;
     members: Member;
     contributions: Contribution;
     replies: Reply;
@@ -123,6 +124,7 @@ export interface Config {
     'price-checks': PriceChecksSelect<false> | PriceChecksSelect<true>;
     'travel-advisories': TravelAdvisoriesSelect<false> | TravelAdvisoriesSelect<true>;
     'exchange-rates': ExchangeRatesSelect<false> | ExchangeRatesSelect<true>;
+    trips: TripsSelect<false> | TripsSelect<true>;
     members: MembersSelect<false> | MembersSelect<true>;
     contributions: ContributionsSelect<false> | ContributionsSelect<true>;
     replies: RepliesSelect<false> | RepliesSelect<true>;
@@ -721,7 +723,6 @@ export interface Staff {
    */
   communityModerator?: boolean | null;
   totpSecret?: string | null;
-  hasTotp?: boolean | null;
   updatedAt: string;
   createdAt: string;
   email: string;
@@ -1048,6 +1049,55 @@ export interface ExchangeRate {
   sourceUrl: string;
   checkedAt: string;
   method?: ('editor' | 'ai_research') | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "trips".
+ */
+export interface Trip {
+  id: string;
+  token: string;
+  title: string;
+  visitor: string;
+  member?: (string | null) | Member;
+  status: 'generating' | 'ready' | 'failed';
+  error?: string | null;
+  attempts?: number | null;
+  startedAt?: string | null;
+  form:
+    | {
+        [k: string]: unknown;
+      }
+    | unknown[]
+    | string
+    | number
+    | boolean
+    | null;
+  plan?:
+    | {
+        [k: string]: unknown;
+      }
+    | unknown[]
+    | string
+    | number
+    | boolean
+    | null;
+  selection?:
+    | {
+        [k: string]: unknown;
+      }
+    | unknown[]
+    | string
+    | number
+    | boolean
+    | null;
+  unlocked?: boolean | null;
+  unlockedAt?: string | null;
+  payment?: (string | null) | ListingPayment;
+  previewHash?: string | null;
+  model?: string | null;
   updatedAt: string;
   createdAt: string;
 }
@@ -1485,57 +1535,35 @@ export interface Reply {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "votes".
+ * via the `definition` "listing-payments".
  */
-export interface Vote {
+export interface ListingPayment {
   id: string;
-  key: string;
-  member: string | Member;
-  targetType: 'contribution' | 'reply';
-  targetId: string;
+  invoiceNumber: string;
+  purpose: 'listing' | 'ai_plan';
+  plan?: (string | null) | Plan;
+  trip?: (string | null) | Trip;
+  contribution?: (string | null) | Contribution;
+  member?: (string | null) | Member;
+  status: 'created' | 'paid' | 'refunded' | 'expired';
+  description: string;
   /**
-   * 1 = like (helpful), 2 = love (red heart), -1 = dislike. Posts only take likes.
+   * Total charged, in cents, including any GST.
    */
-  value: number;
-  updatedAt: string;
-  createdAt: string;
-}
-/**
- * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "bookmarks".
- */
-export interface Bookmark {
-  id: string;
-  key: string;
-  member: string | Member;
-  targetType: 'contribution' | 'article';
-  targetId: string;
-  updatedAt: string;
-  createdAt: string;
-}
-/**
- * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "follows".
- */
-export interface Follow {
-  id: string;
-  key: string;
-  member: string | Member;
-  destination: string | Destination;
-  updatedAt: string;
-  createdAt: string;
-}
-/**
- * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "rsvps".
- */
-export interface Rsvp {
-  id: string;
-  key: string;
-  member: string | Member;
-  activity: string | Contribution;
-  status: 'interested' | 'going';
-  showPublicly?: boolean | null;
+  amountMinor: number;
+  currency: string;
+  /**
+   * GST included in the total, in cents. 0 when the seller was not registered for GST.
+   */
+  gstMinor: number;
+  sellerName: string;
+  sellerAbn: string;
+  buyerEmail?: string | null;
+  stripeSessionId?: string | null;
+  stripePaymentIntentId?: string | null;
+  paidAt?: string | null;
+  refundedAt?: string | null;
+  refundReason?: string | null;
   updatedAt: string;
   createdAt: string;
 }
@@ -1666,6 +1694,62 @@ export interface Plan {
     authorName?: string | null;
     copiedAt?: string | null;
   };
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "votes".
+ */
+export interface Vote {
+  id: string;
+  key: string;
+  member: string | Member;
+  targetType: 'contribution' | 'reply';
+  targetId: string;
+  /**
+   * 1 = like (helpful), 2 = love (red heart), -1 = dislike. Posts only take likes.
+   */
+  value: number;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "bookmarks".
+ */
+export interface Bookmark {
+  id: string;
+  key: string;
+  member: string | Member;
+  targetType: 'contribution' | 'article';
+  targetId: string;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "follows".
+ */
+export interface Follow {
+  id: string;
+  key: string;
+  member: string | Member;
+  destination: string | Destination;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "rsvps".
+ */
+export interface Rsvp {
+  id: string;
+  key: string;
+  member: string | Member;
+  activity: string | Contribution;
+  status: 'interested' | 'going';
+  showPublicly?: boolean | null;
   updatedAt: string;
   createdAt: string;
 }
@@ -1886,39 +1970,6 @@ export interface JobRun {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "listing-payments".
- */
-export interface ListingPayment {
-  id: string;
-  invoiceNumber: string;
-  purpose: 'listing' | 'ai_plan';
-  plan?: (string | null) | Plan;
-  contribution?: (string | null) | Contribution;
-  member?: (string | null) | Member;
-  status: 'created' | 'paid' | 'refunded' | 'expired';
-  description: string;
-  /**
-   * Total charged, in cents, including any GST.
-   */
-  amountMinor: number;
-  currency: string;
-  /**
-   * GST included in the total, in cents. 0 when the seller was not registered for GST.
-   */
-  gstMinor: number;
-  sellerName: string;
-  sellerAbn: string;
-  buyerEmail?: string | null;
-  stripeSessionId?: string | null;
-  stripePaymentIntentId?: string | null;
-  paidAt?: string | null;
-  refundedAt?: string | null;
-  refundReason?: string | null;
-  updatedAt: string;
-  createdAt: string;
-}
-/**
- * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "ai-runs".
  */
 export interface AiRun {
@@ -1927,7 +1978,11 @@ export interface AiRun {
   plan?: (string | null) | Plan;
   status: 'started' | 'ok' | 'failed';
   model: string;
-  kind?: ('brief' | 'detailed' | 'revision' | 'research') | null;
+  kind?: ('brief' | 'detailed' | 'revision' | 'research' | 'trip' | 'trip_prices') | null;
+  /**
+   * Single-form Trip Planner: the trip this request wrote or priced.
+   */
+  trip?: (string | null) | Trip;
   /**
    * Price research: the place researched.
    */
@@ -2069,6 +2124,10 @@ export interface PayloadLockedDocument {
     | ({
         relationTo: 'exchange-rates';
         value: string | ExchangeRate;
+      } | null)
+    | ({
+        relationTo: 'trips';
+        value: string | Trip;
       } | null)
     | ({
         relationTo: 'members';
@@ -2517,7 +2576,6 @@ export interface StaffSelect<T extends boolean = true> {
   active?: T;
   communityModerator?: T;
   totpSecret?: T;
-  hasTotp?: T;
   updatedAt?: T;
   createdAt?: T;
   email?: T;
@@ -2628,6 +2686,30 @@ export interface ExchangeRatesSelect<T extends boolean = true> {
   sourceUrl?: T;
   checkedAt?: T;
   method?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "trips_select".
+ */
+export interface TripsSelect<T extends boolean = true> {
+  token?: T;
+  title?: T;
+  visitor?: T;
+  member?: T;
+  status?: T;
+  error?: T;
+  attempts?: T;
+  startedAt?: T;
+  form?: T;
+  plan?: T;
+  selection?: T;
+  unlocked?: T;
+  unlockedAt?: T;
+  payment?: T;
+  previewHash?: T;
+  model?: T;
   updatedAt?: T;
   createdAt?: T;
 }
@@ -3163,6 +3245,7 @@ export interface ListingPaymentsSelect<T extends boolean = true> {
   invoiceNumber?: T;
   purpose?: T;
   plan?: T;
+  trip?: T;
   contribution?: T;
   member?: T;
   status?: T;
@@ -3191,6 +3274,7 @@ export interface AiRunsSelect<T extends boolean = true> {
   status?: T;
   model?: T;
   kind?: T;
+  trip?: T;
   place?: T;
   searches?: T;
   free?: T;

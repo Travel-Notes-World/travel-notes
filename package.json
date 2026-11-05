@@ -18,7 +18,8 @@
     "bench:search": "node --import tsx scripts/bench-search.ts",
     "destinations:import": "node --env-file-if-exists=.env --env-file-if-exists=.env.local --import tsx scripts/import-destinations.ts",
     "staff:reset-2fa": "node --import tsx scripts/reset-staff-2fa.ts",
-    "community:demo-seed": "node --env-file-if-exists=.env --env-file-if-exists=.env.local --import tsx scripts/community-demo-seed.ts"
+    "community:demo-seed": "node --env-file-if-exists=.env --env-file-if-exists=.env.local --import tsx scripts/community-demo-seed.ts",
+    "test:trip": "node --import tsx --test --test-force-exit tests/trip/*.test.ts"
   },
   "dependencies": {
     "@payloadcms/db-postgres": "3.90.2",

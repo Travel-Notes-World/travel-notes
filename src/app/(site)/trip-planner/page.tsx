@@ -24,6 +24,9 @@ import { getDestinationPage, getDestinationsWithContent } from "@/lib/content/de
 import { PACES, PARTIES, planDays, plannerHref, readPlannerInput, tripMonths } from "@/lib/planner/input";
 import { loadPlanner, timingSummary, type PlannerPlace } from "@/lib/planner/load";
 import { siteUrl } from "@/lib/site";
+import { TripForm } from "@/components/planner/trip/trip-form";
+import { findTrip, hasFullAccess } from "@/lib/planner/trip/store";
+import type { TripForm as TripFormValues } from "@/lib/planner/trip/form";
 
 /**
  * The Trip Planner (/trip-planner).
@@ -37,7 +40,8 @@ import { siteUrl } from "@/lib/site";
  */
 export const dynamic = "force-dynamic";
 // The instant itinerary is written by a server action on this page and can take about a minute.
-export const maxDuration = 120;
+// The single-form planner writes the trip in the background after "Generate my trip" (up to a few minutes).
+export const maxDuration = 300;
 
 type Props = { searchParams: Promise<Record<string, string | string[] | undefined>> };
 
@@ -72,6 +76,12 @@ export default async function TripPlannerPage({ searchParams }: Props) {
   const settings = await getSettings();
   const aiOn = settings.planner.aiEnabled && aiConfigured();
   const aiPrice = aiPlanPrice(settings).text;
+
+  // Holidays use the single form. Visa, family and business plans keep the step-by-step planner.
+  const purposeParam = typeof params.for === "string" ? params.for : "";
+  if (!input.placeIds.length && !params.go && (!purposeParam || purposeParam === "holiday") && !params.classic) {
+    return <SingleFormPlanner params={params} memberId={member?.id ?? null} priceText={aiPrice} aiOn={aiOn} />;
+  }
 
   const result = input.placeIds.length ? await loadPlanner(payload, input, { pageFor: (doc) => getDestinationPage(doc), months, community }) : null;
   const places = result?.places ?? [];
@@ -347,6 +357,61 @@ export default async function TripPlannerPage({ searchParams }: Props) {
         <h2 className="t-heading-3 m-0">About this plan</h2>
         <p className="t-body-sm text-ink-600 mt-2 mb-0">The Trip Planner, created by Jeeva Palasundram, arranges your days and gathers Travel Notes content for the places you chose. It does not book anything, and it has not been tested as a complete itinerary. Prices, opening hours and entry rules change: check them with the official source before you travel. Read our <Link href="/editorial-policy" className="text-marine-600 underline">editorial policy</Link>.</p>
       </aside>
+    </PageShell>
+  );
+}
+
+/** The form values of a saved trip, as strings for the form fields ("Edit trip"). */
+function formValues(f: TripFormValues): Record<string, unknown> {
+  return {
+    origin: f.origin, destination: f.destination, arrive: f.arrive, depart: f.depart, days: String(f.days), by: "dates",
+    travellerType: f.travellerType, adults: String(f.adults), children: String(f.childAges.length), childAge: f.childAges.map(String),
+    budget: f.budget !== null ? String(f.budget) : "", currency: f.currency, interests: f.interests, pace: f.pace, stay: f.stay,
+    rooms: f.rooms ? String(f.rooms) : "", roomNotes: f.roomNotes, accessibility: f.accessibility, dietary: f.dietary, mustSee: f.mustSee,
+    flightBooked: f.flightBooked ? "on" : "", flightAmount: f.flightAmount !== null ? String(f.flightAmount) : "", flightPaid: f.flightPaid ? "on" : "",
+    hotelBooked: f.hotelBooked ? "on" : "", hotelName: f.hotelName, hotelAmount: f.hotelAmount !== null ? String(f.hotelAmount) : "", hotelPaid: f.hotelPaid ? "on" : "",
+    breakfastIncluded: f.breakfastIncluded ? "on" : "", arrivalTime: f.arrivalTime ?? "", departureTime: f.departureTime ?? "",
+  };
+}
+
+async function SingleFormPlanner({ params, memberId, priceText, aiOn }: { params: Record<string, string | string[] | undefined>; memberId: string | null; priceText: string; aiOn: boolean }) {
+  const editToken = typeof params.edit === "string" ? params.edit : null;
+  const editing = editToken ? await findTrip(editToken) : null;
+  const ownsEdit = editing && (!editing.memberId || editing.memberId === memberId);
+  const revise = Boolean(editing && ownsEdit && hasFullAccess(editing, memberId));
+  const today = new Date().toLocaleDateString("en-CA", { timeZone: "Australia/Sydney" });
+  return (
+    <PageShell>
+      <JsonLd data={breadcrumbJsonLd(crumbs)} />
+      <Breadcrumbs items={crumbs} />
+      <header className="mt-2 mb-8 max-w-measure">
+        <p className="t-meta text-ochre-700 m-0">Trip Planner</p>
+        <h1 className="t-heading-1 mt-2 m-0">{editing && ownsEdit ? "Edit your trip" : "Plan your trip and its full cost"}</h1>
+        <p className="t-body-sm text-ink-600 mt-2 mb-0">Created by <Link href="/about#who" className="text-marine-600 underline">Jeeva Palasundram</Link>, founder of Travel Notes</p>
+        <p className="t-deck mt-3 mb-0">Enter your trip once. We plan a realistic route and daily activities, look up current prices, and add up an itemised estimate for the whole trip, from flights to coffee.</p>
+      </header>
+      {editing && ownsEdit && <div className="mb-6 max-w-measure"><Notice tone="info" title={revise ? "Changing a paid trip" : "Editing makes a new trip"}>{revise ? "Your unlocked trip will be planned again with these details, using one of its included changes. The new plan and prices replace the current ones." : "Change any details and generate again. Your current trip stays at its own link."}</Notice></div>}
+      {aiOn ? (
+        <TripForm initial={editing && ownsEdit ? formValues(editing.form) : {}} reviseToken={revise ? editing!.token : undefined} priceText={priceText} today={today} />
+      ) : (
+        <Notice tone="info" title="The Trip Planner is not switched on yet">Please come back soon.</Notice>
+      )}
+      <section aria-labelledby="other-heading" className="mt-12 max-w-measure">
+        <h2 id="other-heading" className="t-heading-3 m-0">Planning for something else?</h2>
+        <ul className="t-body-sm mt-2 mb-0 pl-5 grid gap-1">
+          <li><Link href="/trip-planner?for=visa" className="text-marine-600 underline">A proposed itinerary for a visa application</Link> (not for Australian visas)</li>
+          <li><Link href="/trip-planner?for=family" className="text-marine-600 underline">Visiting family or friends</Link></li>
+          <li><Link href="/trip-planner?for=business" className="text-marine-600 underline">A business trip with some leisure</Link></li>
+        </ul>
+      </section>
+      <section aria-labelledby="how-heading" className="mt-10 max-w-measure">
+        <h2 id="how-heading" className="t-heading-3 m-0">How the estimate works</h2>
+        <ul className="t-body-sm mt-2 mb-0 pl-5 grid gap-1">
+          <li>Prices are looked up on the web for your dates and party, and every one shows its source and the date it was checked.</li>
+          <li>Our own calculator adds them up (room rate × rooms × nights, tickets × adults and children, and so on). A cost we cannot price reliably is shown as missing, never as zero.</li>
+          <li>It does not book anything. Estimates can change before you book.</li>
+        </ul>
+      </section>
     </PageShell>
   );
 }
