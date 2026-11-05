@@ -62,7 +62,7 @@ const fakeAi = {
     } else if (request.prompt.includes('STEP 2 OF 2')) {
       const [, from, to] = /days (\d+) to (\d+) only/.exec(request.prompt)!.map(Number)
       dayCalls.push([from, to])
-      reply = { days: answer.days.filter((d: Any) => d.day >= from && d.day <= to).map((d: Any) => ({ day: d.day, items: d.items })), alternatives: answer.alternatives.filter((a: Any) => a.day >= from && a.day <= to), costNeeds: from === 1 ? answer.costNeeds : [] }
+      reply = { days: Object.fromEntries(answer.days.filter((d: Any) => d.day >= from && d.day <= to).map((d: Any) => [`d${d.day}`, d.items])), alternatives: answer.alternatives.filter((a: Any) => a.day >= from && a.day <= to), costNeeds: from === 1 ? answer.costNeeds : [] }
     }
     return { text: JSON.stringify(reply), inputTokens: 2000, outputTokens: 3000, stopReason: 'end_turn' }
   },
@@ -142,7 +142,7 @@ describe('generating a trip', () => {
     const trip = await makeTrip(13)
     assert.equal(trip.status, 'ready', trip.error ?? '')
     assert.equal(routeCalls, 1)
-    assert.deepEqual(dayCalls.sort((a, b) => a[0] - b[0]), [[1, 3], [4, 6], [7, 9], [10, 12], [13, 13]])
+    assert.deepEqual(dayCalls.sort((a, b) => a[0] - b[0]), [[1, 2], [3, 4], [5, 6], [7, 8], [9, 10], [11, 12], [13, 13]])
     assert.equal(trip.plan.days.length, 13)
     assert.ok(trip.plan.days.every((d: Any) => d.items.length === 2), 'every day has its items')
     assert.equal(trip.plan.days[12].items[0].id, 'd13-1')
