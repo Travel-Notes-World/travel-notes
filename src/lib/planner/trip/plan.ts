@@ -358,3 +358,9 @@ export function priceBasisText(f: PriceFact): string {
   if ((f.sampleSize ?? 1) <= 1) return 'Single price found (not an average)'
   return `Range from ${f.sampleSize} comparable prices`
 }
+
+/** The price warning shown at the end of every trip plan (page and PDF). */
+export const PRICE_WARNING = {
+  title: 'Please check prices before you decide',
+  text: 'The prices in this plan come from online sources on several websites, such as official attraction pages, booking platforms, menus and travel cost guides. They may not be accurate: prices change, and what you pay can be different. Please check each price with the provider yourself before you book or make a decision. Nothing in this plan has been booked or reserved.',
+} as const

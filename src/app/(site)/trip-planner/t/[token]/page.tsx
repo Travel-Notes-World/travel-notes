@@ -11,6 +11,7 @@ import { getViewer } from "@/lib/community/next/session";
 import { getSettings } from "@/lib/community/settings";
 import { aiPlanPrice } from "@/lib/planner/payments";
 import { retryTripAction } from "@/lib/planner/trip/actions";
+import { PRICE_WARNING } from "@/lib/planner/trip/plan";
 import { findTrip, tripPage } from "@/lib/planner/trip/store";
 
 /**
@@ -115,7 +116,12 @@ export default async function TripPage({ params, searchParams }: Props) {
       {!full && <div className="mt-10 max-w-[720px]">{pricePanel}</div>}
 
       {/* Space for future affiliate offers (flights, stays, activities, insurance): clearly labelled, verified discounts only, never used to rank activities. */}
-      <aside aria-label="About this plan" className="mt-12 max-w-measure border-t border-paper-200 pt-6">
+      <section role="note" aria-labelledby="price-warning" className="mt-12 max-w-[720px] border-l-4 border-ochre-600 bg-ochre-100 rounded-sm p-4">
+        <h2 id="price-warning" className="t-heading-3 m-0">{PRICE_WARNING.title}</h2>
+        <p className="t-body-sm mt-2 mb-0">{PRICE_WARNING.text}</p>
+      </section>
+
+      <aside aria-label="About this plan" className="mt-8 max-w-measure border-t border-paper-200 pt-6">
         <h2 className="t-heading-3 m-0">About this plan</h2>
         <p className="t-body-sm text-ink-600 mt-2 mb-0">Planned by the Travel Notes Trip Planner using AI, with prices looked up on the web and every total worked out by our own calculator. Estimates can change before you book, and nothing has been reserved. Check opening days, prices and entry rules with the official source before you travel.</p>
       </aside>

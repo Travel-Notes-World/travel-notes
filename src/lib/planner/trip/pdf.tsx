@@ -4,7 +4,7 @@ import { siteUrl } from '../../site'
 import { displayRound, formatMoney } from './calc'
 import { partyText, type TripForm } from './form'
 import type { TripView } from './gate'
-import { CATEGORY_LABEL, MODE_LABEL, PRICE_TYPE_LABEL, priceBasisText, SLOT_LABEL, type PriceFact } from './plan'
+import { CATEGORY_LABEL, MODE_LABEL, PRICE_TYPE_LABEL, PRICE_WARNING, priceBasisText, SLOT_LABEL, type PriceFact } from './plan'
 
 /**
  * The full trip as an A4 PDF: route, every day, the budget with its quantities, assumptions and
@@ -155,7 +155,11 @@ function TripPdf({ form, view, generatedOn }: { form: TripForm; view: TripView; 
         {view.assumptions.length > 0 && <><Text style={s.h2}>Assumptions</Text>{view.assumptions.map((a, i) => <Text key={i}>• {a}</Text>)}</>}
         {view.checks.length > 0 && <><Text style={s.h2}>Check before you book</Text>{view.checks.map((a, i) => <Text key={i}>• {a}</Text>)}</>}
 
-        <Text style={[s.small, { marginTop: 14 }]}>Estimates can change before you book. Nothing in this plan has been booked or reserved. Check prices, opening days and entry rules with the official source before you travel.</Text>
+        <View style={[s.box, { marginTop: 14 }]} wrap={false}>
+          <Text style={s.h3}>{PRICE_WARNING.title}</Text>
+          <Text>{PRICE_WARNING.text}</Text>
+        </View>
+        <Text style={[s.small, { marginTop: 8 }]}>Also check opening days and entry rules with the official source before you travel.</Text>
         <Footer generatedOn={generatedOn} />
       </Page>
     </Document>
