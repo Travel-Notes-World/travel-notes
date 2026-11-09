@@ -42,18 +42,27 @@ export type PlanItem = {
   costKey: string | null
   /** Something to check before going (opening days, season, booking ahead). */
   note: string
+  /** Suggested start time, "HH:MM" (24-hour), or "" when not given. */
+  start?: string
+  /** What the traveller will see or do there, in one or two sentences. */
+  desc?: string
 }
+
+/** Item kinds that count as a substantive activity (not meals, rest, transport or check-in). */
+export const isActivity = (i: Pick<PlanItem, 'kind'>) => i.kind === 'activity'
 
 export type Alternative = PlanItem & { day: number; replaces: string | null; optional: boolean }
 
-export type PlanDay = { day: number; date: string; base: string; overnight: string; kind: DayKind; title: string; items: PlanItem[] }
+export type PlanDay = { day: number; date: string; base: string; overnight: string; kind: DayKind; title: string; items: PlanItem[]; pacingNote?: string }
 
-export const PRICE_TYPES = ['quote', 'published', 'estimate', 'booking', 'unavailable'] as const
+export const PRICE_TYPES = ['quote', 'published', 'estimate', 'allowance', 'user', 'booking', 'unavailable'] as const
 export type PriceType = (typeof PRICE_TYPES)[number]
 export const PRICE_TYPE_LABEL: Record<PriceType, string> = {
   quote: 'Date-specific quote',
   published: 'Published price',
   estimate: 'Sourced estimate',
+  allowance: 'Estimated allowance',
+  user: 'Your allowance',
   booking: 'Your booking',
   unavailable: 'Price unavailable',
 }
@@ -102,6 +111,12 @@ export type PriceFact = {
   sourceUrl: string | null
   checkedAt: string
   assumptions: string
+  /** Verified pages for an activity (each one was returned by the web searches). */
+  officialUrl?: string | null
+  ticketsUrl?: string | null
+  hoursUrl?: string | null
+  /** For an allowance: the evidence it was derived from, in plain words. */
+  basis?: string
 }
 
 export type Rate = { currency: string; perAud: number; sourceName: string; sourceUrl: string; checkedAt: string }
@@ -119,9 +134,12 @@ export type TripPlan = {
   rates: Record<string, Rate>
 }
 
-/** What the traveller has changed: removed and replaced items, added alternatives, and the contingency. */
-export type Selection = { removed: string[]; replaced: Record<string, string>; added: string[]; contingencyPct: number }
-export const DEFAULT_SELECTION: Selection = { removed: [], replaced: {}, added: [], contingencyPct: 10 }
+/**
+ * What the traveller has changed: removed and replaced items, added alternatives, the contingency,
+ * and their own allowances (amount per unit, in the trip currency) for costs with no sourced price.
+ */
+export type Selection = { removed: string[]; replaced: Record<string, string>; added: string[]; contingencyPct: number; allowances?: Record<string, number> }
+export const DEFAULT_SELECTION: Selection = { removed: [], replaced: {}, added: [], contingencyPct: 10, allowances: {} }
 
 // ---------------------------------------------------------------------------------------------
 // Checking the AI's itinerary answer.
@@ -152,7 +170,18 @@ function readItem(raw: Record<string, unknown>, id: string): PlanItem | null {
     reason: txt(raw.reason, 300),
     costKey: keyOf(raw.costKey),
     note: txt(raw.note, 300),
+    start: typeof raw.start === 'string' && /^([01]\d|2[0-3]):[0-5]\d$/.test(raw.start.trim()) ? raw.start.trim() : '',
+    desc: txt(raw.desc, 300),
   }
+}
+
+/**
+ * Full sightseeing days with fewer than `min` substantive activities. Arrival, departure and move
+ * days are not counted, and a relaxed trip needs two (it explains the lighter day instead).
+ */
+export function activityShortfall(days: { day: number; kind: DayKind; items: Pick<PlanItem, 'kind'>[] }[], pace: 'relaxed' | 'balanced' | 'full'): { day: number; count: number; min: number }[] {
+  const min = pace === 'relaxed' ? 2 : 3
+  return days.filter((d) => d.kind === 'full').map((d) => ({ day: d.day, count: d.items.filter(isActivity).length, min })).filter((d) => d.count < min)
 }
 
 export type CostNeed = { key: string; label: string; category: Category; unit: Unit; detail: string }
@@ -167,6 +196,22 @@ export type ItineraryAnswer = { summary: string; why: string; gateway: Gateway; 
  * with nights per base adding up to the trip's nights. Anything malformed is dropped or repaired;
  * a structurally wrong answer throws so the run is marked failed and can be retried.
  */
+/** The costs an answer asks to price, checked and without repeats. */
+export function readCostNeeds(list: unknown): CostNeed[] {
+  const out: CostNeed[] = []
+  const seen = new Set<string>()
+  for (const c of Array.isArray(list) ? (list as Record<string, unknown>[]) : []) {
+    const key = keyOf(c.key)
+    if (!key || seen.has(key)) continue
+    seen.add(key)
+    out.push({ key, label: str(c.label, 120) || key, category: oneOf(c.category, CATEGORIES, 'activities'), unit: oneOf(c.unit, UNITS, 'per_person'), detail: txt(c.detail, 300) })
+  }
+  return out
+}
+
+/** Items in day order: by part of the day, then by start time when given. */
+export const byTime = (a: PlanItem, b: PlanItem) => SLOTS.indexOf(a.slot) - SLOTS.indexOf(b.slot) || (a.start || '99').localeCompare(b.start || '99')
+
 export function readItinerary(text: string, trip: { arrive: string; days: number }): ItineraryAnswer {
   let raw: Record<string, unknown>
   try { raw = JSON.parse(text) as Record<string, unknown> } catch { throw new Error('The itinerary answer was not valid JSON.') }
@@ -193,7 +238,7 @@ export function readItinerary(text: string, trip: { arrive: string; days: number
     const base = str(d.base, 80)
     const known = [...baseNames].includes(base.toLowerCase()) ? bases.find((b) => b.name.toLowerCase() === base.toLowerCase())!.name : bases[0].name
     const kind: DayKind = trip.days === 1 ? 'arrival_departure' : n === 1 ? 'arrival' : n === trip.days ? 'departure' : oneOf(d.kind, ['full', 'move'] as const, 'full')
-    days.push({ day: n, date: addDays(trip.arrive, n - 1), base: known, overnight: n === trip.days ? '' : str(d.overnight, 80) || known, kind, title: str(d.title, 80), items: items.sort((a, b) => SLOTS.indexOf(a.slot) - SLOTS.indexOf(b.slot)) })
+    days.push({ day: n, date: addDays(trip.arrive, n - 1), base: known, overnight: n === trip.days ? '' : str(d.overnight, 80) || known, kind, title: str(d.title, 80), items: items.sort(byTime), pacingNote: txt(d.pacingNote, 240) })
   }
 
   const ids = new Set(days.flatMap((d) => d.items.map((i) => i.id)))
@@ -205,14 +250,7 @@ export function readItinerary(text: string, trip: { arrive: string; days: number
     return [{ ...item, day, replaces, optional: a.optional === true }]
   })
 
-  const costNeeds: CostNeed[] = []
-  const seen = new Set<string>()
-  for (const c of Array.isArray(raw.costNeeds) ? (raw.costNeeds as Record<string, unknown>[]) : []) {
-    const key = keyOf(c.key)
-    if (!key || seen.has(key)) continue
-    seen.add(key)
-    costNeeds.push({ key, label: str(c.label, 120) || key, category: oneOf(c.category, CATEGORIES, 'activities'), unit: oneOf(c.unit, UNITS, 'per_person'), detail: txt(c.detail, 300) })
-  }
+  const costNeeds = readCostNeeds(raw.costNeeds)
 
   const g = raw.gateway && typeof raw.gateway === 'object' ? (raw.gateway as Record<string, unknown>) : {}
   return {
@@ -292,6 +330,10 @@ export function readPrices(raw: unknown, allowedSources: { url: string; title: s
       sourceName: str(f.sourceName, 120) || src.title.slice(0, 120) || new URL(src.url).hostname,
       sourceUrl: src.url,
       assumptions: txt(f.assumptions, 300),
+      // Activity pages are kept only when the searches returned them, like the price source.
+      officialUrl: source(f.officialUrl)?.url ?? null,
+      ticketsUrl: source(f.ticketsUrl)?.url ?? null,
+      hoursUrl: source(f.hoursUrl)?.url ?? null,
     }
   }
   const rates: Record<string, Rate> = {}
@@ -309,6 +351,8 @@ export function readPrices(raw: unknown, allowedSources: { url: string; title: s
 export function priceBasisText(f: PriceFact): string {
   if (f.type === 'unavailable') return 'No reliable price found'
   if (f.type === 'booking') return 'Amount you entered'
+  if (f.type === 'user') return 'Allowance you entered'
+  if (f.type === 'allowance') return f.basis || 'Allowance derived from sourced local prices'
   if (f.type === 'quote') return 'Quote for your dates'
   if (f.type === 'published') return 'Published price'
   if ((f.sampleSize ?? 1) <= 1) return 'Single price found (not an average)'

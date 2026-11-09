@@ -6,11 +6,11 @@ import { fail } from '../../community/errors'
 import { hashSubject } from '../../community/ratelimit'
 import { getSettings } from '../../community/settings'
 import { aiConfigured, aiGateway, costMicroUsd, SEARCH_MICRO_USD, spentTodayMicroUsd, type AiModel } from '../ai'
-import { structuralNeeds } from './calc'
+import { baseSlug, routineOf, structuralNeeds } from './calc'
 import { partyText, travellers, type TripForm } from './form'
 import { applyChange, tripView, type Change, type TripView } from './gate'
-import { DEFAULT_SELECTION, readItinerary, readPrices, type CostNeed, type Selection, type TripPlan } from './plan'
-import { daysSchema, daysStep, ITINERARY_SYSTEM, PRICES_FORMAT, PRICES_SYSTEM, ROUTE_SCHEMA, ROUTE_STEP } from './prompts'
+import { activityShortfall, DEFAULT_SELECTION, readCostNeeds, readItinerary, readPrices, type CostNeed, type PlanItem, type PriceFact, type Selection, type TripPlan } from './plan'
+import { ALLOWANCE_SYSTEM, daysSchema, daysStep, ITINERARY_SYSTEM, PRICES_FORMAT, PRICES_SYSTEM, ROUTE_SCHEMA, ROUTE_STEP } from './prompts'
 
 /**
  * Saved trips for the single-form Trip Planner: creating, generating, reading with access checks,
@@ -37,7 +37,8 @@ const PRICE_MAX_SEARCHES = 5
 /** Items per price lookup: small groups keep each answer short enough to finish. */
 const PRICES_PER_LOOKUP = 6
 const PRICE_TIMEOUT_MS = 120_000
-const PRICE_CALLS = 8
+/** Price lookups at the same time, so a long trip does not send dozens of searches at once. */
+const PRICE_CONCURRENCY = 8
 /** Total time allowed for one run, leaving room to save before the 300-second function limit. */
 const RUN_BUDGET_MS = 280_000
 /** A run still "generating" after this long is treated as stopped, so it can be retried. */
@@ -207,6 +208,46 @@ export function readPriceAnswer(text: string, parse: (t: string) => unknown): un
   return prices.length ? { prices, rates: [] } : null
 }
 
+/** A gate that runs at most `limit` tasks at once, in the order they were queued. */
+export function limiter(limit: number): <T>(task: () => Promise<T>) => Promise<T> {
+  let running = 0
+  const waiting: (() => void)[] = []
+  return async (task) => {
+    if (running >= limit) await new Promise<void>((go) => waiting.push(go))
+    running++
+    try { return await task() } finally { running--; waiting.shift()?.() }
+  }
+}
+
+const KIND_WORD = { breakfast: 'breakfast', lunch: 'lunch', dinner: 'dinner', coffee: 'coffee', snacks: 'snacks and water', local: 'local transport' } as const
+
+/**
+ * Last automatic step for routine costs (meals, coffee, snacks, local transport) still without a
+ * price: use the same item's sourced price from another base on this trip, labelled as an allowance
+ * that names where it comes from. Nothing is filled without a sourced price behind it.
+ */
+export function fillFromOtherBases(prices: Record<string, PriceFact>, bases: { name: string }[]): Record<string, PriceFact> {
+  const out = { ...prices }
+  const nameOf = (slug: string) => bases.find((b) => baseSlug(b.name) === slug)?.name ?? slug
+  for (const [key, f] of Object.entries(prices)) {
+    const r = routineOf(key)
+    if (!r || f.type !== 'unavailable') continue
+    const donor = Object.values(prices).find((g) => g.type !== 'unavailable' && g.type !== 'user' && routineOf(g.key)?.kind === r.kind && routineOf(g.key)?.base !== r.base)
+    if (!donor) continue
+    const from = nameOf(routineOf(donor.key)!.base)
+    out[key] = { ...donor, key, label: f.label, route: f.route, type: 'allowance', basis: `Allowance based on the sourced ${KIND_WORD[r.kind]} price for ${from}; no local price was found for ${nameOf(r.base)}`, assumptions: `Assumes ${KIND_WORD[r.kind]} costs about the same as in ${from}.` }
+  }
+  return out
+}
+
+/** Substantive activities on each full day of a days-step answer (for the three-a-day check). */
+function shortDays(part: Record<string, unknown>, from: number, to: number, kinds: Map<number, string>, pace: TripForm['pace']): { day: number; count: number; min: number }[] {
+  const got = (part.days && typeof part.days === 'object' ? part.days : {}) as Record<string, { items?: Pick<PlanItem, 'kind'>[] } | undefined>
+  const days = []
+  for (let n = from; n <= to; n++) days.push({ day: n, kind: (kinds.get(n) ?? 'full') as 'full', items: Array.isArray(got[`d${n}`]?.items) ? got[`d${n}`]!.items! : [] })
+  return activityShortfall(days, pace)
+}
+
 /**
  * Write the trip: the route, then the days (in parallel groups) and prices. Safe to call again
  * after a failure (it starts over on the same trip). Records each request's cost for the daily
@@ -228,7 +269,7 @@ export async function generateTrip(tripId: string, options: { now?: Date } = {})
   const worst =
     costMicroUsd(model, 20_000, ROUTE_MAX_TOKENS) +
     chunks.length * costMicroUsd(model, 25_000, DAYS_MAX_TOKENS) +
-    PRICE_CALLS * (costMicroUsd(PRICE_MODEL, 100_000, PRICE_MAX_TOKENS) + PRICE_MAX_SEARCHES * SEARCH_MICRO_USD)
+    (6 + trip.form.days) * (costMicroUsd(PRICE_MODEL, 100_000, PRICE_MAX_TOKENS) + PRICE_MAX_SEARCHES * SEARCH_MICRO_USD)
   const failWith = async (error: string, message: string) => {
     console.error('[trip planner] generation failed', error)
     await payload.update({ collection: 'trips', id: tripId, overrideAccess: true, data: { status: 'failed', error: message } })
@@ -256,17 +297,19 @@ export async function generateTrip(tripId: string, options: { now?: Date } = {})
   }
 
   /** One price lookup, logged in ai-runs. A failure marks only these prices as missing. */
-  const lookUp = async (group: CostNeed[]): Promise<{ prices: TripPlan['prices']; rates: TripPlan['rates']; error: string | null }> => {
+  const lookUp = async (group: CostNeed[], mode: 'prices' | 'allowance' = 'prices'): Promise<{ prices: TripPlan['prices']; rates: TripPlan['rates']; error: string | null }> => {
     const missing = () => readPrices(null, [], group, now.toISOString())
     if (!group.length) return { prices: {}, rates: {}, error: null }
     if (!gateway.research || left() < 20_000) return { ...missing(), error: gateway.research ? 'no time left' : null }
     const run = await payload.create({ collection: 'ai-runs', data: { model: PRICE_MODEL, kind: 'trip_prices', trip: tripId, status: 'started', free: false } })
     try {
-      const response = await gateway.research({ model: PRICE_MODEL, system: PRICES_SYSTEM, prompt: priceRequest(trip.form, group, today), maxTokens: PRICE_MAX_TOKENS, maxSearches: PRICE_MAX_SEARCHES, timeoutMs: Math.min(PRICE_TIMEOUT_MS, left()) })
+      const response = await gateway.research({ model: PRICE_MODEL, system: mode === 'allowance' ? ALLOWANCE_SYSTEM : PRICES_SYSTEM, prompt: priceRequest(trip.form, group, today), maxTokens: PRICE_MAX_TOKENS, maxSearches: PRICE_MAX_SEARCHES, timeoutMs: Math.min(PRICE_TIMEOUT_MS, left()) })
       const { parseResearch } = await import('../research')
       const parsed = readPrices(readPriceAnswer(response.text, parseResearch), response.sources, group, now.toISOString())
+      // A price from the second try is an allowance from local cost data, and says what it rests on.
+      if (mode === 'allowance') for (const f of Object.values(parsed.prices)) if (f.type !== 'unavailable') Object.assign(f, { type: 'allowance', basis: `Allowance from local cost data${f.method ? `: ${f.method}` : ''}` })
       const found = Object.values(parsed.prices).filter((f) => f.type !== 'unavailable').length
-      console.log('[trip planner] prices', JSON.stringify({ asked: group.length, found, sources: response.sources.length, searches: response.searches, stopReason: response.stopReason, parsed: Boolean(parseResearch(response.text)), outputTokens: response.outputTokens }))
+      console.log('[trip planner] prices', JSON.stringify({ mode, asked: group.length, found, sources: response.sources.length, searches: response.searches, stopReason: response.stopReason, parsed: Boolean(parseResearch(response.text)), outputTokens: response.outputTokens }))
       await payload.update({ collection: 'ai-runs', id: run.id, data: { status: found ? 'ok' : 'failed', error: found ? null : `no usable prices (stop reason ${response.stopReason}, ${response.sources.length} sources)`, inputTokens: response.inputTokens, outputTokens: response.outputTokens, searches: response.searches, costMicroUsd: costMicroUsd(PRICE_MODEL, response.inputTokens, response.outputTokens) + response.searches * SEARCH_MICRO_USD } })
       return { prices: parsed.prices, rates: parsed.rates, error: null }
     } catch (error) {
@@ -279,6 +322,9 @@ export async function generateTrip(tripId: string, options: { now?: Date } = {})
 
   let itinerary
   let structural: Awaited<ReturnType<typeof lookUp>>[] = []
+  const gate = limiter(PRICE_CONCURRENCY)
+  const queued = new Set<string>()
+  const early: Promise<Awaited<ReturnType<typeof lookUp>>>[] = []
   try {
     // 1. The route: bases, nights and what each day is for. Short, so it is quick.
     const routePrompt = `${ROUTE_STEP}\n\n${brief}`
@@ -291,16 +337,37 @@ export async function generateTrip(tripId: string, options: { now?: Date } = {})
     const routeText = JSON.stringify({ gateway: route.gateway, bases: route.bases, days: route.days })
 
     // 2. The days, in small groups at the same time, while the route's prices are looked up.
+    const kinds = new Map(routeCheck.days.map((d) => [d.day, d.kind]))
+    // Activity prices are looked up as soon as each group of days is written, not after all of them.
+    const keyOf = (k: unknown) => (typeof k === 'string' ? k.trim().toLowerCase() : '')
+    const queueActivityPrices = (part: Record<string, unknown>, from: number, to: number) => {
+      const got = (part.days && typeof part.days === 'object' ? part.days : {}) as Record<string, { items?: { costKey?: unknown }[] } | undefined>
+      const used = new Set<string>()
+      for (let n = from; n <= to; n++) for (const it of got[`d${n}`]?.items ?? []) if (keyOf(it.costKey)) used.add(keyOf(it.costKey))
+      const fresh = readCostNeeds(part.costNeeds).filter((n) => used.has(n.key) && !n.key.startsWith('flight:') && !n.key.includes('@') && !queued.has(n.key))
+      fresh.forEach((n) => queued.add(n.key))
+      for (const g of priceGroups(fresh)) early.push(gate(() => lookUp(g)))
+    }
     const writeDays = async ([from, to]: [number, number]) => {
       const prompt = `${daysStep(from, to, routeText)}\n\n${brief}`
-      try { return await ask(`days ${from}-${to}`, prompt, daysSchema(from, to), DAYS_MAX_TOKENS, DAYS_TIMEOUT_MS) } catch (error) {
+      let part: Record<string, unknown>
+      try { part = await ask(`days ${from}-${to}`, prompt, daysSchema(from, to), DAYS_MAX_TOKENS, DAYS_TIMEOUT_MS) } catch (error) {
         if (left() < 60_000) throw error
         return ask(`days ${from}-${to} (retry)`, prompt, daysSchema(from, to), DAYS_MAX_TOKENS, DAYS_TIMEOUT_MS)
       }
+      // A full sightseeing day needs at least three activities: ask once more when one is short.
+      const short = shortDays(part, from, to, kinds, trip.form.pace)
+      if (short.length && left() > 150_000) {
+        const fix = `${prompt}\n\nYOUR PREVIOUS ANSWER was too light: ${short.map((d) => `day ${d.day} had ${d.count} activities`).join(', ')}. Give every full day at least ${short[0].min} activities (kind "activity"), normally four.`
+        const again = await ask(`days ${from}-${to} (more activities)`, fix, daysSchema(from, to), DAYS_MAX_TOKENS, DAYS_TIMEOUT_MS).catch(() => null)
+        if (again && shortDays(again, from, to, kinds, trip.form.pace).length < short.length) part = again
+      }
+      queueActivityPrices(part, from, to)
+      return part
     }
     const [parts, priced] = await Promise.all([
       Promise.all(chunks.map(writeDays)),
-      Promise.all(priceGroups(structuralNeeds(trip.form, routeCheck)).map(lookUp)),
+      Promise.all(priceGroups(structuralNeeds(trip.form, routeCheck)).map((g) => gate(() => lookUp(g)))),
     ])
     structural = priced
 
@@ -310,9 +377,11 @@ export async function generateTrip(tripId: string, options: { now?: Date } = {})
       const got = (part.days && typeof part.days === 'object' ? part.days : {}) as Record<string, unknown>
       for (let n = chunks[i][0]; n <= chunks[i][1]; n++) items.set(n, got[`d${n}`])
     })
+    // Each day comes back as { pacingNote, items } (or, from older answers, just the items).
+    const dayOf = (n: number) => { const v = items.get(n) as { items?: unknown; pacingNote?: unknown } | unknown[] | undefined; return Array.isArray(v) ? { items: v, pacingNote: '' } : { items: v?.items ?? [], pacingNote: v?.pacingNote ?? '' } }
     const merged = {
       ...route,
-      days: ((route.days ?? []) as Record<string, unknown>[]).map((d) => ({ ...d, items: items.get(Number(d.day)) ?? [] })),
+      days: ((route.days ?? []) as Record<string, unknown>[]).map((d) => ({ ...d, ...dayOf(Number(d.day)) })),
       alternatives: parts.flatMap((p) => (Array.isArray(p.alternatives) ? p.alternatives : [])),
       costNeeds: parts.flatMap((p) => (Array.isArray(p.costNeeds) ? p.costNeeds : [])),
     }
@@ -324,11 +393,20 @@ export async function generateTrip(tripId: string, options: { now?: Date } = {})
     return failWith(message, 'The planner could not finish your trip. Nothing was used from your free trip. Please press Try again.')
   }
 
-  // 4. Prices for the activities the days added. If any lookup fails, those costs are marked
-  //    missing and the total is marked incomplete; nothing becomes zero.
-  const activityNeeds = itinerary.costNeeds.filter((n) => !n.key.startsWith('flight:') && !n.key.includes('@'))
-  const results = [...structural, ...(await Promise.all(priceGroups(activityNeeds).map(lookUp)))]
-  const prices: TripPlan['prices'] = Object.assign({}, ...results.map((r) => r.prices))
+  // 4. Prices for the activities the days added (the planned ones first, then the alternatives'),
+  //    and a second try, from local cost data, for routine costs the first search missed.
+  //    If a lookup fails, those costs are marked missing and the total incomplete; nothing becomes zero.
+  const structuralPrices: TripPlan['prices'] = Object.assign({}, ...structural.map((r) => r.prices))
+  const gaps = structuralNeeds(trip.form, itinerary).filter((n) => routineOf(n.key) && structuralPrices[n.key]?.type === 'unavailable')
+  // The rest (alternatives' costs, and any planned cost not yet queued) come after the planned ones.
+  const activityNeeds = itinerary.costNeeds.filter((n) => !n.key.startsWith('flight:') && !n.key.includes('@') && !queued.has(n.key))
+  const planned = new Set(itinerary.days.flatMap((d) => d.items.map((i) => i.costKey)).filter(Boolean))
+  const later = [...priceGroups(gaps).map((g) => gate(() => lookUp(g, 'allowance'))), ...[...priceGroups(activityNeeds.filter((n) => planned.has(n.key))), ...priceGroups(activityNeeds.filter((n) => !planned.has(n.key)))].map((g) => gate(() => lookUp(g)))]
+  const results = [...structural, ...(await Promise.all([...early, ...later]))]
+  // A later answer replaces an "unavailable" from an earlier one, never a found price.
+  const prices: TripPlan['prices'] = {}
+  for (const r of results) for (const [k, f] of Object.entries(r.prices)) if (!prices[k] || prices[k].type === 'unavailable') prices[k] = f
+  Object.assign(prices, fillFromOtherBases(prices, itinerary.bases))
   const rates: TripPlan['rates'] = Object.assign({}, ...results.map((r) => r.rates))
   const priceError = results.find((r) => r.error)?.error ?? null
 

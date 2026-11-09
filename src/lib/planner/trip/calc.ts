@@ -1,5 +1,5 @@
 import { minorDigits, roomsFor, travellers, type TripForm } from './form'
-import { CATEGORIES, SLOT_MINUTES, SLOTS, type Alternative, type Category, type CostNeed, type PlanDay, type PlanItem, type PriceFact, type PriceType, type Rate, type Selection, type Slot, type TripPlan } from './plan'
+import { byTime, CATEGORIES, SLOT_MINUTES, SLOTS, type Alternative, type Category, type CostNeed, type PlanDay, type PlanItem, type PriceFact, type PriceType, type Rate, type Selection, type Slot, type TripPlan } from './plan'
 
 /**
  * The trip budget, worked out in code. The AI proposes items; every number here comes from a price
@@ -48,7 +48,7 @@ export type Budget = {
   total: { low: number; high: number; working: number }
   perPerson: number
   travellers: number
-  byCategory: { category: Category; working: number; low: number; high: number; missing: number }[]
+  byCategory: { category: Category; working: number; low: number; high: number; missing: number; unresolved: { key: string | null; label: string; count: number }[]; userAllowance: boolean; allowance: boolean }[]
   byDay: { day: number; working: number; low: number; high: number; missing: number }[]
   oneTime: { working: number; low: number; high: number }
   budget: number | null
@@ -57,7 +57,9 @@ export type Budget = {
   paid: number
   toPay: number
   incomplete: boolean
-  missing: { label: string; category: Category; day: number | null }[]
+  missing: { label: string; category: Category; day: number | null; factKey: string | null }[]
+  /** True when any line uses an amount the traveller entered as their own allowance. */
+  usesUserAllowance: boolean
 }
 
 // ---------------------------------------------------------------------------------------------
@@ -114,7 +116,7 @@ export function selectedItems(plan: Pick<TripPlan, 'days' | 'alternatives'>, sel
       const a = alts.get(id)
       if (a && a.day === d.day && !Object.values(sel.replaced).includes(id)) items.push({ ...a, added: true })
     }
-    items.sort((a, b) => SLOTS.indexOf(a.slot) - SLOTS.indexOf(b.slot))
+    items.sort(byTime)
     out.set(d.day, items)
   }
   return out
@@ -123,15 +125,27 @@ export function selectedItems(plan: Pick<TripPlan, 'days' | 'alternatives'>, sel
 // ---------------------------------------------------------------------------------------------
 // Price facts the budget needs that the app itself defines (the AI adds item-specific ones).
 
-const slug = (s: string) => s.toLowerCase().normalize('NFKD').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 40) || 'base'
-export const stayKey = (base: string) => `stay@${slug(base)}`
-export const foodKey = (meal: Meal | 'coffee' | 'snacks' | 'water', base: string) => `${meal}@${slug(base)}`
-export const localKey = (base: string) => `local@${slug(base)}`
+/** The short form of a base's name used in price keys: "Surfers Paradise" → "surfers-paradise". */
+export const baseSlug = (s: string) => s.toLowerCase().normalize('NFKD').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 40) || 'base'
+export const stayKey = (base: string) => `stay@${baseSlug(base)}`
+/** A budget-level room in the same base, looked up only to show what cheaper accommodation would save. */
+export const budgetStayKey = (base: string) => `stay-budget@${baseSlug(base)}`
+export const foodKey = (meal: Meal | 'coffee' | 'snacks' | 'water', base: string) => `${meal}@${baseSlug(base)}`
+export const localKey = (base: string) => `local@${baseSlug(base)}`
 export const FLIGHT_OUT = 'flight:outbound'
 export const FLIGHT_BACK = 'flight:return'
 
 export type Meal = 'breakfast' | 'lunch' | 'dinner'
-const MEALS: Meal[] = ['breakfast', 'lunch', 'dinner']
+export const MEALS: Meal[] = ['breakfast', 'lunch', 'dinner']
+
+/** The routine daily costs every base needs: meals, coffee, snacks and local transport. */
+export const ROUTINE_KINDS = ['breakfast', 'lunch', 'dinner', 'coffee', 'snacks', 'local'] as const
+export type RoutineKind = (typeof ROUTINE_KINDS)[number]
+/** Which routine cost a key is for, and its base slug: "lunch@torquay" → ["lunch", "torquay"]. */
+export function routineOf(key: string): { kind: RoutineKind; base: string } | null {
+  const m = /^(breakfast|lunch|dinner|coffee|snacks|local)@(.+)$/.exec(key)
+  return m ? { kind: m[1] as RoutineKind, base: m[2] } : null
+}
 
 /** Everything the budget needs a price for, beyond the itinerary items' own cost keys. */
 export function structuralNeeds(form: TripForm, plan: Pick<TripPlan, 'bases' | 'gateway'>): CostNeed[] {
@@ -148,11 +162,12 @@ export function structuralNeeds(form: TripForm, plan: Pick<TripPlan, 'bases' | '
   plan.bases.forEach((b, i) => {
     if (b.nights > 0 && !(i === 0 && form.hotelBooked)) {
       out.push({ key: stayKey(b.name), label: `Accommodation in ${b.name}`, category: 'accommodation', unit: 'per_room_night', detail: `A ${level} room in ${b.name}${b.region ? `, ${b.region}` : ''} for ${b.nights} nights from day ${b.fromDay}, ${rooms} room(s) for ${party}${form.roomNotes ? `; ${form.roomNotes}` : ''}. Per room per night.` })
+      // With a budget given, also price a budget room, so the savings of cheaper accommodation are sourced.
+      if (form.budget !== null && form.stay !== 'budget') out.push({ key: budgetStayKey(b.name), label: `Budget accommodation in ${b.name}`, category: 'accommodation', unit: 'per_room_night', detail: `A budget room (simple hotel, motel or hostel private room) in ${b.name}${b.region ? `, ${b.region}` : ''} for the same dates, ${rooms} room(s) for ${party}. Per room per night.` })
     }
     for (const m of MEALS) out.push({ key: foodKey(m, b.name), label: `${m[0].toUpperCase()}${m.slice(1)} in ${b.name}`, category: 'food', unit: 'per_person', detail: `Typical ${m} at a casual ${m === 'dinner' ? 'mid-range restaurant' : 'café'} in ${b.name}, per person${m === 'dinner' ? ', without alcohol' : ''}.` })
     out.push({ key: foodKey('coffee', b.name), label: `Coffee in ${b.name}`, category: 'food', unit: 'per_item', detail: `One café coffee or tea in ${b.name}.` })
-    out.push({ key: foodKey('snacks', b.name), label: `Snacks in ${b.name}`, category: 'food', unit: 'per_person', detail: `Snacks for one person for a day in ${b.name}.` })
-    out.push({ key: foodKey('water', b.name), label: `Drinking water in ${b.name}`, category: 'food', unit: 'per_person', detail: `Bottled water for one person for a day (about 1.5 litres) in ${b.name}.` })
+    out.push({ key: foodKey('snacks', b.name), label: `Snacks and water in ${b.name}`, category: 'food', unit: 'per_person', detail: `Snacks and bottled water for one person for a day in ${b.name} (for example a piece of fruit or pastry and 1.5 litres of water).` })
     out.push({ key: localKey(b.name), label: `Local transport in ${b.name}`, category: 'local_transport', unit: 'per_person', detail: `Public transport for one person for a day in ${b.name} (day pass or two to four trips).` })
   })
   return out
@@ -264,7 +279,17 @@ export function calculateBudget(form: TripForm, plan: TripPlan, sel: Selection):
   const rooms = roomsFor(form)
   const people = travellers(form)
   const lines: BudgetLine[] = []
-  const fact = (key: string | null) => (key ? plan.prices[key] ?? null : null)
+  const allowances = sel.allowances ?? {}
+  // A sourced price is used first; the traveller's own allowance fills a cost with no sourced price.
+  const fact = (key: string | null): PriceFact | null => {
+    if (!key) return null
+    const f = plan.prices[key] ?? null
+    const own = allowances[key]
+    if (f && f.type === 'unavailable' && typeof own === 'number' && own >= 0) {
+      return { ...f, type: 'user', currency, low: own, high: own, working: own, childLow: null, childHigh: null, childMaxAge: null, freeUnderAge: null, familyPass: null, sampleSize: null, sourceName: '', sourceUrl: null, basis: 'Allowance you entered' }
+    }
+    return f
+  }
   const trip = { currency, rates: plan.rates, rooms }
 
   const push = (base: Omit<BudgetLine, 'low' | 'high' | 'working' | 'status' | 'quantity' | 'priceType' | 'paid' | 'optional' | 'note'> & { note?: string; optional?: boolean }, f: PriceFact | null, opts: { nights?: number; count?: number } = {}) => {
@@ -309,8 +334,9 @@ export function calculateBudget(form: TripForm, plan: TripPlan, sel: Selection):
     for (const m of meals.included) lines.push({ id: `d${d.day}-${m}`, category: 'food', label: `${m[0].toUpperCase()}${m.slice(1)} (included with accommodation)`, day: d.day, quantity: 'Included', low: 0, high: 0, working: 0, status: 'included', priceType: null, factKey: null, paid: false, optional: false, note: '' })
     // One coffee per adult on a day with a morning at the destination; snacks and water for everyone.
     if (form.adults > 0 && (d.kind !== 'arrival' || form.arrivalTime !== 'evening')) push({ id: `d${d.day}-coffee`, category: 'food', label: 'Coffee or tea', day: d.day, factKey: foodKey('coffee', base) }, fact(foodKey('coffee', base)), { count: form.adults })
-    push({ id: `d${d.day}-snacks`, category: 'food', label: 'Snacks', day: d.day, factKey: foodKey('snacks', base) }, fact(foodKey('snacks', base)))
-    push({ id: `d${d.day}-water`, category: 'food', label: 'Drinking water', day: d.day, factKey: foodKey('water', base) }, fact(foodKey('water', base)))
+    push({ id: `d${d.day}-snacks`, category: 'food', label: plan.prices[foodKey('water', base)] ? 'Snacks' : 'Snacks and water', day: d.day, factKey: foodKey('snacks', base) }, fact(foodKey('snacks', base)))
+    // Trips planned before snacks and water were priced together keep their separate water line.
+    if (plan.prices[foodKey('water', base)]) push({ id: `d${d.day}-water`, category: 'food', label: 'Drinking water', day: d.day, factKey: foodKey('water', base) }, fact(foodKey('water', base)))
     // Local transport on every day spent at the destination; airport and intercity journeys are separate lines.
     push({ id: `d${d.day}-local`, category: 'local_transport', label: 'Local transport', day: d.day, factKey: localKey(base) }, fact(localKey(base)))
 
@@ -330,7 +356,19 @@ export function calculateBudget(form: TripForm, plan: TripPlan, sel: Selection):
   const pct = Math.max(0, Math.min(30, Math.round(sel.contingencyPct)))
   const contingency = { low: Math.round((known.low * pct) / 100), high: Math.round((known.high * pct) / 100), working: Math.round((known.working * pct) / 100) }
   const total = { low: known.low + contingency.low, high: known.high + contingency.high, working: known.working + contingency.working }
-  const missing = lines.filter((l) => l.status === 'unavailable').map((l) => ({ label: l.label, category: l.category, day: l.day }))
+  const missing = lines.filter((l) => l.status === 'unavailable').map((l) => ({ label: l.label, category: l.category, day: l.day, factKey: l.factKey }))
+  // Unpriced lines grouped by what they are (for example "Lunch (Torquay) × 5"), per category.
+  const unresolvedIn = (c: Category) => {
+    const counts = new Map<string, { key: string | null; label: string; count: number }>()
+    for (const l of lines) if (l.category === c && l.status === 'unavailable') {
+      const f = l.factKey ? plan.prices[l.factKey] : null
+      const id = l.factKey ?? l.id
+      const g = counts.get(id) ?? { key: l.factKey, label: f?.label ?? l.label, count: 0 }
+      g.count++
+      counts.set(id, g)
+    }
+    return [...counts.values()]
+  }
   const budget = form.budget !== null ? toMinor(form.budget, currency) : null
   const paid = priced.filter((l) => l.paid).reduce((a, l) => a + l.working, 0)
 
@@ -343,7 +381,14 @@ export function calculateBudget(form: TripForm, plan: TripPlan, sel: Selection):
     total,
     perPerson: people ? Math.round(total.working / people) : total.working,
     travellers: people,
-    byCategory: CATEGORIES.map((c) => ({ category: c, ...sum(priced.filter((l) => l.category === c)), missing: lines.filter((l) => l.category === c && l.status === 'unavailable').length })).filter((c) => c.working > 0 || c.missing > 0 || c.low > 0),
+    byCategory: CATEGORIES.map((c) => ({
+      category: c,
+      ...sum(priced.filter((l) => l.category === c)),
+      missing: lines.filter((l) => l.category === c && l.status === 'unavailable').length,
+      unresolved: unresolvedIn(c),
+      userAllowance: priced.some((l) => l.category === c && l.priceType === 'user'),
+      allowance: priced.some((l) => l.category === c && l.priceType === 'allowance'),
+    })).filter((c) => c.working > 0 || c.missing > 0 || c.low > 0 || c.unresolved.length > 0),
     byDay: plan.days.map((d) => ({ day: d.day, ...sum(priced.filter((l) => l.day === d.day)), missing: lines.filter((l) => l.day === d.day && l.status === 'unavailable').length })),
     oneTime: sum(priced.filter((l) => l.day === null)),
     budget,
@@ -352,6 +397,7 @@ export function calculateBudget(form: TripForm, plan: TripPlan, sel: Selection):
     toPay: total.working - paid,
     incomplete: missing.length > 0,
     missing,
+    usesUserAllowance: priced.some((l) => l.priceType === 'user'),
   }
 }
 
@@ -371,4 +417,92 @@ export function warningsFor(plan: TripPlan, sel: Selection, budget: Budget): str
   }
   if (budget.remaining !== null && budget.remaining < 0) out.push(`The estimate is ${formatMoney(-budget.remaining, budget.currency, { round: true })} over your budget.`)
   return out
+}
+
+// ---------------------------------------------------------------------------------------------
+// Over budget: what drives the cost, and sourced ways to spend less.
+
+export type Saving = { id: string; label: string; detail: string; saving: number }
+export type BudgetAdvice = {
+  over: number
+  drivers: { category: Category; working: number; share: number }[]
+  options: Saving[]
+  /** What the options other than shortening the trip save together (minor units, with contingency). */
+  combined: number
+  /** Whether the budget is met after those savings. */
+  fits: boolean
+  /** Nights to cut, on top of the other savings, to meet the budget (null when no shorter trip fits). */
+  nightsToCut: number | null
+}
+
+/**
+ * When the estimate is over the traveller's budget: the biggest cost categories, and ways to spend
+ * less, each worked out from the same sourced prices (a budget room's own price, the low end of the
+ * meal ranges, free alternatives already in the plan). Nothing here changes the trip.
+ */
+export function budgetAdvice(form: TripForm, plan: TripPlan, sel: Selection, b: Budget): BudgetAdvice | null {
+  if (b.remaining === null || b.remaining >= 0) return null
+  const over = -b.remaining
+  const withContingency = (minor: number) => Math.round(minor * (1 + b.contingencyPct / 100))
+  const party: Party = { adults: form.adults, childAges: form.childAges }
+  const trip = { currency: b.currency, rates: plan.rates, rooms: roomsFor(form) }
+  const options: Saving[] = []
+  const priced = b.lines.filter((l) => l.status === 'priced' || l.status === 'free')
+
+  // 1. Budget accommodation, from the budget-room price found for each base.
+  let rooms = 0
+  const where: string[] = []
+  plan.bases.forEach((base, i) => {
+    if (base.nights <= 0 || (i === 0 && form.hotelBooked)) return
+    const mid = plan.prices[stayKey(base.name)]
+    const cheap = plan.prices[budgetStayKey(base.name)]
+    if (!mid || !cheap) return
+    const a = amountFor(mid, party, { ...trip, nights: base.nights })
+    const c = amountFor(cheap, party, { ...trip, nights: base.nights })
+    if (a && c && a.working > c.working) { rooms += a.working - c.working; where.push(base.name) }
+  })
+  if (rooms > 0) options.push({ id: 'stay', label: 'Choose budget accommodation', detail: `Simple hotels, motels or hostel private rooms in ${where.join(' and ')}, at the budget room prices found for your dates.`, saving: withContingency(rooms) })
+
+  // 2. Free alternatives already suggested for paid activities, and leaving out optional extras.
+  const items = selectedItems(plan, sel)
+  let swaps = 0, swapCount = 0
+  for (const d of plan.days) {
+    for (const it of items.get(d.day) ?? []) {
+      const line = b.lines.find((l) => l.id === `item-${it.id}`)
+      if (!line || line.status !== 'priced' || line.working <= 0 || line.category === 'extras') continue
+      const free = plan.alternatives.find((a) => a.day === d.day && a.replaces === it.id && (!a.costKey || plan.prices[a.costKey]?.working === 0))
+      if (free) { swaps += line.working; swapCount++ }
+    }
+  }
+  if (swaps > 0) options.push({ id: 'free', label: 'Swap paid activities for free ones', detail: `${swapCount} paid ${swapCount === 1 ? 'activity has' : 'activities have'} a free alternative in the daily plan.`, saving: withContingency(swaps) })
+  const extras = priced.filter((l) => l.category === 'extras').reduce((a, l) => a + l.working, 0)
+  if (extras > 0) options.push({ id: 'extras', label: 'Leave out the optional extras', detail: 'Tours and add-ons marked optional.', saving: withContingency(extras) })
+
+  // 3. Meals and local transport at the low end of their sourced ranges.
+  const lowEnd = (c: Category) => priced.filter((l) => l.category === c).reduce((a, l) => a + (l.working - l.low), 0)
+  const meals = lowEnd('food')
+  if (meals > 0) options.push({ id: 'meals', label: 'Eat more simply', detail: 'Cafés, bakeries and supermarket meals: the low end of the sourced meal prices.', saving: withContingency(meals) })
+  const local = lowEnd('local_transport')
+  if (local > 0) options.push({ id: 'local', label: 'Use cheaper local transport', detail: 'Daily fare caps and walking where practical: the low end of the sourced fares.', saving: withContingency(local) })
+
+  const combined = options.reduce((a, o) => a + o.saving, 0)
+
+  // 4. A shorter trip: one night in the last base, with that day's routine costs.
+  const last = plan.bases.at(-1)
+  let perNight = 0
+  if (last && last.nights > 1) {
+    const stay = plan.prices[stayKey(last.name)]
+    const room = stay ? amountFor(stay, party, { ...trip, nights: 1 }) : null
+    const lastDays = plan.days.filter((d) => d.base === last.name && d.kind === 'full').map((d) => d.day)
+    const daily = lastDays.length ? b.byDay.filter((x) => lastDays.includes(x.day)).reduce((a, x) => a + x.working, 0) / lastDays.length : 0
+    perNight = withContingency(Math.round((room?.working ?? 0) + daily))
+    if (perNight > 0) options.push({ id: 'night', label: `One night fewer in ${last.name}`, detail: 'The room and a typical day’s meals, transport and activities there.', saving: perNight })
+  }
+  const stillOver = over - combined
+  const maxCut = last ? last.nights - 1 : 0
+  const nightsToCut = stillOver <= 0 ? 0 : perNight > 0 && Math.ceil(stillOver / perNight) <= maxCut ? Math.ceil(stillOver / perNight) : null
+
+  const total = b.known.working || 1
+  const drivers = b.byCategory.filter((c) => c.working > 0).sort((x, y) => y.working - x.working).slice(0, 3).map((c) => ({ category: c.category, working: c.working, share: Math.round((c.working / total) * 100) }))
+  return { over, drivers, options, combined, fits: combined >= over, nightsToCut }
 }
