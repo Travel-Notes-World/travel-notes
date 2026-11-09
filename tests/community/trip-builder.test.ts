@@ -28,50 +28,80 @@ const fakeStripe = {
   verifyWebhook() { throw new Error('not used') },
 }
 
-/** A fake model: a valid itinerary for the requested days, and sourced prices for every key asked. */
+/**
+ * A fake model: a valid itinerary for the requested days (one base, or Sydney then Melbourne for
+ * trips of 14 days or more), three activities on each day, and sourced prices for every key asked,
+ * except the keys listed in `priceGaps`.
+ */
 const SOURCE = 'https://www.example.test/prices'
+const OFFICIAL = 'https://www.example.test/official'
 let itineraryMode: 'ok' | 'bad' | 'throw' = 'ok'
 let priceMode: 'ok' | 'none' | 'throw' = 'ok'
 let routeCalls = 0
 let dayCalls: [number, number][] = []
 let priceCalls = 0
+let allowanceCalls = 0
+/** Keys the first price search does not find; `allowanceFinds` are found by the second, cost-data search. */
+let priceGaps = new Set<string>()
+let allowanceFinds = new Set<string>()
+/** Days whose first answer has only two activities (the planner should ask again). */
+let thinOnce = new Set<number>()
+const basesFor = (days: number) => days >= 14
+  ? [{ name: 'Sydney', region: 'NSW', nights: Math.floor((days - 1) / 2), fromDay: 1, toDay: Math.floor((days - 1) / 2) + 1, reason: 'Harbour and beaches.', airport: 'SYD' },
+     { name: 'Melbourne', region: 'VIC', nights: days - 1 - Math.floor((days - 1) / 2), fromDay: Math.floor((days - 1) / 2) + 1, toDay: days, reason: 'Laneways and food.', airport: 'MEL' }]
+  : [{ name: 'Sydney', region: 'NSW', nights: days - 1, fromDay: 1, toDay: days, reason: 'Harbour, beaches and easy transport.', airport: 'SYD' }]
+const baseOn = (days: number, day: number) => { const b = basesFor(days); return b.length > 1 && day > b[0].nights ? b[1].name : 'Sydney' }
+const itemsFor = (day: number, base: string, thin: boolean) => [
+  { slot: 'morning', start: '09:00', kind: 'activity', title: `Secret garden ${day}`, place: 'Royal Botanic Garden Sydney', area: `${base}`, minutes: 90, travel: { mode: 'none', minutes: 0 }, reason: 'Easy start.', desc: 'Shady paths and harbour views.', costKey: '', note: '' },
+  { slot: 'afternoon', start: '13:30', kind: 'activity', title: `Opera House tour ${day}`, place: 'Sydney Opera House', area: `${base}`, minutes: 60, travel: { mode: 'walk', minutes: 15 }, reason: 'Iconic.', desc: 'A guided walk through the theatres.', costKey: 'ticket-opera-tour', note: '' },
+  ...(thin ? [] : [{ slot: 'afternoon', start: '15:30', kind: 'activity', title: `Art gallery ${day}`, place: 'Art Gallery of New South Wales', area: `${base}`, minutes: 90, travel: { mode: 'walk', minutes: 20 }, reason: 'Free and indoors.', desc: 'Australian and international art.', costKey: 'visit-art-gallery', note: '' }]),
+  { slot: 'afternoon', start: '12:30', kind: 'break', title: 'Rest', place: '', area: '', minutes: 30, travel: { mode: 'none', minutes: 0 }, reason: '', desc: '', costKey: '', note: '' },
+]
 const fakeAi = {
   async generate(request: Any) {
     if (itineraryMode === 'throw') throw new Error('model down')
     const days = Number(/Days at the destination: (\d+)/.exec(request.prompt)![1])
     if (itineraryMode === 'bad') return { text: '{"days": []}', inputTokens: 10, outputTokens: 10, stopReason: 'end_turn' }
-    const answer = {
-      summary: 'A relaxed Sydney stay.', why: 'One base keeps travel short.',
+    const route = {
+      summary: 'A relaxed Australian stay.', why: 'Few moves keep travel short.',
       gateway: { needsFlight: true, arrivalAirport: 'Sydney (SYD)', departureAirport: 'Sydney (SYD)', note: '' },
-      bases: [{ name: 'Sydney', region: 'NSW', nights: days - 1, fromDay: 1, toDay: days, reason: 'Harbour, beaches and easy transport.', airport: 'SYD' }],
-      days: Array.from({ length: days }, (_, i) => ({ day: i + 1, base: 'Sydney', overnight: 'Sydney', kind: 'full', title: `Sydney day ${i + 1}`, items: [
-        { slot: 'morning', kind: 'activity', title: `Secret garden ${i + 1}`, place: 'Royal Botanic Garden Sydney', area: 'Sydney NSW', minutes: 90, travel: { mode: 'none', minutes: 0 }, reason: 'Easy start.', costKey: '', note: '' },
-        { slot: 'afternoon', kind: 'activity', title: `Opera House tour ${i + 1}`, place: 'Sydney Opera House', area: 'Sydney NSW', minutes: 60, travel: { mode: 'walk', minutes: 15 }, reason: 'Iconic.', costKey: 'ticket-opera-tour', note: '' },
-      ] })),
-      alternatives: [{ day: 1, replaces: 'd1-2', optional: false, slot: 'afternoon', kind: 'activity', title: 'Bondi to Coogee walk', place: 'Bondi Beach', area: 'Bondi Beach, Sydney NSW', minutes: 150, travel: { mode: 'bus', minutes: 40 }, reason: 'Free coastal walk.', costKey: '', note: '' }],
-      costNeeds: [{ key: 'ticket-opera-tour', label: 'Opera House tour', category: 'activities', unit: 'per_person', detail: 'Standard guided tour' }],
+      bases: basesFor(days),
+      days: Array.from({ length: days }, (_, i) => ({ day: i + 1, base: baseOn(days, i + 1), overnight: baseOn(days, i + 1), kind: 'full', title: `Day ${i + 1}` })),
       assumptions: ['Economy flights with one checked bag.'], checks: ['Check tour times.'],
     }
-    // The planner asks for the route first, then the days in groups.
-    let reply: Any = answer
     if (request.prompt.includes('STEP 1 OF 2')) {
       routeCalls++
-      reply = { ...answer, days: answer.days.map((d: Any) => ({ day: d.day, base: d.base, overnight: d.overnight, kind: d.kind, title: d.title })) }
-      delete reply.alternatives
-      delete reply.costNeeds
-    } else if (request.prompt.includes('STEP 2 OF 2')) {
-      const [, from, to] = /days (\d+) to (\d+) only/.exec(request.prompt)!.map(Number)
-      dayCalls.push([from, to])
-      reply = { days: Object.fromEntries(answer.days.filter((d: Any) => d.day >= from && d.day <= to).map((d: Any) => [`d${d.day}`, d.items])), alternatives: answer.alternatives.filter((a: Any) => a.day >= from && a.day <= to), costNeeds: from === 1 ? answer.costNeeds : [] }
+      return { text: JSON.stringify(route), inputTokens: 2000, outputTokens: 1000, stopReason: 'end_turn' }
     }
-    return { text: JSON.stringify(reply), inputTokens: 2000, outputTokens: 3000, stopReason: 'end_turn' }
+    const [, from, to] = /days (\d+) to (\d+) only/.exec(request.prompt)!.map(Number)
+    dayCalls.push([from, to])
+    const out: Any = { days: {}, alternatives: [], costNeeds: [] }
+    for (let d = from; d <= to; d++) {
+      const thin = thinOnce.has(d) && !request.prompt.includes('YOUR PREVIOUS ANSWER')
+      out.days[`d${d}`] = { pacingNote: '', items: itemsFor(d, baseOn(days, d), thin) }
+      out.alternatives.push({ day: d, replaces: `d${d}-2`, optional: false, slot: 'afternoon', start: '13:30', kind: 'activity', title: 'Bondi to Coogee walk', place: 'Bondi Beach', area: 'Bondi Beach, Sydney NSW', minutes: 150, travel: { mode: 'bus', minutes: 40 }, reason: 'Free coastal walk.', desc: 'Cliff-top coastal path.', costKey: '', note: '' })
+    }
+    if (from === 1) out.costNeeds = [
+      { key: 'ticket-opera-tour', label: 'Opera House tour', category: 'activities', unit: 'per_person', detail: 'Standard guided tour' },
+      { key: 'visit-art-gallery', label: 'Art Gallery of NSW', category: 'activities', unit: 'per_person', detail: 'General admission' },
+    ]
+    return { text: JSON.stringify(out), inputTokens: 2000, outputTokens: 3000, stopReason: 'end_turn' }
   },
   async research(request: Any) {
     priceCalls++
     if (priceMode === 'throw') throw new Error('search down')
-    const keys = [...request.prompt.matchAll(/^- ([a-z0-9:@_-]+):/gm)].map((m: Any) => m[1])
-    const prices = priceMode === 'none' ? [] : keys.map((key: string) => ({ key, type: 'estimate', currency: 'AUD', low: key.startsWith('flight') ? 400 : 20, high: key.startsWith('flight') ? 600 : 30, working: key.startsWith('flight') ? 500 : 25, unit: key.startsWith('stay') ? 'per_room_night' : key.startsWith('coffee') ? 'per_item' : 'per_person', sampleSize: 4, sourceUrl: SOURCE, sourceName: 'Example' }))
-    return { text: '```json\n' + JSON.stringify({ prices, rates: [] }) + '\n```', sources: [{ url: SOURCE, title: 'Example prices', pageAge: null }], inputTokens: 5000, outputTokens: 2000, searches: 3, stopReason: 'end_turn' }
+    const allowance = /everyday travel costs/.test(request.system)
+    if (allowance) allowanceCalls++
+    const keys = [...request.prompt.matchAll(/^- ([a-z0-9:@_-]+):/gm)].map((m: Any) => m[1]).filter((k: string) => (allowance ? allowanceFinds.has(k) : !priceGaps.has(k)))
+    const amount = (key: string) => key.startsWith('flight') ? 500 : key.startsWith('stay-budget') ? 120 : key.startsWith('stay') ? 250 : key.startsWith('visit') ? 0 : 25
+    const prices = priceMode === 'none' ? [] : keys.map((key: string) => ({
+      key, type: key.startsWith('ticket') ? 'published' : 'estimate', currency: 'AUD', low: Math.round(amount(key) * 0.8), high: Math.round(amount(key) * 1.2), working: amount(key),
+      unit: key.startsWith('stay') ? 'per_room_night' : key.startsWith('coffee') ? 'per_item' : 'per_person', sampleSize: 4, sourceUrl: SOURCE, sourceName: 'Example',
+      ...(key.startsWith('visit') ? { free: true, inclusions: 'Special exhibitions are ticketed' } : {}),
+      ...(key.startsWith('ticket') || key.startsWith('visit') ? { officialUrl: OFFICIAL, ticketsUrl: SOURCE, hoursUrl: 'https://not-in-results.example/hours' } : {}),
+      ...(allowance ? { method: 'Menu prices at three cafés' } : {}),
+    }))
+    return { text: '```json\n' + JSON.stringify({ prices, rates: [] }) + '\n```', sources: [{ url: SOURCE, title: 'Example prices', pageAge: null }, { url: OFFICIAL, title: 'Official site', pageAge: null }], inputTokens: 5000, outputTokens: 2000, searches: 3, stopReason: 'end_turn' }
   },
 }
 
@@ -144,11 +174,17 @@ describe('generating a trip', () => {
     assert.equal(routeCalls, 1)
     assert.deepEqual(dayCalls.sort((a, b) => a[0] - b[0]), [[1, 2], [3, 4], [5, 6], [7, 8], [9, 10], [11, 12], [13, 13]])
     assert.equal(trip.plan.days.length, 13)
-    assert.ok(trip.plan.days.every((d: Any) => d.items.length === 2), 'every day has its items')
+    assert.ok(trip.plan.days.every((d: Any) => d.items.length === 4), 'every day has its items')
     assert.equal(trip.plan.days[12].items[0].id, 'd13-1')
-    assert.equal(priceCalls, 4, 'flights and stays, food and transport in groups of six, then activities')
+    assert.equal(priceCalls, 3, 'flights and stays, food and transport, then activities')
     const budget = CALC.calculateBudget(trip.form, trip.plan, trip.selection)
     assert.equal(budget.incomplete, false)
+  })
+  it('never runs more price lookups at once than the limit', async () => {
+    const gate = S.limiter(2)
+    let now = 0, most = 0
+    await Promise.all(Array.from({ length: 6 }, () => gate(async () => { now++; most = Math.max(most, now); await new Promise((r) => setTimeout(r, 5)); now-- })))
+    assert.equal(most, 2)
   })
   it('keeps every finished price from an answer that was cut off part-way', () => {
     const cut = 'Searching...\n```json\n{"prices": [{"key": "a", "low": 1, "sourceName": "x {y}"}, {"key": "b", "low": 2}, {"key": "c", "lo'
@@ -165,6 +201,106 @@ describe('generating a trip', () => {
     assert.equal(budget.incomplete, true)
     assert.ok(budget.missing.some((m: Any) => m.category === 'flights'))
     assert.equal(budget.lines.filter((l: Any) => l.status === 'priced').length, 0)
+  })
+})
+
+describe('a 20-day trip in two areas (Sydney, then Melbourne)', () => {
+  let trip: Any
+  before(async () => {
+    priceGaps = new Set(['lunch@melbourne', 'snacks@melbourne', 'dinner@melbourne'])
+    allowanceFinds = new Set(['lunch@melbourne'])
+    thinOnce = new Set([5])
+    routeCalls = 0; dayCalls = []; priceCalls = 0; allowanceCalls = 0
+    trip = await makeTrip(20, { form: { budget: '6000' } })
+    priceGaps = new Set(); allowanceFinds = new Set(); thinOnce = new Set()
+  })
+  it('generates two bases and every day', () => {
+    assert.equal(trip.status, 'ready', trip.error ?? '')
+    assert.deepEqual(trip.plan.bases.map((b: Any) => [b.name, b.nights]), [['Sydney', 9], ['Melbourne', 10]])
+    assert.equal(trip.plan.days.length, 20)
+  })
+  it('every full sightseeing day has at least three substantive activities (a light answer is asked again)', () => {
+    const full = trip.plan.days.filter((d: Any) => d.kind === 'full')
+    assert.ok(full.length >= 17)
+    for (const d of full) assert.ok(d.items.filter((i: Any) => i.kind === 'activity').length >= 3, `day ${d.day}`)
+    assert.ok(dayCalls.filter(([f]) => f === 5).length === 2, 'the days 5–6 group was asked again')
+    assert.ok(trip.plan.days[1].items.every((i: Any) => i.start && i.desc !== undefined))
+  })
+  it('meal allowances apply to every appropriate day: cost data first, then a sourced price from the other base', () => {
+    const p = trip.plan.prices
+    assert.equal(allowanceCalls, 1, 'one second search for the routine gaps')
+    assert.equal(p['lunch@melbourne'].type, 'allowance')
+    assert.match(p['lunch@melbourne'].basis, /local cost data: Menu prices/)
+    assert.equal(p['snacks@melbourne'].type, 'allowance')
+    assert.match(p['snacks@melbourne'].basis, /Sydney/)
+    assert.equal(p['snacks@melbourne'].sourceUrl, SOURCE, 'an allowance keeps the source it rests on')
+    const b = CALC.calculateBudget(trip.form, trip.plan, trip.selection)
+    const food = b.lines.filter((l: Any) => l.category === 'food')
+    assert.equal(food.filter((l: Any) => l.status === 'unavailable').length, 0, 'no meal is left without an estimate')
+    for (const d of trip.plan.days.filter((x: Any) => x.kind === 'full')) {
+      for (const m of ['breakfast', 'lunch', 'dinner']) assert.ok(food.some((l: Any) => l.id === `d${d.day}-${m}`), `day ${d.day} ${m}`)
+    }
+  })
+  it('prices say what they are, and activity links are kept only when the searches returned them', () => {
+    const types = new Set(Object.values(trip.plan.prices).map((f: Any) => f.type))
+    for (const t of types) assert.ok(['quote', 'published', 'estimate', 'allowance', 'user', 'unavailable'].includes(t as string))
+    const gallery = trip.plan.prices['visit-art-gallery']
+    assert.equal(gallery.working, 0)
+    assert.equal(gallery.officialUrl, OFFICIAL)
+    assert.equal(gallery.hoursUrl, null, 'a page the searches did not return is dropped')
+    assert.match(gallery.inclusions, /exhibitions/)
+    assert.equal(trip.plan.prices['ticket-opera-tour'].type, 'published')
+  })
+  it('daily, one-time and category totals reconcile with the trip total', () => {
+    const b = CALC.calculateBudget(trip.form, trip.plan, trip.selection)
+    const days = b.byDay.reduce((a: number, d: Any) => a + d.working, 0)
+    assert.equal(days + b.oneTime.working + b.contingency.working, b.total.working)
+    assert.equal(b.byCategory.reduce((a: number, c: Any) => a + c.working, 0) + b.contingency.working, b.total.working)
+  })
+  it('locked days show meaningful summary amounts, without their details', () => {
+    const view = S.tripPage(trip, null).view
+    const locked = view.budget.lines.filter((l: Any) => l.id.startsWith('locked-'))
+    const meals = locked.find((l: Any) => l.category === 'food')
+    assert.equal(meals.label, 'Meals, coffee and snacks for days 4–20')
+    assert.ok(meals.working > 0)
+    assert.equal(meals.status, 'priced')
+    assert.ok(locked.find((l: Any) => l.category === 'activities').working > 0)
+    const sum = view.budget.lines.reduce((a: number, l: Any) => a + l.working, 0)
+    assert.equal(sum + view.budget.contingency.working, view.budget.total.working, 'the preview lines still add up to the total')
+    assert.equal(JSON.stringify(view).includes('Opera House tour 9'), false)
+  })
+  it('an over-budget trip gets its cost drivers and sourced ways to spend less', () => {
+    const view = S.tripPage(trip, null).view
+    assert.ok(view.advice, 'the plan is over the A$6,000 budget')
+    assert.ok(view.advice.drivers.length > 0)
+    const ids = view.advice.options.map((o: Any) => o.id)
+    for (const id of ['stay', 'free', 'meals', 'night']) assert.ok(ids.includes(id), id)
+    assert.ok(view.advice.options.find((o: Any) => o.id === 'stay').saving > 0)
+    assert.equal(typeof view.advice.fits, 'boolean')
+  })
+  it('the PDF keeps every source as a readable, clickable link', async () => {
+    const view = S.tripPage({ ...trip, unlocked: true }, null).view
+    const { renderTripPdf } = await import('../../src/lib/planner/trip/pdf')
+    const pdf = (await renderTripPdf(trip.form, view)).toString('latin1')
+    assert.ok(pdf.includes('/URI'), 'links are clickable')
+    assert.ok(pdf.includes(SOURCE) && pdf.includes(OFFICIAL))
+  })
+  it('a cost with no sourced price can take the traveller’s own allowance, shown as theirs', async () => {
+    const t = await makeTrip(4, { form: {} })
+    const key = 'coffee@sydney'
+    // Make the coffee price unavailable, as if nothing was found.
+    const doc: Any = await payload.findByID({ collection: "trips", id: t.id, depth: 0, overrideAccess: true })
+    doc.plan.prices[key] = { ...doc.plan.prices[key], type: 'unavailable', low: 0, high: 0, working: 0, sourceUrl: null }
+    await payload.update({ collection: 'trips', id: t.id, overrideAccess: true, data: { plan: doc.plan } })
+    let view = S.tripPage(await S.findTrip(t.token), null).view
+    assert.ok(view.allowanceKeys.some((k: Any) => k.key === key))
+    await S.changeTrip(t.token, null, { op: 'allowance', key, amount: 6 })
+    const after = await S.findTrip(t.token)
+    view = S.tripPage(after, null).view
+    const coffee = view.budget.lines.filter((l: Any) => l.factKey === key)
+    assert.ok(coffee.every((l: Any) => l.priceType === 'user' && l.working > 0))
+    assert.equal(view.budget.usesUserAllowance, true)
+    await assert.rejects(S.changeTrip(t.token, null, { op: 'allowance', key: 'ticket-opera-tour', amount: 5 }), /cannot be set/)
   })
 })
 

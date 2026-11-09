@@ -13,7 +13,7 @@ import { describe, it } from 'node:test'
 import { amountFor, calculateBudget, FLIGHT_BACK, FLIGHT_OUT, foodKey, localKey, mealsOn, selectedItems, stayKey, structuralNeeds } from '../../src/lib/planner/trip/calc'
 import { departureFor, readTripForm, roomsFor, tripDates, tripDays, tripNights, type TripForm } from '../../src/lib/planner/trip/form'
 import { applyChange, tripView } from '../../src/lib/planner/trip/gate'
-import { DEFAULT_SELECTION, priceBasisText, readItinerary, readPrices, type PriceFact, type TripPlan } from '../../src/lib/planner/trip/plan'
+import { activityShortfall, DEFAULT_SELECTION, priceBasisText, readItinerary, readPrices, type PriceFact, type TripPlan } from '../../src/lib/planner/trip/plan'
 
 const TODAY = '2026-11-05'
 
@@ -125,6 +125,20 @@ describe('itinerary answers', () => {
     assert.throws(() => readItinerary(answer({ bases: [{ name: 'Sydney', nights: 5, fromDay: 1, toDay: 3 }] }), { arrive: '2026-12-01', days: 3 }))
     assert.throws(() => readItinerary(answer({ days: [] }), { arrive: '2026-12-01', days: 3 }))
     assert.throws(() => readItinerary('not json', { arrive: '2026-12-01', days: 3 }))
+  })
+})
+
+describe('activities per day', () => {
+  const act = { kind: 'activity' as const }
+  const brk = { kind: 'break' as const }
+  it('a full day needs three substantive activities; breaks and travel do not count; arrival days are exempt', () => {
+    const days = [
+      { day: 1, kind: 'arrival' as const, items: [act] },
+      { day: 2, kind: 'full' as const, items: [act, act, brk, { kind: 'transfer' as const }] },
+      { day: 3, kind: 'full' as const, items: [act, act, act, act] },
+    ]
+    assert.deepEqual(activityShortfall(days, 'balanced'), [{ day: 2, count: 2, min: 3 }])
+    assert.deepEqual(activityShortfall(days, 'relaxed'), [], 'a relaxed trip may have two')
   })
 })
 

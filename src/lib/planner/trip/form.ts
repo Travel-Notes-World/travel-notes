@@ -35,9 +35,9 @@ export const INTERESTS = [
 export type Interest = (typeof INTERESTS)[number]['value']
 
 export const TRIP_PACES = [
-  { value: 'relaxed', label: 'Relaxed', hint: 'One or two main things a day, with plenty of rest.' },
-  { value: 'balanced', label: 'Balanced', hint: 'Two or three main things a day.' },
-  { value: 'full', label: 'Full days', hint: 'Early starts and more to see.' },
+  { value: 'relaxed', label: 'Relaxed', hint: 'Two or three things a day, with plenty of rest.' },
+  { value: 'balanced', label: 'Balanced', hint: 'Three or four things a day.' },
+  { value: 'full', label: 'Full days', hint: 'Four or five things a day, with early starts.' },
 ] as const
 export type TripPace = (typeof TRIP_PACES)[number]['value']
 

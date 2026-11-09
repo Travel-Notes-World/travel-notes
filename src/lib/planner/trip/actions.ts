@@ -59,7 +59,7 @@ export async function retryTripAction(form: FormData): Promise<void> {
   redirect(`/trip-planner/t/${trip.token}`)
 }
 
-const CHANGE_OPS = new Set(['remove', 'replace', 'add', 'undo', 'unadd', 'contingency'])
+const CHANGE_OPS = new Set(['remove', 'replace', 'add', 'undo', 'unadd', 'contingency', 'allowance'])
 
 /** Add, replace or remove an activity, or change the contingency. The budget is worked out again on the page. */
 export async function changeTripAction(form: FormData): Promise<void> {
@@ -69,6 +69,7 @@ export async function changeTripAction(form: FormData): Promise<void> {
   const change = (op === 'replace' ? { op, item: str(form, 'item'), with: str(form, 'with') }
     : op === 'add' || op === 'unadd' ? { op, alt: str(form, 'alt') }
     : op === 'contingency' ? { op, pct: Number(str(form, 'pct')) || 0 }
+    : op === 'allowance' ? { op, key: str(form, 'key'), amount: str(form, 'amount').trim() === '' ? null : Number(str(form, 'amount').replace(/[$,\s]/g, '')) }
     : { op, item: str(form, 'item') }) as Change
   const { member } = await getViewer()
   let problem = ''
