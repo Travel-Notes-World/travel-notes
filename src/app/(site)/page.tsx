@@ -3,6 +3,16 @@ import type { ReactNode } from "react";
 
 import { Photo } from "@/components/destination/Photo";
 import { Placeholder } from "@/components/Placeholder";
+import {
+  PlaceholderDestinations,
+  PlaceholderGemsAndMap,
+  PlaceholderGuides,
+  PlaceholderKnowledgeHub,
+  PlaceholderMedia,
+  PlaceholderNewsletter,
+  PlaceholderPlanner,
+  PlaceholderStory,
+} from "@/components/home/HomePlaceholders";
 import home from "@/content/data/home.json";
 import { TRAVEL_STYLES } from "@/lib/community/constants";
 import { getCommunityHighlights, getFeaturedDestinations, getHomeTopics } from "@/lib/content/home";
@@ -14,8 +24,13 @@ import { getLatestStories, type Story } from "@/lib/content/stories";
  *
  * Fixed wording (headings, descriptions, link lists) lives in src/content/data/home.json. Every
  * destination, topic, guide and post shown here is published content from the CMS or the
- * community database. A section with nothing published is left out entirely: the homepage never
- * shows sample content or "Coming soon" mock-ups.
+ * community database.
+ *
+ * Placeholders (owner's decision, 10 Nov 2026): every section of the design is shown again so each can
+ * be worked on in turn. Sections without real content use the design's sample wording from
+ * src/content/data/home-placeholders.json and carry a visible "Placeholder P#" tag. Popular destinations
+ * (P1), Featured guides (P2) and Travel stories (P9) switch to real content by themselves once it is
+ * published. (Previously, 8 Oct 2026: sections with nothing published were left out entirely.)
  *
  * Colours: theme tokens (paper, ink, navy-900, marine) follow the visitor's light/dark setting.
  * The brand-* colours are fixed and only used for bands that stay dark in both themes.
@@ -130,6 +145,7 @@ export default async function HomePage() {
       </section>
 
       {/* POPULAR DESTINATIONS: published destinations with published guides, linking to their pages. */}
+      {destinations.length === 0 && <PlaceholderDestinations />}
       {destinations.length > 0 && (
         <section className="bg-paper-000 py-14 lg:pt-18 lg:pb-16">
           <div className={wrap}>
@@ -170,6 +186,7 @@ export default async function HomePage() {
       </section>
 
       {/* FEATURED GUIDES */}
+      {!flagship && <PlaceholderGuides />}
       {flagship && (
         <section className="bg-paper-000 py-14 lg:py-18">
           <div className={wrap}>
@@ -212,10 +229,16 @@ export default async function HomePage() {
         </section>
       )}
 
+      {/* PLACEHOLDERS P3–P8: video, photo, knowledge hub, hidden gems, world map, AI planner */}
+      <PlaceholderMedia />
+      <PlaceholderKnowledgeHub />
+      <PlaceholderGemsAndMap />
+      <PlaceholderPlanner />
+
       {/* TRIP REPORTS + COMMUNITY: only posts that are published and visible to everyone */}
-      {(community.trip || community.question) && (
-        <section className="bg-paper-000 py-14 lg:py-18">
+      <section className="bg-paper-000 py-14 lg:py-18">
           <div className={`${wrap} grid gap-6 lg:grid-cols-2`}>
+            {!community.trip && <PlaceholderStory />}
             {community.trip && (
               <div className="border border-paper-200 rounded-2xl p-7 flex flex-col gap-3">
                 <Eyebrow className="mb-0!">{home.tripReports.eyebrow}</Eyebrow>
@@ -242,7 +265,9 @@ export default async function HomePage() {
             )}
           </div>
         </section>
-      )}
+
+      {/* NEWSLETTER (P10) */}
+      <PlaceholderNewsletter />
 
       {/* OUR COMMITMENTS */}
       <section className="bg-paper-000 border-t border-paper-200 py-16">

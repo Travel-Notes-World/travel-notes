@@ -1,0 +1,124 @@
+{
+  "_note": "SAMPLE CONTENT from the Homepage 1a design (owner's decision, 10 Nov 2026). Every section here is a placeholder to be replaced with real content one by one. Each section shows a visible 'Placeholder P#' tag on the page. To retire a section, replace its content with real data, then remove its entry here and its block in src/components/home/HomePlaceholders.tsx.",
+  "tagLabel": "Placeholder",
+  "destinations": {
+    "id": "P1",
+    "eyebrow": "Where next",
+    "title": "Popular destinations",
+    "link": { "label": "All destinations", "href": "/destinations" },
+    "items": [
+      { "country": "Japan", "name": "Kyoto", "text": "Temples, tea houses and seasonal rituals — the quiet heart of Japan.", "image": "kyoto — torii gates", "tone": "blue" },
+      { "country": "Italy", "name": "Amalfi Coast", "text": "Lemon groves, coastal drives and villages carved into the cliffs.", "image": "amalfi coast — cliffside town", "tone": "green" },
+      { "country": "Morocco", "name": "Marrakech", "text": "Souks, riads and the road to the Atlas Mountains.", "image": "marrakech — souk rooftops", "tone": "sand" },
+      { "country": "New Zealand", "name": "Queenstown", "text": "Adventure capital of the southern hemisphere, framed by the Remarkables.", "image": "queenstown — lake & peaks", "tone": "blue" },
+      { "country": "Mexico", "name": "Oaxaca", "text": "Mole, mezcal and living traditions in Mexico's culinary capital.", "image": "oaxaca — street colour", "tone": "green" },
+      { "country": "Tanzania", "name": "Zanzibar", "text": "Spice-trade history and Indian Ocean beaches off the Tanzanian coast.", "image": "zanzibar — dhow at dusk", "tone": "sand" }
+    ]
+  },
+  "guides": {
+    "id": "P2",
+    "eyebrow": "From the editors",
+    "title": "Featured travel guides",
+    "link": { "label": "All guides", "href": "/guides" },
+    "flagship": {
+      "label": "Flagship guide",
+      "title": "Patagonia, planned properly: a 2-week route that actually works",
+      "meta": "Elena Ruiz · Andes specialist · 18 min read · Updated 28 Jun 2026",
+      "image": "patagonia — granite towers"
+    },
+    "readLabel": "Read guide",
+    "items": [
+      { "title": "Eating Hanoi: 48 hours of street food, mapped", "meta": "Minh Tran · 12 min · Updated 2 Jul 2026", "image": "hanoi street food", "tone": "green" },
+      { "title": "Iceland's Ring Road: costs, stops and when to go", "meta": "Sigrún Ólafs · 15 min · Updated 21 Jun 2026", "image": "iceland ring road", "tone": "blue" },
+      { "title": "Jordan beyond Petra: a first-timer's honest itinerary", "meta": "Omar Haddad · 14 min · Updated 15 Jun 2026", "image": "jordan — petra", "tone": "sand" }
+    ]
+  },
+  "video": {
+    "id": "P3",
+    "eyebrow": "Watch",
+    "title": "Video explorer",
+    "main": { "image": "video still — norway fjords by drone", "label": "Norway by drone · 8:42" },
+    "items": [
+      { "label": "Sri Lanka by rail · 6:15" },
+      { "label": "Sahara nights · 4:58" }
+    ]
+  },
+  "photo": {
+    "id": "P4",
+    "eyebrow": "See",
+    "title": "Photo explorer",
+    "items": [
+      { "image": "bali rice terraces", "size": "tall" },
+      { "image": "lofoten aurora", "size": "normal" },
+      { "image": "atacama stars", "size": "normal" },
+      { "image": "varanasi ghats", "size": "normal" },
+      { "image": "serengeti migration — panorama", "size": "wide" }
+    ],
+    "link": { "label": "Browse all galleries", "href": "/photos" }
+  },
+  "knowledge": {
+    "id": "P5",
+    "eyebrow": "Destination knowledge hub",
+    "title": "Everything about a place, in one page",
+    "text": "Every destination page answers the questions travellers actually ask — structured so you (and search engines) find answers fast.",
+    "items": [
+      { "title": "Attractions", "text": "What's genuinely worth your time — and what isn't." },
+      { "title": "Hotels", "text": "Where to stay by area, style and budget." },
+      { "title": "Restaurants", "text": "Local picks, not tourist traps." },
+      { "title": "Things to Do", "text": "Experiences ranked by real travellers." },
+      { "title": "Transport", "text": "Getting there and around, step by step." },
+      { "title": "Safety & Costs", "text": "Current prices, scams to avoid, real budgets." },
+      { "title": "Best Time to Visit", "text": "Month-by-month weather and crowds." },
+      { "title": "FAQs", "text": "Straight answers to the questions everyone asks." }
+    ],
+    "href": "/destinations"
+  },
+  "gems": {
+    "id": "P6",
+    "eyebrow": "Editor curated",
+    "title": "Hidden gems",
+    "items": [
+      { "name": "Svaneti, Georgia", "text": "Medieval towers in Europe's wildest mountains", "tone": "green" },
+      { "name": "Isla Holbox, Mexico", "text": "Car-free island of sandbars and bioluminescence", "tone": "blue" },
+      { "name": "Takachiho Gorge, Japan", "text": "Waterfalls and myth in rural Kyushu", "tone": "sand" }
+    ],
+    "link": { "label": "All hidden gems", "href": "/destinations" }
+  },
+  "map": {
+    "id": "P7",
+    "eyebrow": "Interactive world explorer",
+    "title": "Pick a continent, go deep",
+    "image": "interactive world map — clickable countries",
+    "continents": ["Europe", "Asia", "Africa", "North America", "South America", "Oceania"],
+    "href": "/destinations"
+  },
+  "planner": {
+    "id": "P8",
+    "badge": "Coming 2026",
+    "title": "AI trip planning, grounded in real knowledge",
+    "text": "Tell us where, when, and how you like to travel. Our planner will draft a personalised itinerary built from our fact-checked guides and real traveller knowledge — not generic AI guesses.",
+    "primary": { "label": "Join the waitlist", "href": "/trip-planner" },
+    "secondary": { "label": "How it will work", "href": "/trip-planner" },
+    "previewLabel": "Preview · your itinerary",
+    "days": [
+      { "day": "Day 1", "text": "Arrive Lisbon · Alfama walking route · sunset at Miradouro" },
+      { "day": "Day 2", "text": "Day trip to Sintra — beat the crowds route" },
+      { "day": "Day 3", "text": "Belém pastries · LX Factory · fado in Bairro Alto" }
+    ],
+    "footnote": "Built from 14 verified Travel Notes guides"
+  },
+  "stories": {
+    "id": "P9",
+    "eyebrow": "Travel stories",
+    "title": "Real journeys, told well",
+    "quote": "\"We missed the last ferry from Naxos — and it turned into the best three days of the trip.\"",
+    "byline": "Priya S. · Stranded in the Cyclades",
+    "link": { "label": "Read traveller stories", "href": "/community/trips" }
+  },
+  "newsletter": {
+    "id": "P10",
+    "title": "The Field Notes newsletter",
+    "text": "One email a week: a destination worth knowing, a guide worth reading, and one hidden gem. No noise, unsubscribe anytime.",
+    "footnote": "Join 48,000 travellers · Privacy-first, no data sold"
+  }
+}
