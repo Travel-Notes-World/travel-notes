@@ -1,6 +1,7 @@
 import Link from "next/link";
 import type { Photo as PhotoData } from "@/lib/content/photos";
 
+import { AuthorByline } from "./AuthorByline";
 import { Photo } from "./destination/Photo";
 import { Placeholder } from "./Placeholder";
 
@@ -9,7 +10,7 @@ const fmt = (iso: string) => new Date(iso).toLocaleDateString("en-AU", { day: "n
 /** The fields a card needs; a CMS story (src/lib/content/stories.ts) satisfies this shape. */
 export type CardArticle = {
   slug: string; type: string; title: string; excerpt: string; readMinutes: number; updated: string;
-  author: { name: string }; heroTone: string; accent: string; photo?: PhotoData | null;
+  author: { name: string; slug?: string }; heroTone: string; accent: string; photo?: PhotoData | null;
 };
 
 export function ArticleCard({ article, hero = false }: { article: CardArticle; hero?: boolean }) {
@@ -37,7 +38,8 @@ export function ArticleCard({ article, hero = false }: { article: CardArticle; h
         </h3>
         <p className={`m-0 text-ink-600 ${hero ? "t-deck" : "t-body-sm"}`}>{article.excerpt}</p>
         <p className="t-meta text-ink-400 m-0">
-          By {article.author.name}<span className="ml-3">Updated {fmt(article.updated)}</span>
+          {article.author.slug ? <AuthorByline author={{ name: article.author.name, slug: article.author.slug }} size={20} nameClassName="" /> : <>By {article.author.name}</>}
+          <span className="ml-3">Updated {fmt(article.updated)}</span>
         </p>
       </div>
     </article>

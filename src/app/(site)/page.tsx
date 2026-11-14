@@ -1,6 +1,7 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
 
+import { AuthorPhoto } from "@/components/AuthorByline";
 import { Photo } from "@/components/destination/Photo";
 import { Placeholder } from "@/components/Placeholder";
 import {
@@ -68,7 +69,8 @@ const travelStyles = TRAVEL_STYLES.filter((s) => !home.ways.excludedTravelStyles
 
 function GuideMeta({ story, light = false }: { story: Story; light?: boolean }) {
   return (
-    <span className={`text-[12.5px] ${light ? "text-white/85" : "text-ink-400"}`}>
+    <span className={`inline-flex flex-wrap items-center gap-x-1.5 text-[12.5px] ${light ? "text-white/85" : "text-ink-400"}`}>
+      <AuthorPhoto author={story.author} size={18} />
       {story.author.name} · {story.readMinutes} {home.guides.minutesLabel} · {home.guides.updatedLabel} {fmt(story.updated)}
     </span>
   );
