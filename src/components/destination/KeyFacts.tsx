@@ -2,7 +2,6 @@ import Link from "next/link";
 
 import type { Planning } from "@/lib/content/destinations";
 
-import { LocalTime } from "./LocalTime";
 
 export const fmtDate = (iso: string) => new Date(iso).toLocaleDateString("en-AU", { day: "numeric", month: "long", year: "numeric", timeZone: "Australia/Sydney" });
 
@@ -11,7 +10,7 @@ export const fmtDate = (iso: string) => new Date(iso).toLocaleDateString("en-AU"
  * Local time comes from the destination record's time zone and is filled in by the browser. Shown only when there is at least one fact.
  */
 export function KeyFacts({ name, planning, headingId = "key-facts-heading" }: { name: string; planning: Planning; headingId?: string }) {
-  const { facts, factsCheckedAt, timeZone, timeNeeded, bestRange } = planning;
+  const { facts, factsCheckedAt, timeNeeded, bestRange } = planning;
   if (!facts.length && !timeNeeded && !bestRange) return null;
   return (
     <section aria-labelledby={headingId} className="rounded-lg border border-paper-200 bg-paper-000 shadow-card">
@@ -30,7 +29,6 @@ export function KeyFacts({ name, planning, headingId = "key-facts-heading" }: { 
             note={f.source ? <>Source: <a href={f.source.url} className="text-marine-600 underline" rel="noopener">{f.source.name}</a></> : null}
           />
         ))}
-        {timeZone && <Row label="Local time" value={<LocalTime timeZone={timeZone.name} offset={timeZone.offset} />} />}
       </dl>
       {factsCheckedAt && (
         <p className="t-body-sm text-ink-600 m-0 px-5 py-4 border-t border-paper-200 bg-paper-100 rounded-b-lg">

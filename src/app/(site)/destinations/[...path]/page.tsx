@@ -6,6 +6,7 @@ import { ArticleCard } from "@/components/ArticleCard";
 import { Breadcrumbs } from "@/components/Breadcrumbs";
 import { JsonLd } from "@/components/community/ui";
 import { fmtDate, KeyFacts } from "@/components/destination/KeyFacts";
+import { LocalTime } from "@/components/destination/LocalTime";
 import { LocationMap } from "@/components/destination/LocationMap";
 import { OnThisPage, PlaceCard, Questions, SourcesAndChecks } from "@/components/destination/PageParts";
 import { Photo, PhotoCredit } from "@/components/destination/Photo";
@@ -142,7 +143,7 @@ export default async function DestinationRoute({ params }: Props) {
             {place.name}
           </h1>
           {place.summary && <p className="t-deck mt-4 mb-0">{place.summary}</p>}
-          {(planning.goodFor || planning.timeNeeded) && (
+          {(planning.goodFor || planning.timeNeeded || planning.timeZone) && (
             <dl className="mt-6 m-0 grid gap-4 sm:grid-cols-2">
               {planning.goodFor && (
                 <div className="border-l-2 border-ochre-500 pl-4">
@@ -154,6 +155,13 @@ export default async function DestinationRoute({ params }: Props) {
                 <div className="border-l-2 border-ochre-500 pl-4">
                   <dt className="t-meta text-ink-400">Time to allow</dt>
                   <dd className="t-body-sm text-ink-900 m-0 mt-1">{planning.timeNeeded}</dd>
+                </div>
+              )}
+              {/* Shown on every destination with a time zone, including pages that are not written yet. */}
+              {planning.timeZone && (
+                <div className="border-l-2 border-ochre-500 pl-4">
+                  <dt className="t-meta text-ink-400">Local time</dt>
+                  <dd className="t-body-sm text-ink-900 m-0 mt-1"><LocalTime timeZone={planning.timeZone.name} offset={planning.timeZone.offset} /></dd>
                 </div>
               )}
             </dl>
