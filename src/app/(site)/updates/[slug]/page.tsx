@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
+import { AuthorByline } from "@/components/AuthorByline";
 import { Breadcrumbs } from "@/components/Breadcrumbs";
 import { JsonLd } from "@/components/community/ui";
 import { RichBody } from "@/components/RichBody";
@@ -93,7 +94,7 @@ export default async function UpdatePage({ params }: Props) {
         <h1 className="t-heading-1 mt-2 mb-3">{u.title}</h1>
         <p className="t-deck m-0">{u.summary}</p>
         <p className="t-body-sm text-ink-400 mt-5 mb-0">
-          {u.author && <>By <Link href={`/authors/${u.author.slug}`} className="text-ink-900 font-medium no-underline hover:underline">{u.author.name}</Link>. </>}
+          {u.author && <><AuthorByline author={u.author} nameClassName="text-ink-900 font-medium no-underline hover:underline" />. </>}
           Published <time dateTime={u.firstPublished}>{formatPublished(u.firstPublished)}</time>
           {u.updated && <>, updated <time dateTime={u.updated}>{formatPublished(u.updated)}</time></>}.
         </p>

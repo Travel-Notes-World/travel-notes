@@ -3,6 +3,7 @@ import Link from "next/link";
 import { notFound, permanentRedirect } from "next/navigation";
 
 import { ArticleCard } from "@/components/ArticleCard";
+import { AuthorByline } from "@/components/AuthorByline";
 import { Breadcrumbs } from "@/components/Breadcrumbs";
 import { JsonLd } from "@/components/community/ui";
 import { fmtDate, KeyFacts } from "@/components/destination/KeyFacts";
@@ -160,11 +161,7 @@ export default async function DestinationRoute({ params }: Props) {
           )}
           {(planning.author || planning.factsCheckedAt) && (
             <p className="t-body-sm text-ink-600 mt-6 mb-0">
-              {planning.author && (
-                <>
-                  By <Link href={`/authors/${planning.author.slug}`} className="text-ink-900 font-medium underline">{planning.author.name}</Link>
-                </>
-              )}
+              {planning.author && <AuthorByline author={planning.author} />}
               {planning.author && planning.factsCheckedAt && <span aria-hidden="true"> · </span>}
               {planning.factsCheckedAt && <>Facts checked {fmtDate(planning.factsCheckedAt)}</>}
             </p>
