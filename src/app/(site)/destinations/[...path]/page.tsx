@@ -160,8 +160,14 @@ export default async function DestinationRoute({ params }: Props) {
               )}
               {/* Shown on every destination with a time zone, including pages that are not written yet. */}
               {planning.timeZone && (
-                <div className="border-l-2 border-ochre-500 pl-4">
-                  <dt className="t-meta text-ink-400">Local time</dt>
+                <div className="rounded-md border-l-4 border-marine-600 bg-marine-100 px-4 py-3">
+                  <dt className="t-meta text-navy-900 flex items-center gap-2">
+                    <span aria-hidden="true" className="relative inline-flex h-2.5 w-2.5">
+                      <span className="absolute inline-flex h-full w-full rounded-full bg-marine-600 opacity-60 motion-safe:animate-ping" />
+                      <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-marine-600" />
+                    </span>
+                    Current live time in {place.name}
+                  </dt>
                   <dd className="t-body-sm text-ink-900 m-0 mt-1"><LocalTime timeZone={planning.timeZone.name} offset={planning.timeZone.offset} /></dd>
                 </div>
               )}

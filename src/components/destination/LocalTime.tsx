@@ -41,7 +41,7 @@ export function LocalTime({ timeZone, offset }: Props) {
   return (
     <>
       {/* The space is kept while the time loads, so the box does not jump. */}
-      <span className="block min-h-[1.5em]">{clock ? clock.text : <span className="text-ink-400">Loading local time…</span>}</span>
+      <span className="block min-h-[1.5em] text-lg font-semibold text-navy-900 tabular-nums">{clock ? clock.text : <span className="text-base font-normal text-ink-400">Loading current time…</span>}</span>
       <span className="block text-ink-600">
         {clock?.offset || offset} ({zone})
       </span>
